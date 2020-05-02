@@ -290,7 +290,7 @@ class Background:
     """
     return self.Omega_de*np.power(a, self.f_de(a))/self.Esqr(a)
 
-  def chi(self, a):
+  def radial_comoving_distance(self, a):
     r"""Radial comoving distance in [Mpc/h] for a given scale factor.
 
     Parameters
@@ -347,7 +347,7 @@ class Background:
     """
     return const.rh/(a**2*np.sqrt(self.Esqr(a)))
 
-  def f_k(self, a):
+  def transverse_comoving_distance(self, a):
     r"""Transverse comoving distance in [Mpc/h] for a given scale factor.
 
     Parameters
@@ -379,7 +379,7 @@ class Background:
         \end{matrix}
         \right.
     """
-    chi = self.chi(a)
+    chi = self.radial_comoving_distance(a)
     if self.k < 0:      # Open universe
         return const.rh/self.sqrtk*np.sinh(self.sqrtk * chi/const.rh)
     elif self.k > 0:    # Closed Universe
@@ -387,7 +387,7 @@ class Background:
     else:
         return chi
 
-  def d_A(self, a):
+  def angular_diameter_distance(self, a):
     r"""Angular diameter distance in [Mpc/h] for a given scale factor.
 
     Parameters
@@ -408,7 +408,37 @@ class Background:
 
         d_A(a) = a f_k(a)
     """
-    return a * self.f_k(a)
+    return a * self.transverse_comoving_distance(a)
+
+  def growth_factor(self, a, amin=1e-3):
+    """ Compute Growth factor at a given scale factor, normalised such
+    that G(a=1) = 1.
+
+    Parameters
+    ----------
+    a: array_like
+      Scale factor
+
+    amin: float
+      Mininum scale factor, default 1e-3
+
+    Returns
+    -------
+    G:  ndarray, or float if input scalar
+        Growth factor computed at requested scale factor
+
+    """
+    a = np.atleast_1d(a)
+    def D_derivs(y, x):
+        q = (2.0 - 0.5 * (self.Omega_m_a(x) +
+                          (1.0 + 3.0 * self.w(x))
+                          * self.Omega_de_a(x)))/x
+        r = 1.5*self.Omega_m_a(x)/x/x
+        return [y[1], -q * y[1] + r * y[0]]
+    y0 = [amin, 1.0]
+    a = np.concatenate([np.array([amin]), a ,np.array([1.0])])
+    y1, y2 = odeint(D_derivs, y0, a)
+    return y1[1:-1]/y1[-1]
 
   @property
   def sh_d(self):
@@ -470,6 +500,10 @@ class Background:
   @property
   def Omega_k(self):
     return self._parameters.Omega_k
+
+  @property
+  def k(self):
+    return self._k
 
   @property
   def h(self):
