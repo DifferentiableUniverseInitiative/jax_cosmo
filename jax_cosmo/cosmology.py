@@ -1,4 +1,5 @@
 import jax.numpy as np
+from jax.experimental.ode import odeint
 from . import constants as const
 
 def z2a(z):
@@ -397,113 +398,98 @@ class cosmology(object):
     #
     #     return self._a_chi_interp(chi)
 
-    # def a2chi(self, a):
-    #     r"""Radial comoving distance in [Mpc/h] for a given scale factor.
-    #
-    #     Parameters
-    #     ----------
-    #     a : array_like
-    #         Scale factor
-    #
-    #     Returns
-    #     -------
-    #     chi : ndarray, or float if input scalar
-    #         Radial comoving distance corresponding to the specified scale
-    #         factor.
-    #
-    #     Notes
-    #     -----
-    #     The radial comoving distance is computed by performing the following
-    #     integration:
-    #
-    #     .. math::
-    #
-    #         \chi(a) =  R_H \int_a^1 \frac{da^\prime}{{a^\prime}^2 E(a^\prime)}
-    #     """
-    #     def dchioverdlna(x):
-    #         xa = exp(x)
-    #         return self.dchioverda(xa) * xa
-    #
-    #     chi = vectorize(lambda x: romberg(dchioverdlna, log(x), 0,
-    #                                       vec_func=True))
-    #
-    #     # Initialize interpolation array
-    #     if self._chi_a_interp is None:
-    #         chitab = chi(self.atab)
-    #         self._chi_a_interp = interp1d(self.atab, chitab, kind='quadratic')
-    #         self._a_chi_interp = interp1d(chitab[::-1], self.atab[::-1],
-    #                                       kind='quadratic')
-    #
-    #     # For values within the interpolation array use _chi_interp,
-    #     # otherwise perform the integration
-    #     res = vectorize(lambda x: self._chi_a_interp(x)
-    #                     if ((x > self._amin) and (x < self._amax))
-    #                     else chi(x))
-    #     return res(a)
-    #
-    # def f_k(self, a):
-    #     r"""Transverse comoving distance in [Mpc/h] for a given scale factor.
-    #
-    #     Parameters
-    #     ----------
-    #     a : array_like
-    #         Scale factor
-    #
-    #     Returns
-    #     -------
-    #     f_k : ndarray, or float if input scalar
-    #         Transverse comoving distance corresponding to the specified
-    #         scale factor.
-    #
-    #     Notes
-    #     -----
-    #     The transverse comoving distance depends on the curvature of the
-    #     universe and is related to the radial comoving distance through:
-    #
-    #     .. math::
-    #
-    #         f_k(a) = \left\lbrace
-    #         \begin{matrix}
-    #         R_H \frac{1}{\sqrt{\Omega_k}}\sinh(\sqrt{|\Omega_k|}\chi(a)R_H)&
-    #             \mbox{for }\Omega_k > 0 \\
-    #         \chi(a)&
-    #             \mbox{for } \Omega_k = 0 \\
-    #         R_H \frac{1}{\sqrt{\Omega_k}} \sin(\sqrt{|\Omega_k|}\chi(a)R_H)&
-    #             \mbox{for } \Omega_k < 0
-    #         \end{matrix}
-    #         \right.
-    #     """
-    #
-    #     chi = self.a2chi(a)
-    #     if self.k < 0:      # Open universe
-    #         return const.rh/self.sqrtk*sinh(self.sqrtk * chi/const.rh)
-    #     elif self.k > 0:    # Closed Universe
-    #         return const.rh/self.sqrtk*sin(self.sqrtk * chi/const.rh)
-    #     else:
-    #         return chi
+    def a2chi(self, a):
+        r"""Radial comoving distance in [Mpc/h] for a given scale factor.
 
-    # def d_A(self, a):
-    #     r"""Angular diameter distance in [Mpc/h] for a given scale factor.
-    #
-    #     Parameters
-    #     ----------
-    #     a : array_like
-    #         Scale factor
-    #
-    #     Returns
-    #     -------
-    #     d_A : ndarray, or float if input scalar
-    #
-    #     Notes
-    #     -----
-    #     Angular diameter distance is expressed in terms of the transverse
-    #     comoving distance as:
-    #
-    #     .. math::
-    #
-    #         d_A(a) = a f_k(a)
-    #     """
-    #     return a * self.f_k(a)
+        Parameters
+        ----------
+        a : array_like
+            Scale factor
+
+        Returns
+        -------
+        chi : ndarray, or float if input scalar
+            Radial comoving distance corresponding to the specified scale
+            factor.
+
+        Notes
+        -----
+        The radial comoving distance is computed by performing the following
+        integration:
+
+        .. math::
+
+            \chi(a) =  R_H \int_a^1 \frac{da^\prime}{{a^\prime}^2 E(a^\prime)}
+        """
+        def dchioverdlna(y, x):
+            xa = np.exp(x)
+            return self.dchioverda(xa) * xa
+
+        res = odeint(dchioverdlna, 0., np.linspace(np.log(a),0.,2))
+        return res[1]
+
+    def f_k(self, a):
+        r"""Transverse comoving distance in [Mpc/h] for a given scale factor.
+
+        Parameters
+        ----------
+        a : array_like
+            Scale factor
+
+        Returns
+        -------
+        f_k : ndarray, or float if input scalar
+            Transverse comoving distance corresponding to the specified
+            scale factor.
+
+        Notes
+        -----
+        The transverse comoving distance depends on the curvature of the
+        universe and is related to the radial comoving distance through:
+
+        .. math::
+
+            f_k(a) = \left\lbrace
+            \begin{matrix}
+            R_H \frac{1}{\sqrt{\Omega_k}}\sinh(\sqrt{|\Omega_k|}\chi(a)R_H)&
+                \mbox{for }\Omega_k > 0 \\
+            \chi(a)&
+                \mbox{for } \Omega_k = 0 \\
+            R_H \frac{1}{\sqrt{\Omega_k}} \sin(\sqrt{|\Omega_k|}\chi(a)R_H)&
+                \mbox{for } \Omega_k < 0
+            \end{matrix}
+            \right.
+        """
+        chi = self.a2chi(a)
+        if self.k < 0:      # Open universe
+            return const.rh/self.sqrtk*np.sinh(self.sqrtk * chi/const.rh)
+        elif self.k > 0:    # Closed Universe
+            return const.rh/self.sqrtk*np.sin(self.sqrtk * chi/const.rh)
+        else:
+            return chi
+
+    def d_A(self, a):
+        r"""Angular diameter distance in [Mpc/h] for a given scale factor.
+
+        Parameters
+        ----------
+        a : array_like
+            Scale factor
+
+        Returns
+        -------
+        d_A : ndarray, or float if input scalar
+
+        Notes
+        -----
+        Angular diameter distance is expressed in terms of the transverse
+        comoving distance as:
+
+        .. math::
+
+            d_A(a) = a f_k(a)
+        """
+        return a * self.f_k(a)
 
     def dchioverda(self, a):
         r"""Derivative of the radial comoving distance with respect to the
@@ -649,75 +635,74 @@ class cosmology(object):
         else:
             raise NotImplementedError
         return res
-    #
-    # def G(self, a):
-    #     """ Compute Growth factor at a given scale factor, normalised such
-    #     that G(a=1) = 1.
-    #
-    #     Parameters
-    #     ----------
-    #     a: array_like
-    #         Scale factor
-    #
-    #     Returns
-    #     -------
-    #     G:  ndarray, or float if input scalar
-    #         Growth factor computed at requested scale factor
-    #
-    #     """
-    #
-    #     if self._da_interp is None:
-    #         def D_derivs(y, x):
-    #             q = (2.0 - 0.5 * (self.Omega_m_a(x) +
-    #                               (1.0 + 3.0 * self.w(x))
-    #                               * self.Omega_de_a(x)))/x
-    #             r = 1.5*self.Omega_m_a(x)/x/x
-    #             return [y[1], -q * y[1] + r * y[0]]
-    #         y0 = [self._amin, 1]
-    #
-    #         y = odeint(D_derivs, y0, self.atab)
-    #         self._da_interp = interp1d(self.atab, y[:, 0], kind='linear')
-    #
-    #     return self._da_interp(a)/self._da_interp(1.0)
 
-    # def pk_lin(self, k, a=1.0, **kwargs):
-    #     r""" Computes the linear matter power spectrum.
-    #
-    #     Parameters
-    #     ----------
-    #     k: array_like
-    #         Wave number in h Mpc^{-1}
-    #
-    #     a: array_like, optional
-    #         Scale factor (def: 1.0)
-    #
-    #     type: str, optional
-    #         Type of transfer function. Either 'eisenhu' or 'eisenhu_osc'
-    #         (def: 'eisenhu_osc')
-    #
-    #     Returns
-    #     -------
-    #     pk: array_like
-    #         Linear matter power spectrum at the specified scale
-    #         and scale factor.
-    #
-    #     """
-    #     k = atleast_1d(k)
-    #     a = atleast_1d(a)
-    #     g = self.G(a)
-    #     t = self.T(k, **kwargs)
-    #
-    #     pknorm = self.sigma8**2/self.sigmasqr(8.0, **kwargs)
-    #
-    #     if k.ndim == 1:
-    #         pk = outer(self.pk_prim(k) * pow(t, 2), pow(g, 2))
-    #     else:
-    #         pk = self.pk_prim(k) * pow(t, 2) * pow(g, 2)
-    #
-    #     # Apply normalisation
-    #     pk = pk*pknorm
-    #
-    #     return pk.squeeze()
+    def G(self, a):
+        """ Compute Growth factor at a given scale factor, normalised such
+        that G(a=1) = 1.
+
+        Parameters
+        ----------
+        a: array_like
+            Scale factor
+
+        Returns
+        -------
+        G:  ndarray, or float if input scalar
+            Growth factor computed at requested scale factor
+
+        """
+        a = np.atleast_1d(a)
+        def D_derivs(y, x):
+            q = (2.0 - 0.5 * (self.Omega_m_a(x) +
+                              (1.0 + 3.0 * self.w(x))
+                              * self.Omega_de_a(x)))/x
+            r = 1.5*self.Omega_m_a(x)/x/x
+            return [y[1], -q * y[1] + r * y[0]]
+        y0 = [self._amin, 1.0]
+
+        a = np.concatenate([np.array([self._amin]), a ,np.array([self._amax])])
+
+        y1, y2 = odeint(D_derivs, y0, a)
+
+        return y1[1:-1]/y1[-1]
+
+    def pk_lin(self, k, a=1.0, **kwargs):
+        r""" Computes the linear matter power spectrum.
+
+        Parameters
+        ----------
+        k: array_like
+            Wave number in h Mpc^{-1}
+
+        a: array_like, optional
+            Scale factor (def: 1.0)
+
+        type: str, optional
+            Type of transfer function. Either 'eisenhu' or 'eisenhu_osc'
+            (def: 'eisenhu_osc')
+
+        Returns
+        -------
+        pk: array_like
+            Linear matter power spectrum at the specified scale
+            and scale factor.
+
+        """
+        k = np.atleast_1d(k)
+        a = np.atleast_1d(a)
+        g = self.G(a)
+        t = self.T(k, **kwargs)
+
+        pknorm = self.sigma8**2/self.sigmasqr(8.0, **kwargs)
+
+        if k.ndim == 1:
+            pk = np.outer(self.pk_prim(k) * t**2,  g**2)
+        else:
+            pk = self.pk_prim(k) * t**2 * g**2
+
+        # Apply normalisation
+        pk = pk*pknorm
+        return pk.squeeze()
 
     # def _smith_parameters(self, a,  **kwargs):
     #     r""" Computes the non linear scale, effective spectral index
@@ -851,25 +836,25 @@ class cosmology(object):
     #
     #     return self.pk(k, a, **kwargs)
     #
-    # def pl_lin(self, l, a, **kwargs):
-    #     """
-    #     Computes the linear matter power spectrum at the specified scale
-    #     and scale factor
-    #     """
-    #
-    #     k = outer(l + 0.5, 1.0/self.a2chi(a))
-    #
-    #     g = self.G(a)
-    #     t = self.T(k, **kwargs)
-    #
-    #     pknorm = self.sigma8**2/self.sigmasqr(8.0, **kwargs)
-    #
-    #     pk = multiply(self.pk_prim(k) * pow(t, 2), pow(g, 2))
-    #
-    #     # Apply normalisation
-    #     pk = pk*pknorm
-    #
-    #     return pk
+    def pl_lin(self, l, a, **kwargs):
+        """
+        Computes the linear matter power spectrum at the specified scale
+        and scale factor
+        """
+
+        k = np.outer(l + 0.5, 1.0/self.a2chi(a))
+
+        g = self.G(a)
+        t = self.T(k, **kwargs)
+
+        pknorm = self.sigma8**2/self.sigmasqr(8.0, **kwargs)
+
+        pk = np.multiply(self.pk_prim(k) * t**2, g**2)
+
+        # Apply normalisation
+        pk = pk*pknorm
+    
+        return pk
 
     def pk_prim(self, k):
         """ Primordial power spectrum
@@ -877,41 +862,37 @@ class cosmology(object):
         """
         return k**self.n
 
-    # def sigmasqr(self, R, **kwargs):
-    #     """ Computes the energy of the fluctuations within a sphere of R h^{-1} Mpc
-    #
-    #     .. math::
-    #
-    #        \\sigma^2(R)= \\frac{1}{2 \\pi^2} \\int_0^\\infty \\frac{dk}{k} k^3 P(k,z) W^2(kR)
-    #
-    #     where
-    #
-    #     .. math::
-    #
-    #        W(kR) = \\frac{3j_1(kR)}{kR}
-    #     """
-    #     def int_sigma(logk):
-    #         k = exp(logk)
-    #         x = k * R
-    #         w = 3.0*(sin(x) - x*cos(x))/(x*x*x)
-    #         pk = self.T(k, **kwargs)**2 * self.pk_prim(k)
-    #
-    #         return k * pow(k*w, 2.0) * pk
-    #
-    #     return 1.0/(2.0*pi**2.0) * romberg(int_sigma, log(self._kmin),
-    #                                        log(self._kmax))
-    #
-    # def g(self, a, a_s):
-    #     """ Lensing efficiency kernel computed a distance chi for sources
-    #     placed at distance chi_s
-    #     """
-    #     a_s = atleast_1d(a_s)
-    #     a   = atleast_1d(a)
-    #     factor = 3.0 * const.H0**2 * self.Omega_m / (2.0 * const.c**2)/a
-    #     res = (self.a2chi(a_s) - self.a2chi(a)) / self.a2chi(a_s)
-    #     res[a_s > a] = 0
-    #
-    #     return factor * self.f_k(a) * res * self.dchioverda(a)
+    def sigmasqr(self, R, **kwargs):
+        """ Computes the energy of the fluctuations within a sphere of R h^{-1} Mpc
+
+        .. math::
+
+           \\sigma^2(R)= \\frac{1}{2 \\pi^2} \\int_0^\\infty \\frac{dk}{k} k^3 P(k,z) W^2(kR)
+
+        where
+
+        .. math::
+
+           W(kR) = \\frac{3j_1(kR)}{kR}
+        """
+        def int_sigma(y, logk):
+            k = np.exp(logk)
+            x = k * R
+            w = 3.0*(np.sin(x) - x*np.cos(x))/(x*x*x)
+            pk = self.T(k, **kwargs)**2 * self.pk_prim(k)
+            return k * (k*w)**2 * pk
+
+        y = odeint(int_sigma, 0., np.array([np.log(self._kmin), np.log(self._kmax)]))
+
+        return 1.0/(2.0*np.pi**2.0) * y[1]
+
+    def g(self, a, a_s):
+        """ Lensing efficiency kernel computed a distance chi for sources
+        placed at distance chi_s
+        """
+        factor = 3.0 * const.H0**2 * self.Omega_m / (2.0 * const.c**2)/a
+        res = np.clip(self.a2chi(a_s) - self.a2chi(a), 0.) / self.a2chi(a_s)
+        return factor * self.f_k(a) * res * self.dchioverda(a)
 
     # Derived constants
     @property
@@ -973,7 +954,6 @@ class cosmology(object):
     @h.setter
     def h(self,val):
         self.update(h=val)
-
 
     @property
     def Omega_b(self):
