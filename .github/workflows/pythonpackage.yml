@@ -23,18 +23,22 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
+    - name: setup-conda
+      uses: s-weigand/setup-conda@v1.0.2
+      with:
+        # Wether to activate the conda base env (Default: 'true')
+        activate-conda: true
+        #  If conda should be updated before running other commands (Default: 'false')
+        update-conda: false
+        # Python version which should be installed with conda (default: 'Default')
+        python-version: ${{ matrix.python-version }}
+        # Additional channels like 'conda-forge' which can be used to install packages
+        conda-channels: conda-forge
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pytest
-        pip install pyccl
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        conda install pytest
+        conda install -c conda-forge pyccl
+        pip install .
     - name: Test with pytest
       run: |
         pytest
