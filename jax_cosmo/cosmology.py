@@ -1,3 +1,5 @@
+# !!!!! THIS MODULE IS DEPRECATED, USE THE CORE MODULE INSTEAD !!!!
+print("THE COSMOLOGY MODULE IS DEPRECATED ")
 import jax.numpy as np
 from jax.experimental.ode import odeint
 from . import constants as const
@@ -853,7 +855,7 @@ class cosmology(object):
 
         # Apply normalisation
         pk = pk*pknorm
-    
+
         return pk
 
     def pk_prim(self, k):
