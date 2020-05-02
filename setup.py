@@ -6,5 +6,6 @@ setup(name='jax_cosmo',
       description='Differentiable Python Cosmology Library',
       author='Francois Lanusse',
       packages=find_packages(),
-      install_requires=['jax', 'jaxlib']
+      install_requires=['jax', 'jaxlib'],
+      tests_require = ['pyccl']
      )
