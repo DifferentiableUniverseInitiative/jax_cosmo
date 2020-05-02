@@ -4,6 +4,7 @@ import jax_cosmo.constants as const
 from jax.experimental.ode import odeint
 
 import jax_cosmo.transfer as tklib
+#import jax_cosmo.nonlinear as nllib
 
 __all__ = ['primordial_matter_power',
            'linear_matter_power']
