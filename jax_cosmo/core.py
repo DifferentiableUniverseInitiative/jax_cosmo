@@ -506,6 +506,10 @@ class Background:
     return self._k
 
   @property
+  def sqrtk(self):
+    return self._sqrtk
+
+  @property
   def h(self):
     return self._parameters.h
 
