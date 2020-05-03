@@ -3,6 +3,7 @@ import jax.numpy as np
 from jax.experimental.ode import odeint
 
 import jax_cosmo.constants as const
+import jax_cosmo.ops as ops
 
 __all__=[
   'w',
@@ -207,6 +208,12 @@ def radial_comoving_distance(cosmo, a):
 
       \chi(a) =  R_H \int_a^1 \frac{da^\prime}{{a^\prime}^2 E(a^\prime)}
   """
+  # # Check if distances have already been computed 
+  # if 'background.radial_comoving_distance' in cosmo._workspace.keys():
+  #   print("already cached")
+  #   # Retrieve already computed results
+  #   cache =
+
   def dchioverdlna(y, x, cosmo):
       xa = np.exp(x)
       return dchioverda(cosmo, xa) * xa
@@ -240,6 +247,34 @@ def dchioverda(cosmo, a):
       \frac{d \chi}{da}(a) = \frac{R_H}{a^2 E(a)}
   """
   return const.rh/(a**2*np.sqrt(Esqr(cosmo, a)))
+
+def a_of_chi(cosmo, chi, log10_amin= -3, steps=50):
+  r""" Computes the scale factor for corresponding (array) of radial comoving
+  distance by reverse linear interpolation.
+
+  Parameters:
+  -----------
+  cosmo: Cosmology
+    Cosmological parameters
+
+  chi: array-like
+    radial comoving distance to query.
+
+  Returns:
+  --------
+  a : array-like
+    Scale factors corresponding to requested distances
+
+  Notes:
+  ------
+
+  Carefull, this is quite costly, try to reuse as much as possible the result
+  of this function.
+  """
+  chi = np.atleast_1d(chi)
+  a = np.logspace(log10_amin, 0., steps)
+  r = radial_comoving_distance(cosmo, a)
+  return ops.interp(chi, r, a)
 
 def transverse_comoving_distance(cosmo, a):
   r"""Transverse comoving distance in [Mpc/h] for a given scale factor.

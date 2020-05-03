@@ -43,6 +43,10 @@ class Cosmology:
     self._w0 = w0
     self._wa = wa
 
+    # Create a workspace where functions can store some precomputed
+    # results
+    self._workspace = {}
+
   def __str__(self):
     return 'Cosmological parameters: \n' + \
         '    h:        ' + str(self.h) + ' \n' + \
