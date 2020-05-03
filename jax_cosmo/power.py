@@ -3,6 +3,7 @@ import jax.numpy as np
 import jax_cosmo.constants as const
 from jax.experimental.ode import odeint
 
+import jax_cosmo.background as bkgrd
 import jax_cosmo.transfer as tklib
 #import jax_cosmo.nonlinear as nllib
 
@@ -38,7 +39,7 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwar
   """
   k = np.atleast_1d(k)
   a = np.atleast_1d(a)
-  g = cosmo.growth_factor(a)
+  g = bkgrd.growth_factor(cosmo, a)
   t = transfer_fn(cosmo, k,**kwargs)
 
   pknorm = cosmo.sigma8**2/sigmasqr(cosmo, 8.0, transfer_fn, **kwargs)
@@ -65,11 +66,11 @@ def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax = 1000.0, ksteps=5, **kwar
 
      W(kR) = \\frac{3j_1(kR)}{kR}
   """
-  def int_sigma(y, logk):
+  def int_sigma(y, logk, cosmo):
     k = np.exp(logk)
     x = k * R
     w = 3.0*(np.sin(x) - x*np.cos(x))/(x*x*x)
     pk = transfer_fn(cosmo, k, **kwargs)**2 * primordial_matter_power(cosmo, k)
     return k * (k*w)**2 * pk
-  y = odeint(int_sigma, 0., np.linspace(np.log10(kmin), np.log10(kmax), ksteps))
+  y = odeint(int_sigma, 0., np.linspace(np.log10(kmin), np.log10(kmax), ksteps), cosmo)
   return 1.0/(2.0*np.pi**2.0) * y[-1]
