@@ -185,7 +185,7 @@ def Omega_de_a(cosmo, a):
   """
   return cosmo.Omega_de*np.power(a, f_de(cosmo, a))/Esqr(cosmo, a)
 
-def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=100):
+def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
   r"""Radial comoving distance in [Mpc/h] for a given scale factor.
 
   Parameters

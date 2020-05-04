@@ -19,15 +19,15 @@ def test_distances_flat():
 
   chi_ccl = ccl.comoving_radial_distance(cosmo_ccl, a)
   chi_jax = bkgrd.radial_comoving_distance(cosmo_jax, a)/cosmo_jax.h
-  assert_allclose(chi_ccl, chi_jax, rtol=1e-3)
+  assert_allclose(chi_ccl, chi_jax, rtol=1e-2)
 
   chi_ccl = ccl.comoving_angular_distance(cosmo_ccl, a)
   chi_jax = bkgrd.transverse_comoving_distance(cosmo_jax, a)/cosmo_jax.h
-  assert_allclose(chi_ccl, chi_jax, rtol=1e-3)
+  assert_allclose(chi_ccl, chi_jax, rtol=1e-2)
 
   chi_ccl = ccl.angular_diameter_distance(cosmo_ccl, a)
   chi_jax = bkgrd.angular_diameter_distance(cosmo_jax, a)/cosmo_jax.h
-  assert_allclose(chi_ccl, chi_jax, rtol=1e-3)
+  assert_allclose(chi_ccl, chi_jax, rtol=1e-2)
 
 
 def test_growth():
