@@ -111,6 +111,10 @@ class Cosmology:
     return np.sqrt(np.abs(self._Omega_k))
 
   @property
+  def sqrtk(self):
+    return self._sqrtk
+
+  @property
   def h(self):
     return self._h
 
