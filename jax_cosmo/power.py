@@ -1,7 +1,7 @@
 # This module computes power spectra
 import jax.numpy as np
 import jax_cosmo.constants as const
-from jax.experimental.ode import odeint
+from jax_cosmo.scipy.integrate import romb
 
 import jax_cosmo.background as bkgrd
 import jax_cosmo.transfer as tklib
@@ -66,11 +66,11 @@ def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax = 1000.0, ksteps=5, **kwar
 
      W(kR) = \\frac{3j_1(kR)}{kR}
   """
-  def int_sigma(y, logk, cosmo):
+  def int_sigma(logk):
     k = np.exp(logk)
     x = k * R
     w = 3.0*(np.sin(x) - x*np.cos(x))/(x*x*x)
     pk = transfer_fn(cosmo, k, **kwargs)**2 * primordial_matter_power(cosmo, k)
     return k * (k*w)**2 * pk
-  y = odeint(int_sigma, 0., np.linspace(np.log10(kmin), np.log10(kmax), ksteps), cosmo)
-  return 1.0/(2.0*np.pi**2.0) * y[-1]
+  y = romb(int_sigma, np.log10(kmin), np.log10(kmax), divmax=7)
+  return 1.0/(2.0*np.pi**2.0) * y

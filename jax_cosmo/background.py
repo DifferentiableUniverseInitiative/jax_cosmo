@@ -3,7 +3,7 @@ import jax.numpy as np
 from jax.experimental.ode import odeint
 
 import jax_cosmo.constants as const
-import jax_cosmo.ops as ops
+from jax_cosmo.scipy.interpolate import interp
 
 __all__=[
   'w',
@@ -185,7 +185,7 @@ def Omega_de_a(cosmo, a):
   """
   return cosmo.Omega_de*np.power(a, f_de(cosmo, a))/Esqr(cosmo, a)
 
-def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
+def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=512):
   r"""Radial comoving distance in [Mpc/h] for a given scale factor.
 
   Parameters
@@ -227,7 +227,7 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
 
   a = np.atleast_1d(a)
   # Return the results as an interpolation of the table
-  return np.clip(ops.interp(a, cache['a'], cache['chi']), 0.)
+  return np.clip(interp(a, cache['a'], cache['chi']), 0.)
 
 def a_of_chi(cosmo, chi):
   r""" Computes the scale factor for corresponding (array) of radial comoving
@@ -251,7 +251,7 @@ def a_of_chi(cosmo, chi):
     radial_comoving_distance(cosmo, 1.0);
   cache = cosmo._workspace['background.radial_comoving_distance']
   chi = np.atleast_1d(chi)
-  return ops.interp(chi, cache['chi'], cache['a'])
+  return interp(chi, cache['chi'], cache['a'])
 
 def dchioverda(cosmo, a):
   r"""Derivative of the radial comoving distance with respect to the
@@ -382,4 +382,4 @@ def growth_factor(cosmo, a, log10_amin=-3, steps=100, eps=1e-4):
     cache = cosmo._workspace['background.growth_factor']
 
   a = np.clip(np.atleast_1d(a), 10.**log10_amin, 1.0-eps)
-  return np.clip(ops.interp(a, cache['a'], cache['g']), 0., 1.0)
+  return np.clip(interp(a, cache['a'], cache['g']), 0., 1.0)
