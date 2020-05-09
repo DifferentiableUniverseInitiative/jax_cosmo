@@ -4,19 +4,20 @@ import jax.numpy as np
 
 from jax.tree_util import register_pytree_node_class
 from jax_cosmo.scipy.integrate import simps
+from jax_cosmo.jax_utils import container
 
-class redshift_distribution(ABC):
+class redshift_distribution(container):
 
-  def __init__(self, zmax=10., **kwargs):
+  def __init__(self, *args, zmax=10., **kwargs):
     """
     Initialize the parameters of the redshift distribution
     """
-    self._params = kwargs
     self._norm = None
-    self._zmax = zmax
-
+    super(redshift_distribution, self).__init__(*args,
+                                                zmax=zmax,
+                                                **kwargs)
   @abstractmethod
-  def pz_fn(self, z, **kwargs):
+  def pz_fn(self, z):
     """
     Un-normalized n(z) function provided by sub classes
     """
@@ -27,27 +28,27 @@ class redshift_distribution(ABC):
     Computes the normalized n(z)
     """
     if self._norm is None:
-      self._norm = simps(lambda t: self.pz_fn(t, **(self._params)),
-                         0., self._zmax, 256)
-    return self.pz_fn(z, **(self._params))/self._norm
-
-  def __repr__(self):
-    return "".join(["%s : %f ; "%(k, self._params[k]) for k in self._params.keys()])
+      self._norm = simps(lambda t: self.pz_fn(t),
+                         0., self.config['zmax'], 256)
+    return self.pz_fn(z)/self._norm
 
   @property
   def zmax(self):
-    return self._zmax
-
-  # Operations for flattening/unflattening representation
-  def tree_flatten(self):
-      return ((self._params, self._zmax) , None)
-
-  @classmethod
-  def tree_unflatten(cls, aux_data, children):
-      params, zmax = list(children)
-      return cls(zmax=zmax, **params)
-
+    return self.config['zmax']
+    
 @register_pytree_node_class
 class smail_nz(redshift_distribution):
-  def pz_fn(self, z, **p):
-    return z**p['a'] * np.exp(-(z / p['z0'])**p['b'])
+  """
+  Defines a smail distribution with these arguments
+
+  Parameters:
+  -----------
+  a:
+
+  b:
+
+  z0
+  """
+  def pz_fn(self, z):
+    a, b, z0 = self.params
+    return z**a * np.exp(-(z / z0)**b)
