@@ -344,7 +344,7 @@ def angular_diameter_distance(cosmo, a):
   """
   return a * transverse_comoving_distance(cosmo, a)
 
-def growth_factor(cosmo, a, log10_amin=-3, steps=100, eps=1e-4):
+def growth_factor(cosmo, a, log10_amin=-3, steps=256, eps=1e-4):
   """ Compute Growth factor at a given scale factor, normalised such
   that G(a=1) = 1.
 
