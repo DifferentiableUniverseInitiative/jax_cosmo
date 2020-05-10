@@ -44,10 +44,10 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwar
 
   pknorm = cosmo.sigma8**2/sigmasqr(cosmo, 8.0, transfer_fn, **kwargs)
 
-  if k.ndim == 1:
-    pk = np.outer(primordial_matter_power(cosmo, k) * t**2,  g**2)
-  else:
-    pk = primordial_matter_power(cosmo, k) * t**2 * g**2
+  # if k.ndim == 1:
+  #   pk = np.outer(primordial_matter_power(cosmo, k) * t**2,  g**2)
+  # else:
+  pk = primordial_matter_power(cosmo, k) * t**2 * g**2
 
   # Apply normalisation
   pk = pk*pknorm

@@ -193,5 +193,5 @@ def simps(f,a,b,N=128):
     dx = (b-a)/N
     x = np.linspace(a,b,N+1)
     y = f(x)
-    S = dx/3 * np.sum(y[0:-1:2] + 4*y[1::2] + y[2::2])
+    S = dx/3 * np.sum(y[0:-1:2] + 4*y[1::2] + y[2::2], axis=0)
     return S

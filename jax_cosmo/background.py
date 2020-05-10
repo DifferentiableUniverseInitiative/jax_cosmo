@@ -1,9 +1,10 @@
 # This module implements various functions for the background COSMOLOGY
 import jax.numpy as np
-from jax.experimental.ode import odeint
+#from jax.experimental.ode import odeint
 
 import jax_cosmo.constants as const
 from jax_cosmo.scipy.interpolate import interp
+from jax_cosmo.scipy.ode import odeint
 
 __all__=[
   'w',
@@ -185,7 +186,7 @@ def Omega_de_a(cosmo, a):
   """
   return cosmo.Omega_de*np.power(a, f_de(cosmo, a))/Esqr(cosmo, a)
 
-def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=512):
+def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
   r"""Radial comoving distance in [Mpc/h] for a given scale factor.
 
   Parameters
@@ -213,11 +214,12 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=512):
     # Compute tabulated array
     atab = np.logspace(log10_amin, 0., steps)
 
-    def dchioverdlna(y, x, cosmo):
+    def dchioverdlna(y, x):
         xa = np.exp(x)
         return dchioverda(cosmo, xa) * xa
 
-    chitab = odeint(dchioverdlna, 0., np.log(atab), cosmo)
+    chitab = odeint(dchioverdlna, 0., np.log(atab))
+    #np.clip(- 3000*np.log(atab), 0, 10000)#odeint(dchioverdlna, 0., np.log(atab), cosmo)
     chitab = chitab[-1] - chitab
 
     cache = {'a':atab, 'chi':chitab}
@@ -342,7 +344,7 @@ def angular_diameter_distance(cosmo, a):
   """
   return a * transverse_comoving_distance(cosmo, a)
 
-def growth_factor(cosmo, a, log10_amin=-3, steps=100, eps=1e-4):
+def growth_factor(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
   """ Compute Growth factor at a given scale factor, normalised such
   that G(a=1) = 1.
 
@@ -359,27 +361,26 @@ def growth_factor(cosmo, a, log10_amin=-3, steps=100, eps=1e-4):
   G:  ndarray, or float if input scalar
       Growth factor computed at requested scale factor
   """
+  #return np.ones_like(a)
   # Check if growth has already been computed
   if not 'background.growth_factor' in cosmo._workspace.keys():
     # Compute tabulated array
     atab = np.logspace(log10_amin, 0., steps)
 
-    def D_derivs(y, x, cosmo):
+    def D_derivs(y, x):
       q = (2.0 - 0.5 * (Omega_m_a(cosmo, x) +
                         (1.0 + 3.0 * w(cosmo, x))
                         * Omega_de_a(cosmo, x)))/x
       r = 1.5*Omega_m_a(cosmo, x)/x/x
-      return [y[1], -q * y[1] + r * y[0]]
+      return np.array([y[1], -q * y[1] + r * y[0]])
 
-    y0 = [atab[0], 1.0]
-    y1, y2 = odeint(D_derivs, y0, atab, cosmo)
-
+    y0 = np.array([atab[0], 1.0])
+    y = odeint(D_derivs, y0, atab)
+    y1 = y[:,0]
     gtab = y1/y1[-1]
 
     cache = {'a':atab, 'g':gtab}
     cosmo._workspace['background.growth_factor'] = cache
   else:
     cache = cosmo._workspace['background.growth_factor']
-
-  a = np.clip(np.atleast_1d(a), 10.**log10_amin, 1.0-eps)
   return np.clip(interp(a, cache['a'], cache['g']), 0., 1.0)
