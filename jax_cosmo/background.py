@@ -186,7 +186,7 @@ def Omega_de_a(cosmo, a):
   """
   return cosmo.Omega_de*np.power(a, f_de(cosmo, a))/Esqr(cosmo, a)
 
-def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=512):
+def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
   r"""Radial comoving distance in [Mpc/h] for a given scale factor.
 
   Parameters
@@ -344,7 +344,7 @@ def angular_diameter_distance(cosmo, a):
   """
   return a * transverse_comoving_distance(cosmo, a)
 
-def growth_factor(cosmo, a, log10_amin=-3, steps=256, eps=1e-4):
+def growth_factor(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
   """ Compute Growth factor at a given scale factor, normalised such
   that G(a=1) = 1.
 
