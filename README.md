@@ -1,6 +1,6 @@
 # jax-cosmo
 
-[![Join the chat at https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo](https://badges.gitter.im/DifferentiableUniverseInitiative/jax_cosmo.svg)](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) ![Python package](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/workflows/Python%20package/badge.svg)  
+[![Join the chat at https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo](https://badges.gitter.im/DifferentiableUniverseInitiative/jax_cosmo.svg)](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) ![Python package](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/workflows/Python%20package/badge.svg)  [![PyPI](https://img.shields.io/pypi/v/jax-cosmo)](https://pypi.org/project/jax-cosmo/) [![PyPI - License](https://img.shields.io/pypi/l/jax-cosmo)](https://github.com/google/jax-cosmo/blob/master/LICENSE)
 
 A differentiable cosmology library in JAX.
 
