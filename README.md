@@ -34,7 +34,7 @@ F = - jax.hessian(likelihood)(cosmo)
 This is how you can compute gradients and hessians of any functions in `jax-cosmo`,
 all of this without any finite differences.
 
-Check out a full example here:
+Check out a full example here: [![colab link](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/DifferentiableUniverseInitiative/jax_cosmo/blob/master/notebooks/jax-cosmo-intro.ipynb)
 
 ## What is JAX?
 
