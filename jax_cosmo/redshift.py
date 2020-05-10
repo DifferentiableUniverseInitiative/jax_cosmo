@@ -86,3 +86,37 @@ class smail_nz(redshift_distribution):
   def pz_fn(self, z):
     a, b, z0 = self.params
     return z**a * np.exp(-(z / z0)**b)
+
+@register_pytree_node_class
+class kde_nz(redshift_distribution):
+  """
+  A redshift distribution based on a KDE estimate of the nz of a given catalog
+  currently uses a Gaussian kernel, TODO: add more if necessary
+
+  Parameters:
+  -----------
+  zcat: redshift catalog
+  weights: weight for each galaxy between 0 and 1
+
+  Configuration:
+  --------------
+  bw: Bandwidth for the KDE
+
+  Example:
+  nz = kde_nz(redshift_catalog, w, bw=0.1)
+  """
+
+  def _kernel(self, bw, X, x):
+    """
+    Gaussian kernel for KDE
+    """
+    return (1. / np.sqrt(2 * np.pi )/bw) * np.exp(-(X - x)**2 / (bw**2 * 2.))
+
+  def pz_fn(self, z):
+    # Extract parameters
+    zcat, weight = self.params[:2]
+    w = np.atleast_1d(weight)
+    q = np.sum(w)
+    X = np.expand_dims(zcat, axis=-1)
+    k = self._kernel(self.config['bw'], X , z)
+    return np.dot(k.T, w)/(q)
