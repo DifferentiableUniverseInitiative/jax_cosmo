@@ -4,6 +4,7 @@ from functools import partial
 import jax.numpy as np
 from jax import vmap, lax, jit
 
+import jax_cosmo.constants as const
 from jax_cosmo.utils import z2a, a2z
 from jax_cosmo.scipy.integrate import simps
 import jax_cosmo.background as bkgrd
@@ -73,18 +74,19 @@ def angular_cl(cosmo, ell, probes, amin=0.002):
 
     # Define an ordering for the blocks of the signal vector
     cl_index = np.array(_get_cl_ordering(probes))
-
     # Compute all combinations of tracers
     @jit
     def combine_kernels(inds):
       return kernels[inds[0]] * kernels[inds[1]]
-
     # Now kernels has shape [ncls, na]
     kernels = lax.map(combine_kernels, cl_index)
-    # We transpose the result just to make sure that na is first
-    return (pk * kernels * bkgrd.dchioverda(cosmo, a)/a**2).T
 
-  return simps(integrand, amin, 1., 512)
+    result = pk * kernels * bkgrd.dchioverda(cosmo, a) / np.clip(chi**2, 1.)
+
+    # We transpose the result just to make sure that na is first
+    return result.T
+
+  return simps(integrand, amin, 1., 512) / const.c**2
 
 def noise_cl(ell, probes):
   """
