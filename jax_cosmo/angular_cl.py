@@ -129,8 +129,8 @@ def gaussian_cl_covariance(cosmo, ell, probes, f_sky=0.25, return_cls=True):
 
   def get_cov_block(inds):
       a, b, c, d = inds
-      cov = (cl_obs[a]*cl_obs[b] + cl_obs[c]*cl_obs[d])*np.eye(n_ell) / norm
-      return cov
+      cov = (cl_obs[a]*cl_obs[b] + cl_obs[c]*cl_obs[d]) / norm
+      return cov*np.eye(n_ell)
 
   cov_mat = lax.map(get_cov_block, cov_blocks)
 
