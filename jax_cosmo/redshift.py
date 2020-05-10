@@ -8,6 +8,8 @@ from jax_cosmo.jax_utils import container
 
 steradian_to_arcmin2 = 11818102.86004228
 
+__all__ = ["smail_nz"]
+
 class redshift_distribution(container):
 
   def __init__(self, *args, gals_per_arcmin2=1., zmax=10., **kwargs):
