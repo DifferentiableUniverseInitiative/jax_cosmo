@@ -10,7 +10,7 @@ from jax_cosmo.utils import z2a, a2z
 from jax_cosmo.jax_utils import container
 from jax.tree_util import register_pytree_node_class
 
-__all__ = ["WeakLensing"]
+__all__ = ["WeakLensing", "NumberCounts"]
 
 @register_pytree_node_class
 class WeakLensing(container):
@@ -21,16 +21,18 @@ class WeakLensing(container):
   -----------
   redshift_bins: nzredshift distributions
   sigma_e: intrinsic galaxy ellipticity
-  n_eff: effective number density per bins [1./arcmin^2]
 
   Configuration:
   --------------
-  has_shear:, ia_bias, use_bias.... use_shear is not functional
+  sigma_e: intrinsic galaxy ellipticity
+  has_shear:, ia_bias, use_bias.... these are not functional
   """
   def __init__(self, redshift_bins,
+               sigma_e=0.26,
                use_shear=True,
                **kwargs):
     super(WeakLensing, self).__init__(redshift_bins,
+                                      sigma_e=sigma_e,
                                       use_shear=use_shear,
                                       **kwargs)
   @property
@@ -87,23 +89,13 @@ class WeakLensing(container):
     """
     # Extract parameters
     pzs = self.params[0]
-    print("Careful! lensing noise is still a placeholder")
-    # TODO: find where to store this
-    sigma_e = 0.26
-    n_eff = 20.
 
     # retrieve number of galaxies in each bins
-    # ngals = np.array([pz.ngals for pz in pzs])
-    # TODO: find how to properly compute the noise contributions
-    ngals = np.array([1. for pz in pzs])
+    ngals = np.array([pz.gals_per_steradian for pz in pzs])
 
-    # compute n_eff per bin
-    n_eff_per_bin = n_eff * ngals/np.sum(ngals)
-
-    # work out the number density per steradian
-    steradian_to_arcmin2 = 11818102.86004228
-
-    return sigma_e**2/(n_eff_per_bin * steradian_to_arcmin2)
+    # TODO: add mechanism for effective number density, maybe a bin dependent
+    # efficiency
+    return self.config['sigma_e']**2 / ngals
 
 
 @register_pytree_node_class
@@ -136,7 +128,6 @@ class NumberCounts(container):
     return len(pzs)
 
   def constant_factor(self, cosmo):
-    #TODO: use the correct prefactor
     return 1.0
 
   @jit
@@ -151,6 +142,7 @@ class NumberCounts(container):
     z = np.atleast_1d(z)
     # Extract parameters
     pzs, bias = self.params
+
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
 
@@ -160,7 +152,6 @@ class NumberCounts(container):
     """
     Computes the ell dependent factor for this probe.
     """
-    # TODO: return the correct factor
     return 1.
 
   def noise(self):
@@ -170,20 +161,5 @@ class NumberCounts(container):
     """
     # Extract parameters
     pzs = self.params[0]
-    print("Careful! lensing noise is still a placeholder")
-    # TODO: find where to store this
-    sigma_e = 0.26
-    n_eff = 20.
-
-    # retrieve number of galaxies in each bins
-    # ngals = np.array([pz.ngals for pz in pzs])
-    # TODO: find how to properly compute the noise contributions
-    ngals = np.array([1. for pz in pzs])
-
-    # compute n_eff per bin
-    n_eff_per_bin = n_eff * ngals/np.sum(ngals)
-
-    # work out the number density per steradian
-    steradian_to_arcmin2 = 11818102.86004228
-
-    return sigma_e**2/(n_eff_per_bin * steradian_to_arcmin2)
+    ngals = np.array([pz.gals_per_steradian for pz in pzs])
+    return 1./ngals
