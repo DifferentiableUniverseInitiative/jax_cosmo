@@ -13,16 +13,10 @@ Have a look at the [GitHub issues](https://github.com/DifferentiableUniverseInit
 This is what `jax-cosmo` aims to do:
 
 ```python
-data = #... some measured Cl data vector
-nz1,nz2,nz3,nz4 = #.... redshift distributions of bins
+...
 def likelihood(cosmo):
-  # Define a list of probes
-  probes = [jax_cosmo.probes.WeakLensing([nz1, nz2, nz3, nz4]),
-            jax_cosmo.probes.NumberCounts([nz1, nz2, nz3, nz4])]
-
-  # Compute mean and covariance of angular Cls
+  # Compute mean and covariance of angular Cls, for specific probes
   mu, cov = jax_cosmo.angular_cl.gaussian_cl_covariance(cosmo, ell, probes)
-
   # Return likelihood value
   return jax_cosmo.likelihood.gaussian_log_likelihood(data, mu, cov)
 
@@ -32,10 +26,12 @@ g = jax.grad(likelihood)(cosmo)
 # Compute Fisher matrix of cosmological parameters
 F = - jax.hessian(likelihood)(cosmo)
 ```
-This is how you can compute gradients and hessians of any functions in `jax-cosmo`,
+This is how you can compute **gradients and hessians of any functions in `jax-cosmo`**,
 all of this without any finite differences.
 
 Check out a full example here: [![colab link](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/DifferentiableUniverseInitiative/jax_cosmo/blob/master/notebooks/jax-cosmo-intro.ipynb)
+
+Have a look at the [design document](design.md) to learn more about the structure of the code.
 
 ## What is JAX?
 
@@ -77,6 +73,8 @@ can come in several forms
   - API design suggestions
   - (Pull) requests for more features
   - Examples and notebooks of cool things that can be done with the code
+
+You can chime-in on any aspects of the design by proposing a PR to the [design document](design.md).
 
 The issue page is a good place to start, but don't hesitate to come chat in the
 Gitter room.
