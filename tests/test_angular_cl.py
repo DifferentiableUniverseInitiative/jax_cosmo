@@ -53,7 +53,7 @@ def test_clustering_cl():
   tracer_ccl = ccl.NumberCountsTracer(cosmo_ccl,
                                       has_rsd=False,
                                       dndz=(z, nz(z)),
-                                      bias=(z, bias(z)))
+                                      bias=(z, bias(cosmo_jax, z)))
   tracer_jax = probes.NumberCounts([nz], bias)
 
   # Get an ell range for the cls
