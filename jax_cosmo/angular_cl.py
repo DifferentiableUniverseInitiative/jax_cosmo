@@ -104,18 +104,14 @@ def noise_cl(ell, probes):
       return noise[i] * delta * np.ones(n_ell)
   return lax.map(get_noise_cl, cl_index)
 
-def gaussian_cl_covariance(cosmo, ell, probes, f_sky=0.25, return_cls=True):
+def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25):
   """
   Computes a Gaussian covariance for the angular cls of the provided probes
 
-  return_cls: (returns signal + noise cl, covariance)
+  return_cls: (returns covariance)
   """
   ell = np.atleast_1d(ell)
   n_ell = len(ell)
-
-  # Compute signal vectors
-  cl_signal = angular_cl(cosmo, ell, probes)
-  cl_noise = noise_cl(ell, probes)
 
   # Adding noise to auto-spectra
   cl_obs = cl_signal + cl_noise
@@ -138,7 +134,22 @@ def gaussian_cl_covariance(cosmo, ell, probes, f_sky=0.25, return_cls=True):
   cov_mat = cov_mat.reshape((n_cls, n_cls, n_ell, n_ell))
   cov_mat = cov_mat.transpose(axes=(0,2,1,3)).reshape((n_ell*n_cls,
                                                        n_ell*n_cls))
-  if return_cls:
-    return cl_obs.flatten(), cov_mat
-  else:
-    return cov_mat
+  return cov_mat
+
+def gaussian_cl_covariance_and_mean(cosmo, ell, probes, f_sky=0.25):
+  """
+  Computes a Gaussian covariance for the angular cls of the provided probes
+
+  return_cls: (returns signal + noise cl, covariance)
+  """
+  ell = np.atleast_1d(ell)
+  n_ell = len(ell)
+
+  # Compute signal vectors
+  cl_signal = angular_cl(cosmo, ell, probes)
+  cl_noise = noise_cl(ell, probes)
+
+  # retrieve the covariance
+  cov_mat = gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky)
+
+  return cl_signal.flatten(), cov_mat

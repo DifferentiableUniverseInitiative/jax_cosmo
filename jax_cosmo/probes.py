@@ -146,7 +146,7 @@ class NumberCounts(container):
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
 
-    return dndz * bias(z) * bkgrd.H(cosmo, z2a(z))
+    return dndz * bias(cosmo, z) * bkgrd.H(cosmo, z2a(z))
 
   def ell_factor(self, ell):
     """
