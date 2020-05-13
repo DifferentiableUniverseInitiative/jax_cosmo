@@ -14,7 +14,7 @@ class constant_linear_bias(container):
   -----------
   b: redshift independent bias value
   """
-  def __call__(self, z):
+  def __call__(self, cosmo, z):
     """
     """
     b = self.params[0]
@@ -31,8 +31,8 @@ class inverse_growth_linear_bias(container):
   cosmo: cosmology
   b: redshift independent bias value at z=0
   """
-  def __call__(self, z):
+  def __call__(self, cosmo, z):
     """
     """
-    cosmo, b = self.params[:2]
+    b = self.params[0]
     return b / bkgrd.growth_factor(cosmo, z2a(z))
