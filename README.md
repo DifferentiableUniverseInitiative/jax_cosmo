@@ -16,7 +16,7 @@ This is what `jax-cosmo` aims to do:
 ...
 def likelihood(cosmo):
   # Compute mean and covariance of angular Cls, for specific probes
-  mu, cov = jax_cosmo.angular_cl.gaussian_cl_covariance(cosmo, ell, probes)
+  mu, cov = jax_cosmo.angular_cl.gaussian_cl_covariance_and_mean(cosmo, ell, probes)
   # Return likelihood value
   return jax_cosmo.likelihood.gaussian_log_likelihood(data, mu, cov)
 
