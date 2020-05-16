@@ -5,7 +5,7 @@ from jax_cosmo.scipy.integrate import romb
 
 import jax_cosmo.background as bkgrd
 import jax_cosmo.transfer as tklib
-#import jax_cosmo.nonlinear as nllib
+import jax_cosmo.nonlinear as nllib
 
 __all__ = ['primordial_matter_power',
            'linear_matter_power']
@@ -44,14 +44,19 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwar
 
   pknorm = cosmo.sigma8**2/sigmasqr(cosmo, 8.0, transfer_fn, **kwargs)
 
-  # if k.ndim == 1:
-  #   pk = np.outer(primordial_matter_power(cosmo, k) * t**2,  g**2)
-  # else:
   pk = primordial_matter_power(cosmo, k) * t**2 * g**2
 
   # Apply normalisation
   pk = pk*pknorm
   return pk.squeeze()
+
+def nonlinear_matter_power(cosmo, k, a=1., transfer_fn=tklib.Eisenstein_Hu,
+                           nonlinear_fn=nllib.halofit):
+  """ Computes the non-linear matter power spectrum.
+
+  This function is just a wrapper over several nonlinear power spectra.
+  """
+  return nonlinear_fn(cosmo, k, a, transfer_fn=transfer_fn)
 
 def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax = 1000.0, ksteps=5, **kwargs):
   """ Computes the energy of the fluctuations within a sphere of R h^{-1} Mpc

@@ -40,9 +40,9 @@ def test_growth():
                          Omega_k=0., w0=-1., wa=0.)
 
   # Test array of scale factors
-  a = np.linspace(0.1, 1.)
+  a = np.linspace(0.01, 1.)
 
   gccl = ccl.growth_factor(cosmo_ccl, a)
   gjax = bkgrd.growth_factor(cosmo_jax, a)
 
-  assert_allclose(gccl, gjax, rtol=1e-3)
+  assert_allclose(gccl, gjax, rtol=1e-2)

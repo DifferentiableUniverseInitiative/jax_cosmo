@@ -9,6 +9,8 @@ from jax_cosmo.utils import z2a, a2z
 from jax_cosmo.scipy.integrate import simps
 import jax_cosmo.background as bkgrd
 import jax_cosmo.power as power
+import jax_cosmo.nonlinear as nllib
+import jax_cosmo.transfer as tklib
 
 def _get_cl_ordering(probes):
   """
@@ -43,9 +45,11 @@ def _get_cov_blocks_ordering(probes):
                              find_index(j,m)))
   return cov_blocks
 
-
 @partial(vmap, in_axes=(None, 0, None), out_axes=1)
-def angular_cl(cosmo, ell, probes, amin=0.002):
+def angular_cl(cosmo, ell, probes,
+               transfer_fn=tklib.Eisenstein_Hu,
+               nonlinear_fn=nllib.halofit,
+               amin=0.1):
   """
   Computes angular Cls for the provided probes
 
@@ -56,6 +60,8 @@ def angular_cl(cosmo, ell, probes, amin=0.002):
 
   cls: [ell, ncls]
   """
+  # We could retrieve from each probe what is the  minimum a we need
+  
   def integrand(a):
     # Step 1: retrieve the associated comoving distance
     chi = bkgrd.radial_comoving_distance(cosmo, a)
@@ -64,7 +70,8 @@ def angular_cl(cosmo, ell, probes, amin=0.002):
     k = (ell+0.5) / np.clip(chi, 1.)
 
     # pk should have shape [na]
-    pk = power.linear_matter_power(cosmo, k, a)
+    pk = power.nonlinear_matter_power(cosmo, k, a,
+                                      transfer_fn, nonlinear_fn)
 
     # Compute the kernels for all probes
     kernels = np.vstack([ p.radial_kernel(cosmo, a2z(a)) *
