@@ -1,4 +1,8 @@
 # This module computes power spectra
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import jax.numpy as np
 import jax_cosmo.constants as const
 from jax_cosmo.scipy.integrate import romb

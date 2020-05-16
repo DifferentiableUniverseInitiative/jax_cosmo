@@ -1,4 +1,8 @@
 # This module contains functions to compute angular cls for various tracers
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from functools import partial
 
 import jax.numpy as np
@@ -62,7 +66,7 @@ def angular_cl(cosmo, ell, probes,
   zmax = max([p.zmax for p in probes])
 
   # We define a function that computes a single l, and vectorize it
-  @partial(vmap, out_axes=1) 
+  @partial(vmap, out_axes=1)
   def cl(ell):
     def integrand(a):
       # Step 1: retrieve the associated comoving distance

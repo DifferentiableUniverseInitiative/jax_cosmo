@@ -1,4 +1,7 @@
 # This module defines kernel functions for various tracers
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import jax.numpy as np
 from jax import vmap, jit
@@ -125,7 +128,7 @@ class NumberCounts(container):
                                        bias,
                                        has_rsd=has_rsd,
                                        **kwargs)
-                                       
+
   @property
   def zmax(self):
     """
