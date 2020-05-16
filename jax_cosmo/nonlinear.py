@@ -7,8 +7,8 @@ import jax
 import jax.numpy as np
 
 import jax_cosmo.background as bkgrd
+import jax_cosmo.power as power
 import jax_cosmo.transfer as tklib
-from jax_cosmo.power import linear_matter_power
 from jax_cosmo.scipy.integrate import simps, romb
 from jax_cosmo.scipy.interpolate import interp
 
@@ -16,7 +16,7 @@ from jax_cosmo.scipy.interpolate import interp
 def linear(cosmo, k, a, transfer_fn):
   """Linear matter power spectrum
   """
-  return linear_matter_power(cosmo, k, a, transfer_fn)
+  return power.linear_matter_power(cosmo, k, a, transfer_fn)
 
 def _halofit_parameters(cosmo, a, transfer_fn):
   r""" Computes the non linear scale,
@@ -31,7 +31,7 @@ def _halofit_parameters(cosmo, a, transfer_fn):
     def int_sigma(logk):
         k = np.exp(logk)
         y = np.outer(k, r)
-        pk = linear_matter_power(cosmo, k, transfer_fn=transfer_fn)
+        pk = power.linear_matter_power(cosmo, k, transfer_fn=transfer_fn)
         g = bkgrd.growth_factor(cosmo, np.atleast_1d(a))
         return np.expand_dims(pk * k**3 ,axis=1) * np.exp(-y**2) / (2.0*np.pi**2) * g**2
     sigma = simps(int_sigma, np.log(1e-4), np.log(1e4), 256)
@@ -44,7 +44,7 @@ def _halofit_parameters(cosmo, a, transfer_fn):
   def integrand(logk):
     k = np.exp(logk)
     y = np.outer(k, 1./k_nl)
-    pk = linear_matter_power(cosmo, k, transfer_fn=transfer_fn)
+    pk = power.linear_matter_power(cosmo, k, transfer_fn=transfer_fn)
     g = np.expand_dims(bkgrd.growth_factor(cosmo, np.atleast_1d(a)), 0)
     res =  np.expand_dims(pk * k**3 ,axis=1) *  np.exp(-y**2) * g**2 / (2.0*np.pi**2)
     dneff_dlogk = 2 * res * y**2
@@ -85,7 +85,7 @@ def halofit(cosmo, k, a, transfer_fn,  prescription='takahashi2012'):
   a = np.atleast_1d(a)
 
   # Compute the linear power spectrum
-  pklin = linear_matter_power(cosmo, k, a, transfer_fn)
+  pklin = power.linear_matter_power(cosmo, k, a, transfer_fn)
 
   # Compute non linear scale, effective spectral index and curvature
   k_nl, n, C = _halofit_parameters(cosmo, a, transfer_fn)
