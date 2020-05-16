@@ -45,11 +45,9 @@ def _get_cov_blocks_ordering(probes):
                              find_index(j,m)))
   return cov_blocks
 
-@partial(vmap, in_axes=(None, 0, None), out_axes=1)
 def angular_cl(cosmo, ell, probes,
                transfer_fn=tklib.Eisenstein_Hu,
-               nonlinear_fn=nllib.halofit,
-               amin=0.1):
+               nonlinear_fn=nllib.halofit):
   """
   Computes angular Cls for the provided probes
 
@@ -60,40 +58,46 @@ def angular_cl(cosmo, ell, probes,
 
   cls: [ell, ncls]
   """
-  # We could retrieve from each probe what is the  minimum a we need
-  
-  def integrand(a):
-    # Step 1: retrieve the associated comoving distance
-    chi = bkgrd.radial_comoving_distance(cosmo, a)
+  # Retrieve the maximum redshift probed
+  zmax = max([p.zmax for p in probes])
 
-    # Step 2: get the power spectrum for this combination of chi and a
-    k = (ell+0.5) / np.clip(chi, 1.)
+  # We define a function that computes a single l, and vectorize it
+  @partial(vmap, out_axes=1) 
+  def cl(ell):
+    def integrand(a):
+      # Step 1: retrieve the associated comoving distance
+      chi = bkgrd.radial_comoving_distance(cosmo, a)
 
-    # pk should have shape [na]
-    pk = power.nonlinear_matter_power(cosmo, k, a,
-                                      transfer_fn, nonlinear_fn)
+      # Step 2: get the power spectrum for this combination of chi and a
+      k = (ell+0.5) / np.clip(chi, 1.)
 
-    # Compute the kernels for all probes
-    kernels = np.vstack([ p.radial_kernel(cosmo, a2z(a)) *
-                          p.ell_factor(ell) *
-                          p.constant_factor(cosmo)
-                         for p in probes])
+      # pk should have shape [na]
+      pk = power.nonlinear_matter_power(cosmo, k, a,
+                                        transfer_fn, nonlinear_fn)
 
-    # Define an ordering for the blocks of the signal vector
-    cl_index = np.array(_get_cl_ordering(probes))
-    # Compute all combinations of tracers
-    @jit
-    def combine_kernels(inds):
-      return kernels[inds[0]] * kernels[inds[1]]
-    # Now kernels has shape [ncls, na]
-    kernels = lax.map(combine_kernels, cl_index)
+      # Compute the kernels for all probes
+      kernels = np.vstack([ p.radial_kernel(cosmo, a2z(a)) *
+                            p.ell_factor(ell) *
+                            p.constant_factor(cosmo)
+                           for p in probes])
 
-    result = pk * kernels * bkgrd.dchioverda(cosmo, a) / np.clip(chi**2, 1.)
+      # Define an ordering for the blocks of the signal vector
+      cl_index = np.array(_get_cl_ordering(probes))
+      # Compute all combinations of tracers
+      @jit
+      def combine_kernels(inds):
+        return kernels[inds[0]] * kernels[inds[1]]
+      # Now kernels has shape [ncls, na]
+      kernels = lax.map(combine_kernels, cl_index)
 
-    # We transpose the result just to make sure that na is first
-    return result.T
+      result = pk * kernels * bkgrd.dchioverda(cosmo, a) / np.clip(chi**2, 1.)
 
-  return simps(integrand, amin, 1., 512) / const.c**2
+      # We transpose the result just to make sure that na is first
+      return result.T
+
+    return simps(integrand, z2a(zmax), 1., 512) / const.c**2
+
+  return cl(ell)
 
 def noise_cl(ell, probes):
   """

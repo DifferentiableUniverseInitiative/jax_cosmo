@@ -31,7 +31,7 @@ def test_lensing_cl():
   cl_ccl = ccl.angular_cl(cosmo_ccl, tracer_ccl, tracer_ccl, ell)
   cl_jax = angular_cl(cosmo_jax, ell, [tracer_jax])
 
-  assert_allclose(cl_ccl, cl_jax[0], rtol=1e-2)
+  assert_allclose(cl_ccl, cl_jax[0], rtol=0.5e-2)
 
 def test_clustering_cl():
   # We first define equivalent CCL and jax_cosmo cosmologies
@@ -62,4 +62,4 @@ def test_clustering_cl():
   cl_ccl = ccl.angular_cl(cosmo_ccl, tracer_ccl, tracer_ccl, ell)
   cl_jax = angular_cl(cosmo_jax, ell, [tracer_jax])
 
-  assert_allclose(cl_ccl, cl_jax[0], rtol=1e-2)
+  assert_allclose(cl_ccl, cl_jax[0], rtol=0.5e-2)

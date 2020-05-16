@@ -5,7 +5,7 @@ import jax.numpy as np
 import jax_cosmo.background as bkgrd
 import jax_cosmo.power as power
 import jax_cosmo.transfer as tklib
-from jax_cosmo.scipy.integrate import simps
+from jax_cosmo.scipy.integrate import simps, romb
 from jax_cosmo.scipy.interpolate import interp
 
 
@@ -21,7 +21,7 @@ def _halofit_parameters(cosmo, a, transfer_fn):
   """
   # Step 1: Finding the non linear scale for which sigma(R)=1
   # That's our search range for the non linear scale
-  r = np.logspace(-3,1,512)
+  r = np.logspace(-3,1,256)
   @jax.vmap
   def R_nl(a):
     def int_sigma(logk):
@@ -30,7 +30,7 @@ def _halofit_parameters(cosmo, a, transfer_fn):
         pk = power.linear_matter_power(cosmo, k, transfer_fn=transfer_fn)
         g = bkgrd.growth_factor(cosmo, np.atleast_1d(a))
         return np.expand_dims(pk * k**3 ,axis=1) * np.exp(-y**2) / (2.0*np.pi**2) * g**2
-    sigma = simps(int_sigma, np.log(1e-4), np.log(1e4))
+    sigma = simps(int_sigma, np.log(1e-4), np.log(1e4), 256)
     root = interp(np.atleast_1d(1.), sigma, r)
     return root
   # Compute non linear scale
@@ -46,7 +46,7 @@ def _halofit_parameters(cosmo, a, transfer_fn):
     dneff_dlogk = 2 * res * y**2
     dC_dlogk = 4 * res * (y**2 - y**4)
     return np.stack([dneff_dlogk, dC_dlogk],axis=1)
-  res = simps(integrand, np.log(1e-4), np.log(1e4))
+  res = simps(integrand, np.log(1e-4), np.log(1e4),256)
 
   n_eff = res[0] - 3.
   C = res[0]**2 + res[1]

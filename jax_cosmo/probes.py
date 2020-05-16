@@ -44,6 +44,15 @@ class WeakLensing(container):
     pzs = self.params[0]
     return len(pzs)
 
+  @property
+  def zmax(self):
+    """
+    Returns the maximum redsfhit probed by this probe
+    """
+    # Extract parameters
+    pzs = self.params[0]
+    return max([pz.zmax for pz in pzs])
+
   def constant_factor(self, cosmo):
     return 3.0 * const.H0**2 * cosmo.Omega_m / 2.0 / const.c
 
@@ -59,8 +68,6 @@ class WeakLensing(container):
     z = np.atleast_1d(z)
     # Extract parameters
     pzs = self.params[0]
-    # Find the maximum necessary redshift
-    zmax = max([pz.zmax for pz in pzs])
 
     # Retrieve comoving distance corresponding to z
     chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
@@ -72,7 +79,7 @@ class WeakLensing(container):
       dndz = np.stack([pz(z_prime) for pz in pzs], axis=0)
       return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.)
 
-    result = simps(integrand, z, zmax, 256) * (1. + z ) * chi
+    result = simps(integrand, z, self.zmax, 256) * (1. + z ) * chi
 
     return np.squeeze(result)
 
@@ -118,6 +125,16 @@ class NumberCounts(container):
                                        bias,
                                        has_rsd=has_rsd,
                                        **kwargs)
+                                       
+  @property
+  def zmax(self):
+    """
+    Returns the maximum redsfhit probed by this probe
+    """
+    # Extract parameters
+    pzs = self.params[0]
+    return max([pz.zmax for pz in pzs])
+
   @property
   def n_tracers(self):
     """

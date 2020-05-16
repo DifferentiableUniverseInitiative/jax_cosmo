@@ -23,7 +23,7 @@ def test_eisenstein_hu():
   pk_ccl = ccl.linear_matter_power(cosmo_ccl, k, 1.0)
   pk_jax = power.linear_matter_power(cosmo_jax, k/cosmo_jax.h, a=1.0)/cosmo_jax.h**3
 
-  assert_allclose(pk_ccl, pk_jax, rtol=1e-2)
+  assert_allclose(pk_ccl, pk_jax, rtol=0.5e-2)
 
 def test_halofit():
   # We first define equivalent CCL and jax_cosmo cosmologies
@@ -43,4 +43,4 @@ def test_halofit():
                                         transfer_fn=tklib.Eisenstein_Hu,
                                         nonlinear_fn=nllib.halofit)/cosmo_jax.h**3
 
-  assert_allclose(pk_ccl, pk_jax, rtol=1e-2)
+  assert_allclose(pk_ccl, pk_jax, rtol=0.5e-2)
