@@ -13,14 +13,14 @@ def test_lensing_cl():
   # We first define equivalent CCL and jax_cosmo cosmologies
   cosmo_ccl = ccl.Cosmology(
     Omega_c=0.3, Omega_b=0.05, h=0.7, sigma8 = 0.8, n_s=0.96, Neff=0,
-    transfer_function='eisenstein_hu', matter_power_spectrum='linear')
+    transfer_function='eisenstein_hu', matter_power_spectrum='halofit')
 
   cosmo_jax = Cosmology(Omega_c=0.3, Omega_b=0.05, h=0.7, sigma8 = 0.8, n_s=0.96,
                          Omega_k=0., w0=-1., wa=0.)
 
   # Define a redshift distribution
   nz = smail_nz(1., 2., 1.)
-  z = np.linspace(0,5.,1024)
+  z = np.linspace(0, 5., 1024)
   tracer_ccl = ccl.WeakLensingTracer(cosmo_ccl, (z, nz(z)), use_A_ia=False)
   tracer_jax = probes.WeakLensing([nz])
 
@@ -31,14 +31,13 @@ def test_lensing_cl():
   cl_ccl = ccl.angular_cl(cosmo_ccl, tracer_ccl, tracer_ccl, ell)
   cl_jax = angular_cl(cosmo_jax, ell, [tracer_jax])
 
-  assert_allclose(cl_ccl, cl_jax[0], rtol=1e-2)
-
+  assert_allclose(cl_ccl, cl_jax[0], rtol=0.5e-2)
 
 def test_clustering_cl():
   # We first define equivalent CCL and jax_cosmo cosmologies
   cosmo_ccl = ccl.Cosmology(
     Omega_c=0.3, Omega_b=0.05, h=0.7, sigma8 = 0.8, n_s=0.96, Neff=0,
-    transfer_function='eisenstein_hu', matter_power_spectrum='linear')
+    transfer_function='eisenstein_hu', matter_power_spectrum='halofit')
 
   cosmo_jax = Cosmology(Omega_c=0.3, Omega_b=0.05, h=0.7, sigma8 = 0.8, n_s=0.96,
                          Omega_k=0., w0=-1., wa=0.)
@@ -63,4 +62,4 @@ def test_clustering_cl():
   cl_ccl = ccl.angular_cl(cosmo_ccl, tracer_ccl, tracer_ccl, ell)
   cl_jax = angular_cl(cosmo_jax, ell, [tracer_jax])
 
-  assert_allclose(cl_ccl, cl_jax[0], rtol=1e-2)
+  assert_allclose(cl_ccl, cl_jax[0], rtol=0.5e-2)

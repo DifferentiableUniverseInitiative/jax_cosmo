@@ -1,4 +1,8 @@
 # This module contains functions to compute angular cls for various tracers
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from functools import partial
 
 import jax.numpy as np
@@ -9,6 +13,7 @@ from jax_cosmo.utils import z2a, a2z
 from jax_cosmo.scipy.integrate import simps
 import jax_cosmo.background as bkgrd
 import jax_cosmo.power as power
+import jax_cosmo.transfer as tklib
 
 def _get_cl_ordering(probes):
   """
@@ -43,9 +48,9 @@ def _get_cov_blocks_ordering(probes):
                              find_index(j,m)))
   return cov_blocks
 
-
-@partial(vmap, in_axes=(None, 0, None), out_axes=1)
-def angular_cl(cosmo, ell, probes, amin=0.002):
+def angular_cl(cosmo, ell, probes,
+               transfer_fn=tklib.Eisenstein_Hu,
+               nonlinear_fn=power.halofit):
   """
   Computes angular Cls for the provided probes
 
@@ -56,37 +61,46 @@ def angular_cl(cosmo, ell, probes, amin=0.002):
 
   cls: [ell, ncls]
   """
-  def integrand(a):
-    # Step 1: retrieve the associated comoving distance
-    chi = bkgrd.radial_comoving_distance(cosmo, a)
+  # Retrieve the maximum redshift probed
+  zmax = max([p.zmax for p in probes])
 
-    # Step 2: get the power spectrum for this combination of chi and a
-    k = (ell+0.5) / np.clip(chi, 1.)
+  # We define a function that computes a single l, and vectorize it
+  @partial(vmap, out_axes=1)
+  def cl(ell):
+    def integrand(a):
+      # Step 1: retrieve the associated comoving distance
+      chi = bkgrd.radial_comoving_distance(cosmo, a)
 
-    # pk should have shape [na]
-    pk = power.linear_matter_power(cosmo, k, a)
+      # Step 2: get the power spectrum for this combination of chi and a
+      k = (ell+0.5) / np.clip(chi, 1.)
 
-    # Compute the kernels for all probes
-    kernels = np.vstack([ p.radial_kernel(cosmo, a2z(a)) *
-                          p.ell_factor(ell) *
-                          p.constant_factor(cosmo)
-                         for p in probes])
+      # pk should have shape [na]
+      pk = power.nonlinear_matter_power(cosmo, k, a,
+                                        transfer_fn, nonlinear_fn)
 
-    # Define an ordering for the blocks of the signal vector
-    cl_index = np.array(_get_cl_ordering(probes))
-    # Compute all combinations of tracers
-    @jit
-    def combine_kernels(inds):
-      return kernels[inds[0]] * kernels[inds[1]]
-    # Now kernels has shape [ncls, na]
-    kernels = lax.map(combine_kernels, cl_index)
+      # Compute the kernels for all probes
+      kernels = np.vstack([ p.radial_kernel(cosmo, a2z(a)) *
+                            p.ell_factor(ell) *
+                            p.constant_factor(cosmo)
+                           for p in probes])
 
-    result = pk * kernels * bkgrd.dchioverda(cosmo, a) / np.clip(chi**2, 1.)
+      # Define an ordering for the blocks of the signal vector
+      cl_index = np.array(_get_cl_ordering(probes))
+      # Compute all combinations of tracers
+      @jit
+      def combine_kernels(inds):
+        return kernels[inds[0]] * kernels[inds[1]]
+      # Now kernels has shape [ncls, na]
+      kernels = lax.map(combine_kernels, cl_index)
 
-    # We transpose the result just to make sure that na is first
-    return result.T
+      result = pk * kernels * bkgrd.dchioverda(cosmo, a) / np.clip(chi**2, 1.)
 
-  return simps(integrand, amin, 1., 512) / const.c**2
+      # We transpose the result just to make sure that na is first
+      return result.T
+
+    return simps(integrand, z2a(zmax), 1., 512) / const.c**2
+
+  return cl(ell)
 
 def noise_cl(ell, probes):
   """
@@ -136,7 +150,10 @@ def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25):
                                                        n_ell*n_cls))
   return cov_mat
 
-def gaussian_cl_covariance_and_mean(cosmo, ell, probes, f_sky=0.25):
+def gaussian_cl_covariance_and_mean(cosmo, ell, probes,
+                                    transfer_fn=tklib.Eisenstein_Hu,
+                                    nonlinear_fn=power.halofit,
+                                    f_sky=0.25):
   """
   Computes a Gaussian covariance for the angular cls of the provided probes
 
@@ -146,7 +163,8 @@ def gaussian_cl_covariance_and_mean(cosmo, ell, probes, f_sky=0.25):
   n_ell = len(ell)
 
   # Compute signal vectors
-  cl_signal = angular_cl(cosmo, ell, probes)
+  cl_signal = angular_cl(cosmo, ell, probes, transfer_fn=transfer_fn,
+                         nonlinear_fn=nonlinear_fn)
   cl_noise = noise_cl(ell, probes)
 
   # retrieve the covariance
