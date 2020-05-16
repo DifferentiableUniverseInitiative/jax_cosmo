@@ -4,7 +4,6 @@ from numpy.testing import assert_allclose
 from jax_cosmo import Cosmology
 import jax_cosmo.power as power
 import jax_cosmo.transfer as tklib
-import jax_cosmo.nonlinear as nllib
 import pyccl as ccl
 
 def test_eisenstein_hu():
@@ -41,6 +40,6 @@ def test_halofit():
   pk_ccl = ccl.nonlin_matter_power(cosmo_ccl, k, 1.0)
   pk_jax = power.nonlinear_matter_power(cosmo_jax, k/cosmo_jax.h, a=1.0,
                                         transfer_fn=tklib.Eisenstein_Hu,
-                                        nonlinear_fn=nllib.halofit)/cosmo_jax.h**3
+                                        nonlinear_fn=power.halofit)/cosmo_jax.h**3
 
   assert_allclose(pk_ccl, pk_jax, rtol=0.5e-2)

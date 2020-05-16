@@ -13,7 +13,6 @@ from jax_cosmo.utils import z2a, a2z
 from jax_cosmo.scipy.integrate import simps
 import jax_cosmo.background as bkgrd
 import jax_cosmo.power as power
-import jax_cosmo.nonlinear as nllib
 import jax_cosmo.transfer as tklib
 
 def _get_cl_ordering(probes):
@@ -51,7 +50,7 @@ def _get_cov_blocks_ordering(probes):
 
 def angular_cl(cosmo, ell, probes,
                transfer_fn=tklib.Eisenstein_Hu,
-               nonlinear_fn=nllib.halofit):
+               nonlinear_fn=power.halofit):
   """
   Computes angular Cls for the provided probes
 
@@ -151,7 +150,10 @@ def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25):
                                                        n_ell*n_cls))
   return cov_mat
 
-def gaussian_cl_covariance_and_mean(cosmo, ell, probes, f_sky=0.25):
+def gaussian_cl_covariance_and_mean(cosmo, ell, probes,
+                                    transfer_fn=tklib.Eisenstein_Hu,
+                                    nonlinear_fn=power.halofit,
+                                    f_sky=0.25):
   """
   Computes a Gaussian covariance for the angular cls of the provided probes
 
@@ -161,7 +163,8 @@ def gaussian_cl_covariance_and_mean(cosmo, ell, probes, f_sky=0.25):
   n_ell = len(ell)
 
   # Compute signal vectors
-  cl_signal = angular_cl(cosmo, ell, probes)
+  cl_signal = angular_cl(cosmo, ell, probes, transfer_fn=transfer_fn,
+                         nonlinear_fn=nonlinear_fn)
   cl_noise = noise_cl(ell, probes)
 
   # retrieve the covariance
