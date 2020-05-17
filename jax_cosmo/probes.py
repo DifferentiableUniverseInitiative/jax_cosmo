@@ -48,7 +48,12 @@ def density_kernel(cosmo, pzs, bias, z, ell):
   # stack the dndz of all redshift bins
   dndz = np.stack([pz(z) for pz in pzs], axis=0)
   # Compute radial NLA kernel: same as clustering
-  radial_kernel = dndz * bias(cosmo, z) * bkgrd.H(cosmo, z2a(z))
+  if isinstance(bias, list):
+    # This is to handle the case where we get a bin-dependent bias
+    b = np.stack([b(cosmo, z) for b in bias], axis=0)
+  else:
+    b = bias(cosmo, z)
+  radial_kernel = dndz * b * bkgrd.H(cosmo, z2a(z))
   # Normalization,
   constant_factor = 1.0
   # Ell dependent factor
@@ -63,7 +68,12 @@ def nla_kernel(cosmo, pzs, bias, z, ell):
   # stack the dndz of all redshift bins
   dndz = np.stack([pz(z) for pz in pzs], axis=0)
   # Compute radial NLA kernel: same as clustering
-  radial_kernel = dndz * bias(cosmo, z) * bkgrd.H(cosmo, z2a(z))
+  if isinstance(bias, list):
+    # This is to handle the case where we get a bin-dependent bias
+    b = np.stack([b(cosmo, z) for b in bias], axis=0)
+  else:
+    b = bias(cosmo, z)
+  radial_kernel = dndz * b * bkgrd.H(cosmo, z2a(z))
   # Apply common A_IA normalization to the kernel
   # Joachimi et al. (2011), arXiv: 1008.3491, Eq. 6.
   radial_kernel *= -(5e-14 * const.rhocrit) * cosmo.Omega_m / bkgrd.growth_factor(cosmo, z2a(z))
@@ -80,8 +90,11 @@ class WeakLensing(container):
 
   Parameters:
   -----------
-  redshift_bins: nzredshift distributions
-  ia_bias: (optional) if provided, IA will be added with the NLA model
+  redshift_bins: list of nzredshift distributions
+  ia_bias: (optional) if provided, IA will be added with the NLA model,
+  either a single bias object or a list of same size as nzs
+  multiplicative_bias: (optional) adds an (1+m) multiplicative bias, either single
+  value or list of same length as redshift bins
 
   Configuration:
   --------------
@@ -89,16 +102,17 @@ class WeakLensing(container):
   """
   def __init__(self, redshift_bins,
                ia_bias=None,
+               multiplicative_bias=0.,
                sigma_e=0.26,
                **kwargs):
     # Depending on the Configuration we will trace or not the ia_bias in the
     # container
     if ia_bias is None:
       ia_enabled=False
-      args = (redshift_bins,)
+      args = (redshift_bins, multiplicative_bias)
     else:
       ia_enabled=True
-      args = (redshift_bins, ia_bias)
+      args = (redshift_bins, multiplicative_bias, ia_bias)
     if 'ia_enabled' not in kwargs.keys():
       kwargs['ia_enabled'] = ia_enabled
     super(WeakLensing, self).__init__(*args,
@@ -133,12 +147,16 @@ class WeakLensing(container):
     """
     z = np.atleast_1d(z)
     # Extract parameters
-    pzs = self.params[0]
+    pzs, m = self.params[:2]
     kernel = weak_lensing_kernel(cosmo, pzs, z, ell)
     # If IA is enabled, we add the IA kernel
     if self.config['ia_enabled']:
-      bias = self.params[1]
+      bias = self.params[2]
       kernel += nla_kernel(cosmo, pzs, bias, z, ell)
+    # Applies measurement systematics
+    if isinstance(m, list):
+      m = np.expand_dims(np.stack([mi for mi in m], axis=0),1)
+    kernel *= (1.+ m)
     return kernel
 
   def noise(self):
@@ -150,9 +168,11 @@ class WeakLensing(container):
     pzs = self.params[0]
     # retrieve number of galaxies in each bins
     ngals = np.array([pz.gals_per_steradian for pz in pzs])
-    # TODO: add mechanism for effective number density, maybe a bin dependent
-    # efficiency
-    return self.config['sigma_e']**2 / ngals
+    if isinstance(self.config['sigma_e'], list):
+      sigma_e = np.array([ s for s in self.config['sigma_e']])
+    else:
+      sigma_e = self.config['sigma_e']
+    return sigma_e**2 / ngals
 
 
 @register_pytree_node_class

@@ -41,3 +41,22 @@ class inverse_growth_linear_bias(container):
     """
     b = self.params[0]
     return b / bkgrd.growth_factor(cosmo, z2a(z))
+
+
+@register_pytree_node_class
+class des_y1_ia_bias(container):
+  """
+  https://arxiv.org/pdf/1708.01538.pdf Sec. VII.B
+
+  Parameters:
+  -----------
+  cosmo: cosmology
+  A: amplitude
+  eta: redshift dependent slope
+  z0: pivot redshift
+  """
+  def __call__(self, cosmo, z):
+    """
+    """
+    A, eta, z0 = self.params
+    return A * ( (1.+z)/(1.+z0))**eta
