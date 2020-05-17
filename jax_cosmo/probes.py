@@ -15,6 +15,64 @@ from jax.tree_util import register_pytree_node_class
 
 __all__ = ["WeakLensing", "NumberCounts"]
 
+@jit
+def weak_lensing_kernel(cosmo, pzs, z, ell):
+  """
+  Returns a weak lensing kernel
+  """
+  z = np.atleast_1d(z)
+  zmax = max([pz.zmax for pz in pzs])
+  # Retrieve comoving distance corresponding to z
+  chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
+
+  @vmap
+  def integrand(z_prime):
+    chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
+    # Stack the dndz of all redshift bins
+    dndz = np.stack([pz(z_prime) for pz in pzs], axis=0)
+    return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.)
+
+  # Computes the radial weak lensing kernel
+  radial_kernel = np.squeeze(simps(integrand, z, zmax, 256) * (1. + z ) * chi)
+  # Constant term
+  constant_factor = 3.0 * const.H0**2 * cosmo.Omega_m / 2.0 / const.c
+  # Ell dependent factor
+  ell_factor = np.sqrt((ell-1)*(ell)*(ell+1)*(ell+2))/(ell+0.5)**2
+  return constant_factor*ell_factor*radial_kernel
+
+@jit
+def density_kernel(cosmo, pzs, bias, z, ell):
+  """
+  Computes the number counts density kernel
+  """
+  # stack the dndz of all redshift bins
+  dndz = np.stack([pz(z) for pz in pzs], axis=0)
+  # Compute radial NLA kernel: same as clustering
+  radial_kernel = dndz * bias(cosmo, z) * bkgrd.H(cosmo, z2a(z))
+  # Normalization,
+  constant_factor = 1.0
+  # Ell dependent factor
+  ell_factor = 1.0
+  return constant_factor*ell_factor*radial_kernel
+
+@jit
+def nla_kernel(cosmo, pzs, bias, z, ell):
+  """
+  Computes the NLA IA kernel
+  """
+  # stack the dndz of all redshift bins
+  dndz = np.stack([pz(z) for pz in pzs], axis=0)
+  # Compute radial NLA kernel: same as clustering
+  radial_kernel = dndz * bias(cosmo, z) * bkgrd.H(cosmo, z2a(z))
+  # Apply common A_IA normalization to the kernel
+  # Joachimi et al. (2011), arXiv: 1008.3491, Eq. 6.
+  radial_kernel *= -(5e-14 * const.rhocrit) * cosmo.Omega_m / bkgrd.growth_factor(cosmo, z2a(z))
+  # Constant factor
+  constant_factor = 1.0
+  # Ell dependent factor
+  ell_factor = np.sqrt((ell-1)*(ell)*(ell+1)*(ell+2))/(ell+0.5)**2
+  return constant_factor*ell_factor*radial_kernel
+
 @register_pytree_node_class
 class WeakLensing(container):
   """
@@ -23,21 +81,30 @@ class WeakLensing(container):
   Parameters:
   -----------
   redshift_bins: nzredshift distributions
-  sigma_e: intrinsic galaxy ellipticity
+  ia_bias: (optional) if provided, IA will be added with the NLA model
 
   Configuration:
   --------------
   sigma_e: intrinsic galaxy ellipticity
-  has_shear:, ia_bias, use_bias.... these are not functional
   """
   def __init__(self, redshift_bins,
+               ia_bias=None,
                sigma_e=0.26,
-               use_shear=True,
                **kwargs):
-    super(WeakLensing, self).__init__(redshift_bins,
+    # Depending on the Configuration we will trace or not the ia_bias in the
+    # container
+    if ia_bias is None:
+      ia_enabled=False
+      args = (redshift_bins,)
+    else:
+      ia_enabled=True
+      args = (redshift_bins, ia_bias)
+    if 'ia_enabled' not in kwargs.keys():
+      kwargs['ia_enabled'] = ia_enabled
+    super(WeakLensing, self).__init__(*args,
                                       sigma_e=sigma_e,
-                                      use_shear=use_shear,
                                       **kwargs)
+
   @property
   def n_tracers(self):
     """
@@ -56,11 +123,7 @@ class WeakLensing(container):
     pzs = self.params[0]
     return max([pz.zmax for pz in pzs])
 
-  def constant_factor(self, cosmo):
-    return 3.0 * const.H0**2 * cosmo.Omega_m / 2.0 / const.c
-
-  @jit
-  def radial_kernel(self, cosmo, z):
+  def kernel(self, cosmo, z, ell):
     """
     Compute the radial kernel for all nz bins in this probe.
 
@@ -71,26 +134,12 @@ class WeakLensing(container):
     z = np.atleast_1d(z)
     # Extract parameters
     pzs = self.params[0]
-
-    # Retrieve comoving distance corresponding to z
-    chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
-
-    @vmap
-    def integrand(z_prime):
-      chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
-      # Stack the dndz of all redshift bins
-      dndz = np.stack([pz(z_prime) for pz in pzs], axis=0)
-      return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.)
-
-    result = simps(integrand, z, self.zmax, 256) * (1. + z ) * chi
-
-    return np.squeeze(result)
-
-  def ell_factor(self, ell):
-    """
-    Computes the ell dependent factor for this probe.
-    """
-    return np.sqrt((ell-1)*(ell)*(ell+1)*(ell+2))/(ell+0.5)**2
+    kernel = weak_lensing_kernel(cosmo, pzs, z, ell)
+    # If IA is enabled, we add the IA kernel
+    if self.config['ia_enabled']:
+      bias = self.params[1]
+      kernel += nla_kernel(cosmo, pzs, bias, z, ell)
+    return kernel
 
   def noise(self):
     """
@@ -99,10 +148,8 @@ class WeakLensing(container):
     """
     # Extract parameters
     pzs = self.params[0]
-
     # retrieve number of galaxies in each bins
     ngals = np.array([pz.gals_per_steradian for pz in pzs])
-
     # TODO: add mechanism for effective number density, maybe a bin dependent
     # efficiency
     return self.config['sigma_e']**2 / ngals
@@ -128,7 +175,6 @@ class NumberCounts(container):
                                        bias,
                                        has_rsd=has_rsd,
                                        **kwargs)
-
   @property
   def zmax(self):
     """
@@ -147,11 +193,7 @@ class NumberCounts(container):
     pzs = self.params[0]
     return len(pzs)
 
-  def constant_factor(self, cosmo):
-    return 1.0
-
-  @jit
-  def radial_kernel(self, cosmo, z):
+  def kernel(self, cosmo, z, ell):
     """
     Compute the radial kernel for all nz bins in this probe.
 
@@ -162,17 +204,9 @@ class NumberCounts(container):
     z = np.atleast_1d(z)
     # Extract parameters
     pzs, bias = self.params
-
-    # stack the dndz of all redshift bins
-    dndz = np.stack([pz(z) for pz in pzs], axis=0)
-
-    return dndz * bias(cosmo, z) * bkgrd.H(cosmo, z2a(z))
-
-  def ell_factor(self, ell):
-    """
-    Computes the ell dependent factor for this probe.
-    """
-    return 1.
+    # Retrieve density kernel
+    kernel = density_kernel(cosmo, pzs, bias, z, ell)
+    return kernel
 
   def noise(self):
     """
