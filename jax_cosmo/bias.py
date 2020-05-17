@@ -58,5 +58,5 @@ class des_y1_ia_bias(container):
   def __call__(self, cosmo, z):
     """
     """
-    A, eta, z0 = self.params[0]
+    A, eta, z0 = self.params
     return A * ( (1.+z)/(1.+z0))**eta

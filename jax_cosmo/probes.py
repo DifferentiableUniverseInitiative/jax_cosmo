@@ -168,9 +168,11 @@ class WeakLensing(container):
     pzs = self.params[0]
     # retrieve number of galaxies in each bins
     ngals = np.array([pz.gals_per_steradian for pz in pzs])
-    # TODO: add mechanism for effective number density, maybe a bin dependent
-    # efficiency
-    return self.config['sigma_e']**2 / ngals
+    if isinstance(self.config['sigma_e'], list):
+      sigma_e = np.array([ s for s in self.config['sigma_e']])
+    else:
+      sigma_e = self.config['sigma_e']
+    return sigma_e**2 / ngals
 
 
 @register_pytree_node_class
