@@ -135,6 +135,6 @@ class systematic_shift(redshift_distribution):
   redshift_distribution
   mean_bias
   """
-  def pz_fn(self, z)
+  def pz_fn(self, z):
     parent_pz, bias = self.params[:2]
     return parent_pz.pz_fn(np.clip(z - bias,0))
