@@ -12,7 +12,7 @@ from jax_cosmo.jax_utils import container
 
 steradian_to_arcmin2 = 11818102.86004228
 
-__all__ = ["smail_nz"]
+__all__ = ["smail_nz", "kde_nz"]
 
 class redshift_distribution(container):
 
@@ -124,3 +124,17 @@ class kde_nz(redshift_distribution):
     X = np.expand_dims(zcat, axis=-1)
     k = self._kernel(self.config['bw'], X , z)
     return np.dot(k.T, w)/(q)
+
+@register_pytree_node_class
+class systematic_shift(redshift_distribution):
+  """
+  Implements a systematic shift in a redshift distribution
+  TODO: Find a better name for this
+
+  Arguments:
+  redshift_distribution
+  mean_bias
+  """
+  def pz_fn(self, z)
+    parent_pz, bias = self.params[:2]
+    return parent_pz.pz_fn(np.clip(z - bias,0))
