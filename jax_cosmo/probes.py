@@ -15,6 +15,7 @@ from jax.tree_util import register_pytree_node_class
 
 __all__ = ["WeakLensing", "NumberCounts"]
 
+@jit
 def weak_lensing_kernel(cosmo, pzs, z, ell):
   """
   Returns a weak lensing kernel
@@ -39,6 +40,7 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
   ell_factor = np.sqrt((ell-1)*(ell)*(ell+1)*(ell+2))/(ell+0.5)**2
   return constant_factor*ell_factor*radial_kernel
 
+@jit
 def density_kernel(cosmo, pzs, bias, z, ell):
   """
   Computes the number counts density kernel
@@ -53,6 +55,7 @@ def density_kernel(cosmo, pzs, bias, z, ell):
   ell_factor = 1.0
   return constant_factor*ell_factor*radial_kernel
 
+@jit
 def nla_kernel(cosmo, pzs, bias, z, ell):
   """
   Computes the NLA IA kernel
@@ -61,7 +64,10 @@ def nla_kernel(cosmo, pzs, bias, z, ell):
   dndz = np.stack([pz(z) for pz in pzs], axis=0)
   # Compute radial NLA kernel: same as clustering
   radial_kernel = dndz * bias(cosmo, z) * bkgrd.H(cosmo, z2a(z))
-  # Normalization, this is using the raw/unormalized amplitude
+  # Apply common A_IA normalization to the kernel
+  # Joachimi et al. (2011), arXiv: 1008.3491, Eq. 6.
+  radial_kernel *= -(5e-14 * const.rhocrit) * cosmo.Omega_m / bkgrd.growth_factor(cosmo, z2a(z))
+  # Constant factor
   constant_factor = 1.0
   # Ell dependent factor
   ell_factor = np.sqrt((ell-1)*(ell)*(ell+1)*(ell+2))/(ell+0.5)**2
