@@ -79,15 +79,11 @@ def angular_cl(cosmo, ell, probes,
                                         transfer_fn, nonlinear_fn)
 
       # Compute the kernels for all probes
-      kernels = np.vstack([ p.radial_kernel(cosmo, a2z(a)) *
-                            p.ell_factor(ell) *
-                            p.constant_factor(cosmo)
-                           for p in probes])
+      kernels = np.vstack([ p.kernel(cosmo, a2z(a), ell) for p in probes])
 
       # Define an ordering for the blocks of the signal vector
       cl_index = np.array(_get_cl_ordering(probes))
       # Compute all combinations of tracers
-      @jit
       def combine_kernels(inds):
         return kernels[inds[0]] * kernels[inds[1]]
       # Now kernels has shape [ncls, na]
