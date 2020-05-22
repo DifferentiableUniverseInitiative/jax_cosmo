@@ -348,8 +348,8 @@ def angular_diameter_distance(cosmo, a):
   return a * transverse_comoving_distance(cosmo, a)
 
 def growth_factor(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
-  """ Compute Growth factor at a given scale factor, normalised such
-  that G(a=1) = 1.
+  """ Compute linear growth factor D(a) at a given scale factor,
+  normalised such that D(a=1) = 1.
 
   Parameters
   ----------
@@ -361,7 +361,7 @@ def growth_factor(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
 
   Returns
   -------
-  G:  ndarray, or float if input scalar
+  D:  ndarray, or float if input scalar
       Growth factor computed at requested scale factor
   """
   #return np.ones_like(a)
@@ -372,8 +372,7 @@ def growth_factor(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
 
     def D_derivs(y, x):
       q = (2.0 - 0.5 * (Omega_m_a(cosmo, x) +
-                        (1.0 + 3.0 * w(cosmo, x))
-                        * Omega_de_a(cosmo, x)))/x
+                        (1.0 + 3.0 * w(cosmo, x)) * Omega_de_a(cosmo, x)) )/x
       r = 1.5*Omega_m_a(cosmo, x)/x/x
       return np.array([y[1], -q * y[1] + r * y[0]])
 
@@ -381,9 +380,30 @@ def growth_factor(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
     y = odeint(D_derivs, y0, atab)
     y1 = y[:,0]
     gtab = y1/y1[-1]
+    # To transform from dD/da to dlnD/dlna: dlnD/dlna = a / D dD/da
+    ftab = y[:,1]/y1[-1] * atab / gtab
 
-    cache = {'a':atab, 'g':gtab}
+    cache = {'a':atab, 'g':gtab, 'f': ftab}
     cosmo._workspace['background.growth_factor'] = cache
   else:
     cache = cosmo._workspace['background.growth_factor']
   return np.clip(interp(a, cache['a'], cache['g']), 0., 1.0)
+
+def growth_rate(cosmo, a):
+  """ Compute growth rate dD/dlna at a given scale factor.
+
+  Parameters
+  ----------
+  a: array_like
+    Scale factor
+
+  Returns
+  -------
+  f:  ndarray, or float if input scalar
+      Growth rate computed at requested scale factor
+  """
+  # Check if growth has already been computed, if not, compute it
+  if not 'background.growth_factor' in cosmo._workspace.keys():
+    growth_factor(cosmo, np.atleast_1d(1.0))
+  cache = cosmo._workspace['background.growth_factor']
+  return interp(a, cache['a'], cache['f'])
