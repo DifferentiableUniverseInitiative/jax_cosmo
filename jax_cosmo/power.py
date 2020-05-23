@@ -17,32 +17,32 @@ __all__ = ["primordial_matter_power", "linear_matter_power", "nonlinear_matter_p
 
 def primordial_matter_power(cosmo, k):
     """ Primordial power spectrum
-      Pk = k^n
-  """
+        Pk = k^n
+    """
     return k ** cosmo.n_s
 
 
 def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwargs):
     r""" Computes the linear matter power spectrum.
 
-  Parameters
-  ----------
-  k: array_like
-      Wave number in h Mpc^{-1}
+    Parameters
+    ----------
+    k: array_like
+        Wave number in h Mpc^{-1}
 
-  a: array_like, optional
-      Scale factor (def: 1.0)
+    a: array_like, optional
+        Scale factor (def: 1.0)
 
-  transfer_fn: transfer_fn(cosmo, k, **kwargs)
-      Transfer function
+    transfer_fn: transfer_fn(cosmo, k, **kwargs)
+        Transfer function
 
-  Returns
-  -------
-  pk: array_like
-      Linear matter power spectrum at the specified scale
-      and scale factor.
+    Returns
+    -------
+    pk: array_like
+        Linear matter power spectrum at the specified scale
+        and scale factor.
 
-  """
+    """
     k = np.atleast_1d(k)
     a = np.atleast_1d(a)
     g = bkgrd.growth_factor(cosmo, a)
@@ -60,16 +60,16 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwar
 def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax=1000.0, ksteps=5, **kwargs):
     """ Computes the energy of the fluctuations within a sphere of R h^{-1} Mpc
 
-  .. math::
+    .. math::
 
-     \\sigma^2(R)= \\frac{1}{2 \\pi^2} \\int_0^\\infty \\frac{dk}{k} k^3 P(k,z) W^2(kR)
+       \\sigma^2(R)= \\frac{1}{2 \\pi^2} \\int_0^\\infty \\frac{dk}{k} k^3 P(k,z) W^2(kR)
 
-  where
+    where
 
-  .. math::
+    .. math::
 
-     W(kR) = \\frac{3j_1(kR)}{kR}
-  """
+       W(kR) = \\frac{3j_1(kR)}{kR}
+    """
 
     def int_sigma(logk):
         k = np.exp(logk)
@@ -84,15 +84,15 @@ def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax=1000.0, ksteps=5, **kwargs
 
 def linear(cosmo, k, a, transfer_fn):
     """Linear matter power spectrum
-  """
+    """
     return linear_matter_power(cosmo, k, a, transfer_fn)
 
 
 def _halofit_parameters(cosmo, a, transfer_fn):
     r""" Computes the non linear scale,
-       effective spectral index,
-       spectral curvature
-  """
+         effective spectral index,
+         spectral curvature
+    """
     # Step 1: Finding the non linear scale for which sigma(R)=1
     # That's our search range for the non linear scale
     r = np.logspace(-3, 1, 256)
@@ -145,28 +145,28 @@ def _halofit_parameters(cosmo, a, transfer_fn):
 def halofit(cosmo, k, a, transfer_fn, prescription="takahashi2012"):
     r""" Computes the non linear halofit correction to the matter power spectrum.
 
-  Parameters
-  ----------
-  k: array_like
-      Wave number in h Mpc^{-1}
+    Parameters
+    ----------
+    k: array_like
+        Wave number in h Mpc^{-1}
 
-  a: array_like, optional
-      Scale factor (def: 1.0)
+    a: array_like, optional
+        Scale factor (def: 1.0)
 
-  prescription: str, optional
-      Either 'smith2003' or 'takahashi2012'
+    prescription: str, optional
+        Either 'smith2003' or 'takahashi2012'
 
-  Returns
-  -------
-  pk: array_like
-      Non linear matter power spectrum at the specified scale
-      and scale factor.
+    Returns
+    -------
+    pk: array_like
+        Non linear matter power spectrum at the specified scale
+        and scale factor.
 
-  Notes
-  -----
-  The non linear corrections are implemented following :cite:`2003:smith`
+    Notes
+    -----
+    The non linear corrections are implemented following :cite:`2003:smith`
 
-  """
+    """
     a = np.atleast_1d(a)
 
     # Compute the linear power spectrum
@@ -272,6 +272,6 @@ def nonlinear_matter_power(
 ):
     """ Computes the non-linear matter power spectrum.
 
-  This function is just a wrapper over several nonlinear power spectra.
-  """
+    This function is just a wrapper over several nonlinear power spectra.
+    """
     return nonlinear_fn(cosmo, k, a, transfer_fn=transfer_fn)

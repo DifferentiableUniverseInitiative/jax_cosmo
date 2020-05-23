@@ -17,27 +17,27 @@ __all__ = ["Cosmology"]
 class Cosmology:
     def __init__(self, Omega_c, Omega_b, h, n_s, sigma8, Omega_k, w0, wa):
         """
-    Cosmology object, stores primary and derived cosmological parameters.
+        Cosmology object, stores primary and derived cosmological parameters.
 
-    Parameters:
-    -----------
-    Omega_c, float
-      Cold dark matter density fraction.
-    Omega_b, float
-      Baryonic matter density fraction.
-    h, float
-      Hubble constant divided by 100 km/s/Mpc; unitless.
-    n_s, float
-      Primordial scalar perturbation spectral index.
-    sigma8, float
-      Variance of matter density perturbations at an 8 Mpc/h scale
-    Omega_k, float
-      Curvature density fraction.
-    w0, float
-      First order term of dark energy equation
-    wa, float
-      Second order term of dark energy equation of state
-    """
+        Parameters:
+        -----------
+        Omega_c, float
+          Cold dark matter density fraction.
+        Omega_b, float
+          Baryonic matter density fraction.
+        h, float
+          Hubble constant divided by 100 km/s/Mpc; unitless.
+        n_s, float
+          Primordial scalar perturbation spectral index.
+        sigma8, float
+          Variance of matter density perturbations at an 8 Mpc/h scale
+        Omega_k, float
+          Curvature density fraction.
+        w0, float
+          First order term of dark energy equation
+        wa, float
+          Second order term of dark energy equation of state
+        """
         # Store primary parameters
         self._Omega_c = Omega_c
         self._Omega_b = Omega_b

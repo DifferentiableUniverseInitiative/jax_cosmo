@@ -10,8 +10,8 @@ from jax_cosmo.angular_cl import gaussian_cl_covariance
 
 def gaussian_log_likelihood(data, mu, C, constant_cov=True, inverse_method="inverse"):
     """
-  Computes the likelihood for some cl
-  """
+    Computes the likelihood for some cl
+    """
     # Computes residuals
     r = mu - data
 

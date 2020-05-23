@@ -138,7 +138,9 @@ In `jax-cosmo`, we define `probes` that are container
 objects (i.e. which can be differentiated), gathering in particular a list of
 redshift distributions, and any other necessary parameters.
 
-### Coding style
+### Style Guide
+
+#### Code style
 
 In this project we are following the [Black](https://github.com/psf/black) code formatting guideline:
 `Any color you like...`
@@ -163,3 +165,7 @@ else to do. If pre-commit is installed it will happen automatically for
 you.
 
 See this blogpost for more info: https://www.mattlayman.com/blog/2018/python-code-black/
+
+#### Documentation style
+
+We are going to follow the NumPy/SciPy format: https://numpydoc.readthedocs.io/en/latest/format.html

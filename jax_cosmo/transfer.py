@@ -14,29 +14,29 @@ __all__ = ["Eisenstein_Hu"]
 def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
     """ Computes the Eisenstein & Hu matter transfer function.
 
-  Parameters
-  ----------
-  cosmo: Background
-    Background cosmology
+    Parameters
+    ----------
+    cosmo: Background
+      Background cosmology
 
-  k: array_like
-    Wave number in h Mpc^{-1}
+    k: array_like
+      Wave number in h Mpc^{-1}
 
-  type: str, optional
-    Type of transfer function. Either 'eisenhu' or 'eisenhu_osc'
-    (def: 'eisenhu_osc')
+    type: str, optional
+      Type of transfer function. Either 'eisenhu' or 'eisenhu_osc'
+      (def: 'eisenhu_osc')
 
-  Returns
-  -------
-  T: array_like
-    Value of the transfer function at the requested wave number
+    Returns
+    -------
+    T: array_like
+      Value of the transfer function at the requested wave number
 
-  Notes
-  -----
-  The Eisenstein & Hu transfer functions are computed using the fitting
-  formulae of :cite:`1998:EisensteinHu`
+    Notes
+    -----
+    The Eisenstein & Hu transfer functions are computed using the fitting
+    formulae of :cite:`1998:EisensteinHu`
 
-  """
+    """
     #############################################
     # Quantities computed from 1998:EisensteinHu
     # Provides : - k_eq   : scale of the particle horizon at equality epoch

@@ -19,8 +19,8 @@ __all__ = ["WeakLensing", "NumberCounts"]
 @jit
 def weak_lensing_kernel(cosmo, pzs, z, ell):
     """
-  Returns a weak lensing kernel
-  """
+    Returns a weak lensing kernel
+    """
     z = np.atleast_1d(z)
     zmax = max([pz.zmax for pz in pzs])
     # Retrieve comoving distance corresponding to z
@@ -45,8 +45,8 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
 @jit
 def density_kernel(cosmo, pzs, bias, z, ell):
     """
-  Computes the number counts density kernel
-  """
+    Computes the number counts density kernel
+    """
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
     # Compute radial NLA kernel: same as clustering
@@ -66,8 +66,8 @@ def density_kernel(cosmo, pzs, bias, z, ell):
 @jit
 def nla_kernel(cosmo, pzs, bias, z, ell):
     """
-  Computes the NLA IA kernel
-  """
+    Computes the NLA IA kernel
+    """
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
     # Compute radial NLA kernel: same as clustering
@@ -92,20 +92,20 @@ def nla_kernel(cosmo, pzs, bias, z, ell):
 @register_pytree_node_class
 class WeakLensing(container):
     """
-  Class representing a weak lensing probe, with a bunch of bins
+    Class representing a weak lensing probe, with a bunch of bins
 
-  Parameters:
-  -----------
-  redshift_bins: list of nzredshift distributions
-  ia_bias: (optional) if provided, IA will be added with the NLA model,
-  either a single bias object or a list of same size as nzs
-  multiplicative_bias: (optional) adds an (1+m) multiplicative bias, either single
-  value or list of same length as redshift bins
+    Parameters:
+    -----------
+    redshift_bins: list of nzredshift distributions
+    ia_bias: (optional) if provided, IA will be added with the NLA model,
+    either a single bias object or a list of same size as nzs
+    multiplicative_bias: (optional) adds an (1+m) multiplicative bias, either single
+    value or list of same length as redshift bins
 
-  Configuration:
-  --------------
-  sigma_e: intrinsic galaxy ellipticity
-  """
+    Configuration:
+    --------------
+    sigma_e: intrinsic galaxy ellipticity
+    """
 
     def __init__(
         self,
@@ -130,8 +130,8 @@ class WeakLensing(container):
     @property
     def n_tracers(self):
         """
-    Returns the number of tracers for this probe, i.e. redshift bins
-    """
+        Returns the number of tracers for this probe, i.e. redshift bins
+        """
         # Extract parameters
         pzs = self.params[0]
         return len(pzs)
@@ -139,20 +139,20 @@ class WeakLensing(container):
     @property
     def zmax(self):
         """
-    Returns the maximum redsfhit probed by this probe
-    """
+        Returns the maximum redsfhit probed by this probe
+        """
         # Extract parameters
         pzs = self.params[0]
         return max([pz.zmax for pz in pzs])
 
     def kernel(self, cosmo, z, ell):
         """
-    Compute the radial kernel for all nz bins in this probe.
+        Compute the radial kernel for all nz bins in this probe.
 
-    Returns:
-    --------
-    radial_kernel: shape (nbins, nz)
-    """
+        Returns:
+        --------
+        radial_kernel: shape (nbins, nz)
+        """
         z = np.atleast_1d(z)
         # Extract parameters
         pzs, m = self.params[:2]
@@ -169,9 +169,9 @@ class WeakLensing(container):
 
     def noise(self):
         """
-    Returns the noise power for all redshifts
-    return: shape [nbins]
-    """
+        Returns the noise power for all redshifts
+        return: shape [nbins]
+        """
         # Extract parameters
         pzs = self.params[0]
         # retrieve number of galaxies in each bins
@@ -185,17 +185,16 @@ class WeakLensing(container):
 
 @register_pytree_node_class
 class NumberCounts(container):
+    """ Class representing a galaxy clustering probe, with a bunch of bins
+
+    Parameters:
+    -----------
+    redshift_bins: nzredshift distributions
+
+    Configuration:
+    --------------
+    has_rsd....
     """
-  Class representing a galaxy clustering probe, with a bunch of bins
-
-  Parameters:
-  -----------
-  redshift_bins: nzredshift distributions
-
-  Configuration:
-  --------------
-  has_rsd....
-  """
 
     def __init__(self, redshift_bins, bias, has_rsd=False, **kwargs):
         super(NumberCounts, self).__init__(
@@ -205,29 +204,27 @@ class NumberCounts(container):
     @property
     def zmax(self):
         """
-    Returns the maximum redsfhit probed by this probe
-    """
+        Returns the maximum redsfhit probed by this probe
+        """
         # Extract parameters
         pzs = self.params[0]
         return max([pz.zmax for pz in pzs])
 
     @property
     def n_tracers(self):
+        """ Returns the number of tracers for this probe, i.e. redshift bins
         """
-    Returns the number of tracers for this probe, i.e. redshift bins
-    """
         # Extract parameters
         pzs = self.params[0]
         return len(pzs)
 
     def kernel(self, cosmo, z, ell):
-        """
-    Compute the radial kernel for all nz bins in this probe.
+        """ Compute the radial kernel for all nz bins in this probe.
 
-    Returns:
-    --------
-    radial_kernel: shape (nbins, nz)
-    """
+        Returns:
+        --------
+        radial_kernel: shape (nbins, nz)
+        """
         z = np.atleast_1d(z)
         # Extract parameters
         pzs, bias = self.params
@@ -236,10 +233,9 @@ class NumberCounts(container):
         return kernel
 
     def noise(self):
+        """ Returns the noise power for all redshifts
+        return: shape [nbins]
         """
-    Returns the noise power for all redshifts
-    return: shape [nbins]
-    """
         # Extract parameters
         pzs = self.params[0]
         ngals = np.array([pz.gals_per_steradian for pz in pzs])

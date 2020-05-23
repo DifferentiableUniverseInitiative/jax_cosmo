@@ -18,8 +18,8 @@ import jax_cosmo.transfer as tklib
 
 def _get_cl_ordering(probes):
     """
-  Utility function to get the indices for Cls from a list of probes
-  """
+    Utility function to get the indices for Cls from a list of probes
+    """
     n_tracers = sum([p.n_tracers for p in probes])
     # Define an ordering for the blocks of the signal vector
     cl_index = []
@@ -31,8 +31,8 @@ def _get_cl_ordering(probes):
 
 def _get_cov_blocks_ordering(probes):
     """
-  Utility function to get the ordering of the covariance matrix blocks
-  """
+    Utility function to get the ordering of the covariance matrix blocks
+    """
     cl_index = _get_cl_ordering(probes)
 
     def find_index(a, b):
@@ -54,15 +54,15 @@ def angular_cl(
     cosmo, ell, probes, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=power.halofit
 ):
     """
-  Computes angular Cls for the provided probes
+    Computes angular Cls for the provided probes
 
-  All using the Limber approximation
+    All using the Limber approximation
 
-  Returns
-  -------
+    Returns
+    -------
 
-  cls: [ell, ncls]
-  """
+    cls: [ell, ncls]
+    """
     # Retrieve the maximum redshift probed
     zmax = max([p.zmax for p in probes])
 
@@ -103,8 +103,8 @@ def angular_cl(
 
 def noise_cl(ell, probes):
     """
-  Computes noise contributions to auto-spectra
-  """
+    Computes noise contributions to auto-spectra
+    """
     n_ell = len(ell)
     # Concatenate noise power for each tracer
     noise = np.concatenate([p.noise() for p in probes])
@@ -121,10 +121,10 @@ def noise_cl(ell, probes):
 
 def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25):
     """
-  Computes a Gaussian covariance for the angular cls of the provided probes
+    Computes a Gaussian covariance for the angular cls of the provided probes
 
-  return_cls: (returns covariance)
-  """
+    return_cls: (returns covariance)
+    """
     ell = np.atleast_1d(ell)
     n_ell = len(ell)
 
@@ -162,10 +162,10 @@ def gaussian_cl_covariance_and_mean(
     f_sky=0.25,
 ):
     """
-  Computes a Gaussian covariance for the angular cls of the provided probes
+    Computes a Gaussian covariance for the angular cls of the provided probes
 
-  return_cls: (returns signal + noise cl, covariance)
-  """
+    return_cls: (returns signal + noise cl, covariance)
+    """
     ell = np.atleast_1d(ell)
     n_ell = len(ell)
 
