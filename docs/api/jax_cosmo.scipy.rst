@@ -1,9 +1,6 @@
 jax\_cosmo.scipy package
 ========================
 
-Submodules
-----------
-
 jax\_cosmo.scipy.integrate module
 ---------------------------------
 
@@ -24,15 +21,6 @@ jax\_cosmo.scipy.ode module
 ---------------------------
 
 .. automodule:: jax_cosmo.scipy.ode
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: jax_cosmo.scipy
    :members:
    :undoc-members:
    :show-inheritance:
