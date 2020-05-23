@@ -21,6 +21,8 @@ __all__ = [
     "transverse_comoving_distance",
     "angular_diameter_distance",
     "growth_factor",
+    "growth_rate",
+    "gamma_growth_rate",
 ]
 
 
@@ -199,6 +201,37 @@ def Omega_de_a(cosmo, a):
     :py:meth:`.f_de` (see :cite:`2005:Percival` Eq. (6)).
     """
     return cosmo.Omega_de * np.power(a, f_de(cosmo, a)) / Esqr(cosmo, a)
+
+
+def gamma_growth_rate(cosmo, a):
+    r"""Growth rate approximation at scale factor `a`.
+
+  Parameters
+  ----------
+  a : array_like
+      Scale factor
+
+  Returns
+  -------
+  f_gamma : ndarray, or float if input scalar
+      Growth rate approximation at the requested scale factor
+
+  Notes
+  -----
+  The LCDM approximation to the growth rate :math:`f_{\gamma}(a)` is given by:
+
+  .. math::
+
+      f_{\gamma}(a) = \Omega_m^{\gamma} (a)
+
+   with :math: `\gamma` in LCDM, given approximately by:
+   .. math::
+
+      \gamma = 0.55
+
+  see :cite:`2019:Euclid Preparation VII, eqn.32`
+  """
+    return Omega_m_a(cosmo, a) ** cosmo.gamma
 
 
 def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):

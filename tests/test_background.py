@@ -111,3 +111,26 @@ def test_growth_rate():
     fjax = bkgrd.growth_rate(cosmo_jax, a)
 
     assert_allclose(fccl, fjax, rtol=1e-2)
+
+
+def test_growth_rate():
+    # We first define equivalent CCL and jax_cosmo cosmologies
+    cosmo_jax = Cosmology(
+        Omega_c=0.3,
+        Omega_b=0.05,
+        h=0.7,
+        sigma8=0.8,
+        n_s=0.96,
+        Omega_k=0.0,
+        w0=-1.0,
+        wa=0.0,
+        gamma=0.55,
+    )
+
+    # Test array of scale factors
+    a = np.linspace(0.01, 1.0)
+
+    fjax = bkgrd.growth_rate(cosmo_jax, a)
+    fjax_gamma = bkgrd.gamma_growth_rate(cosmo_jax, a)
+
+    assert_allclose(fjax, fjax_gamma, rtol=1e-2)
