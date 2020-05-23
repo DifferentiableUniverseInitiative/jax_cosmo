@@ -11,8 +11,6 @@ import jax_cosmo.constants as const
 import jax_cosmo.background as bkgrd
 from jax_cosmo.utils import z2a, a2z
 from jax_cosmo.jax_utils import container
-
-
 from jax.tree_util import register_pytree_node_class
 
 __all__ = ["WeakLensing", "NumberCounts"]
