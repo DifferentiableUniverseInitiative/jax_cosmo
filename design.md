@@ -147,9 +147,9 @@ In this project we are following the [Black](https://github.com/psf/black) code 
 This means that all code should be automatically formatted using Black and CI will fail if that's not the case. Luckily it is super easy to ensure that everything is correctly formatted so that you never have to deal
 with code styling again. Here are the steps to follow:
 
-- Install `black` and `pre-commit`:
+- Install `black`, `pre-commit`, and `reorder-python-imports`:
 ```bash
-$ pip install --user black pre-commit
+$ pip install --user black pre-commit reorder-python-imports
 ```
 `pre-commit` will be tasked with automatically running `black` formatting
 whenever you commit some code.
@@ -160,11 +160,13 @@ $ black .
 ```
 from the root directory.
 
-- Automatically running black at each commit: You actually have nothing
+- Automatically running black and import reordering at each commit: You actually have nothing
 else to do. If pre-commit is installed it will happen automatically for
 you.
 
 See this blogpost for more info: https://www.mattlayman.com/blog/2018/python-code-black/
+
+
 
 #### Documentation style
 
