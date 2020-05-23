@@ -86,7 +86,7 @@ def Eisenstein_Hu(cosmo, k, type='eisenhu_osc'):
     q = k * np.power(const.tcmb/2.7, 2)/gamma_eff
 
     # EH98 (29) #
-    L = log(2.*exp(1.0) + 1.8*q)
+    L = np.log(2.*np.exp(1.0) + 1.8*q)
     C = 14.2 + 731.0/(1.0 + 62.5*q)
     res = L/(L + C*q*q)
 
