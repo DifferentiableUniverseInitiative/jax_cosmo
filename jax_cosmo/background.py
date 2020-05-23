@@ -206,31 +206,31 @@ def Omega_de_a(cosmo, a):
 def gamma_growth_rate(cosmo, a):
     r"""Growth rate approximation at scale factor `a`.
 
-  Parameters
-  ----------
-  a : array_like
-      Scale factor
+    Parameters
+    ----------
+    a : array_like
+        Scale factor
 
-  Returns
-  -------
-  f_gamma : ndarray, or float if input scalar
-      Growth rate approximation at the requested scale factor
+    Returns
+    -------
+    f_gamma : ndarray, or float if input scalar
+        Growth rate approximation at the requested scale factor
 
-  Notes
-  -----
-  The LCDM approximation to the growth rate :math:`f_{\gamma}(a)` is given by:
+    Notes
+    -----
+    The LCDM approximation to the growth rate :math:`f_{\gamma}(a)` is given by:
 
-  .. math::
+    .. math::
 
-      f_{\gamma}(a) = \Omega_m^{\gamma} (a)
+        f_{\gamma}(a) = \Omega_m^{\gamma} (a)
 
-   with :math: `\gamma` in LCDM, given approximately by:
-   .. math::
+     with :math: `\gamma` in LCDM, given approximately by:
+     .. math::
 
-      \gamma = 0.55
+        \gamma = 0.55
 
-  see :cite:`2019:Euclid Preparation VII, eqn.32`
-  """
+    see :cite:`2019:Euclid Preparation VII, eqn.32`
+    """
     return Omega_m_a(cosmo, a) ** cosmo.gamma
 
 
