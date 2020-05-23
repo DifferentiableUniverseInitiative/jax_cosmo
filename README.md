@@ -7,8 +7,7 @@
 <h3 align="center">Finally a differentiable cosmology library, and it's in JAX!</h3>
 
 
-**Note**: This package is still in the development phase, expect changes to the API. **We hope to make this project an open and collaborative community effort**, contributions of all kind are most welcome! A paper is being prepared [here](https://github.com/DifferentiableUniverseInitiative/jax-cosmo-paper), at this point, contributions to this project automatically grants you authorship to the paper :-)
-
+**Note**: This package is still in the development phase, expect changes to the API. **We hope to make this project an open and collaborative community effort**, contributions of all kind are most welcome! A paper is being prepared [here](https://github.com/DifferentiableUniverseInitiative/jax-cosmo-paper), at this point, contributions to this project automatically grants you authorship to the paper :-)  
 Have a look at the [GitHub issues](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues) to see what is needed or if you have any thoughts on the design, and don't hesitate to join the [Gitter room](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo) for discussions.
 
 ## TL;DR
