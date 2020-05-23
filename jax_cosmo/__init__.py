@@ -6,9 +6,12 @@ from __future__ import print_function
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version
 
+from pkg_resources import DistributionNotFound
+from pkg_resources import get_distribution
+
 try:
-    __version__ = version(__name__)
-except PackageNotFoundError:
+    __version__ = get_distribution(__name__).version
+except DistributionNotFound:
     # package is not installed
     pass
 
