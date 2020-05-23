@@ -137,3 +137,35 @@ tracer (e.g. lensing, number count, etc.) is characterized by the following:
 In `jax-cosmo`, we define `probes` that are container
 objects (i.e. which can be differentiated), gathering in particular a list of
 redshift distributions, and any other necessary parameters.
+
+### Style Guide
+
+#### Code style
+
+In this project we are following the [Black](https://github.com/psf/black) code formatting guideline:
+`Any color you like...`
+This means that all code should be automatically formatted using Black and CI will fail if that's not the case. Luckily it is super easy to ensure that everything is correctly formatted so that you never have to deal
+with code styling again. Here are the steps to follow:
+
+- Install `black` and `pre-commit`:
+```bash
+$ pip install --user black pre-commit
+```
+`pre-commit` will be tasked with automatically running `black` formatting
+whenever you commit some code.
+
+- Manually running black formatting:
+```bash
+$ black .
+```
+from the root directory.
+
+- Automatically running black at each commit: You actually have nothing
+else to do. If pre-commit is installed it will happen automatically for
+you.
+
+See this blogpost for more info: https://www.mattlayman.com/blog/2018/python-code-black/
+
+#### Documentation style
+
+We are going to follow the NumPy/SciPy format: https://numpydoc.readthedocs.io/en/latest/format.html
