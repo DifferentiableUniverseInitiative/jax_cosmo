@@ -9,22 +9,23 @@ import jax_cosmo.constants as const
 from jax_cosmo.scipy.interpolate import interp
 from jax_cosmo.scipy.ode import odeint
 
-__all__=[
-  'w',
-  'f_de',
-  'Esqr',
-  'H',
-  'Omega_m_a',
-  'Omega_de_a',
-  'radial_comoving_distance',
-  'dchioverda',
-  'transverse_comoving_distance',
-  'angular_diameter_distance',
-  'growth_factor'
+__all__ = [
+    "w",
+    "f_de",
+    "Esqr",
+    "H",
+    "Omega_m_a",
+    "Omega_de_a",
+    "radial_comoving_distance",
+    "dchioverda",
+    "transverse_comoving_distance",
+    "angular_diameter_distance",
+    "growth_factor",
 ]
 
+
 def w(cosmo, a):
-  r"""Dark Energy equation of state parameter using the Linder
+    r"""Dark Energy equation of state parameter using the Linder
   parametrisation.
 
   Parameters
@@ -51,10 +52,11 @@ def w(cosmo, a):
 
       w(a) = w_0 + w (1 -a)
   """
-  return cosmo.w0 + (1.0 - a) * cosmo.wa  # Equation (6) in Linder (2003)
+    return cosmo.w0 + (1.0 - a) * cosmo.wa  # Equation (6) in Linder (2003)
+
 
 def f_de(cosmo, a):
-  r"""Evolution parameter for the Dark Energy density.
+    r"""Evolution parameter for the Dark Energy density.
 
   Parameters
   ----------
@@ -86,12 +88,15 @@ def f_de(cosmo, a):
 
       f(a) = -3(1 + w_0) + 3 w \left[ \frac{a - 1}{ \ln(a) } - 1 \right]
   """
-  # Just to make sure we are not diving by 0
-  epsilon = np.finfo(np.float32).eps
-  return -3.0*(1.0+cosmo.w0) + 3.0*cosmo.wa*((a-1.0)/np.log(a-epsilon) - 1.0)
+    # Just to make sure we are not diving by 0
+    epsilon = np.finfo(np.float32).eps
+    return -3.0 * (1.0 + cosmo.w0) + 3.0 * cosmo.wa * (
+        (a - 1.0) / np.log(a - epsilon) - 1.0
+    )
+
 
 def Esqr(cosmo, a):
-  r"""Square of the scale factor dependent factor E(a) in the Hubble
+    r"""Square of the scale factor dependent factor E(a) in the Hubble
   parameter.
 
   Parameters
@@ -119,11 +124,15 @@ def Esqr(cosmo, a):
   where :math:`f(a)` is the Dark Energy evolution parameter computed
   by :py:meth:`.f_de`.
   """
-  return cosmo.Omega_m*np.power(a, -3) + cosmo.Omega_k*np.power(a, -2) + \
-      cosmo.Omega_de*np.power(a, f_de(cosmo, a))
+    return (
+        cosmo.Omega_m * np.power(a, -3)
+        + cosmo.Omega_k * np.power(a, -2)
+        + cosmo.Omega_de * np.power(a, f_de(cosmo, a))
+    )
+
 
 def H(cosmo, a):
-  r"""Hubble parameter [km/s/(Mpc/h)] at scale factor `a`
+    r"""Hubble parameter [km/s/(Mpc/h)] at scale factor `a`
 
   Parameters
   ----------
@@ -135,10 +144,11 @@ def H(cosmo, a):
   H : ndarray, or float if input scalar
       Hubble parameter at the requested scale factor.
   """
-  return const.H0 * np.sqrt(Esqr(cosmo, a))
+    return const.H0 * np.sqrt(Esqr(cosmo, a))
+
 
 def Omega_m_a(cosmo, a):
-  r"""Matter density at scale factor `a`.
+    r"""Matter density at scale factor `a`.
 
   Parameters
   ----------
@@ -160,10 +170,11 @@ def Omega_m_a(cosmo, a):
 
   see :cite:`2005:Percival` Eq. (6)
   """
-  return cosmo.Omega_m * np.power(a, -3) / Esqr(cosmo, a)
+    return cosmo.Omega_m * np.power(a, -3) / Esqr(cosmo, a)
+
 
 def Omega_de_a(cosmo, a):
-  r"""Dark Energy density at scale factor `a`.
+    r"""Dark Energy density at scale factor `a`.
 
   Parameters
   ----------
@@ -187,10 +198,11 @@ def Omega_de_a(cosmo, a):
   where :math:`f(a)` is the Dark Energy evolution parameter computed by
   :py:meth:`.f_de` (see :cite:`2005:Percival` Eq. (6)).
   """
-  return cosmo.Omega_de*np.power(a, f_de(cosmo, a))/Esqr(cosmo, a)
+    return cosmo.Omega_de * np.power(a, f_de(cosmo, a)) / Esqr(cosmo, a)
+
 
 def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
-  r"""Radial comoving distance in [Mpc/h] for a given scale factor.
+    r"""Radial comoving distance in [Mpc/h] for a given scale factor.
 
   Parameters
   ----------
@@ -212,30 +224,31 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
 
       \chi(a) =  R_H \int_a^1 \frac{da^\prime}{{a^\prime}^2 E(a^\prime)}
   """
-  # Check if distances have already been computed
-  if not 'background.radial_comoving_distance' in cosmo._workspace.keys():
-    # Compute tabulated array
-    atab = np.logspace(log10_amin, 0., steps)
+    # Check if distances have already been computed
+    if not "background.radial_comoving_distance" in cosmo._workspace.keys():
+        # Compute tabulated array
+        atab = np.logspace(log10_amin, 0.0, steps)
 
-    def dchioverdlna(y, x):
-        xa = np.exp(x)
-        return dchioverda(cosmo, xa) * xa
+        def dchioverdlna(y, x):
+            xa = np.exp(x)
+            return dchioverda(cosmo, xa) * xa
 
-    chitab = odeint(dchioverdlna, 0., np.log(atab))
-    #np.clip(- 3000*np.log(atab), 0, 10000)#odeint(dchioverdlna, 0., np.log(atab), cosmo)
-    chitab = chitab[-1] - chitab
+        chitab = odeint(dchioverdlna, 0.0, np.log(atab))
+        # np.clip(- 3000*np.log(atab), 0, 10000)#odeint(dchioverdlna, 0., np.log(atab), cosmo)
+        chitab = chitab[-1] - chitab
 
-    cache = {'a':atab, 'chi':chitab}
-    cosmo._workspace['background.radial_comoving_distance'] = cache
-  else:
-    cache = cosmo._workspace['background.radial_comoving_distance']
+        cache = {"a": atab, "chi": chitab}
+        cosmo._workspace["background.radial_comoving_distance"] = cache
+    else:
+        cache = cosmo._workspace["background.radial_comoving_distance"]
 
-  a = np.atleast_1d(a)
-  # Return the results as an interpolation of the table
-  return np.clip(interp(a, cache['a'], cache['chi']), 0.)
+    a = np.atleast_1d(a)
+    # Return the results as an interpolation of the table
+    return np.clip(interp(a, cache["a"], cache["chi"]), 0.0)
+
 
 def a_of_chi(cosmo, chi):
-  r""" Computes the scale factor for corresponding (array) of radial comoving
+    r""" Computes the scale factor for corresponding (array) of radial comoving
   distance by reverse linear interpolation.
 
   Parameters:
@@ -251,15 +264,16 @@ def a_of_chi(cosmo, chi):
   a : array-like
     Scale factors corresponding to requested distances
   """
-  # Check if distances have already been computed, force computation otherwise
-  if not 'background.radial_comoving_distance' in cosmo._workspace.keys():
-    radial_comoving_distance(cosmo, 1.0);
-  cache = cosmo._workspace['background.radial_comoving_distance']
-  chi = np.atleast_1d(chi)
-  return interp(chi, cache['chi'], cache['a'])
+    # Check if distances have already been computed, force computation otherwise
+    if not "background.radial_comoving_distance" in cosmo._workspace.keys():
+        radial_comoving_distance(cosmo, 1.0)
+    cache = cosmo._workspace["background.radial_comoving_distance"]
+    chi = np.atleast_1d(chi)
+    return interp(chi, cache["chi"], cache["a"])
+
 
 def dchioverda(cosmo, a):
-  r"""Derivative of the radial comoving distance with respect to the
+    r"""Derivative of the radial comoving distance with respect to the
   scale factor.
 
   Parameters
@@ -282,10 +296,11 @@ def dchioverda(cosmo, a):
 
       \frac{d \chi}{da}(a) = \frac{R_H}{a^2 E(a)}
   """
-  return const.rh/(a**2*np.sqrt(Esqr(cosmo, a)))
+    return const.rh / (a ** 2 * np.sqrt(Esqr(cosmo, a)))
+
 
 def transverse_comoving_distance(cosmo, a):
-  r"""Transverse comoving distance in [Mpc/h] for a given scale factor.
+    r"""Transverse comoving distance in [Mpc/h] for a given scale factor.
 
   Parameters
   ----------
@@ -316,16 +331,17 @@ def transverse_comoving_distance(cosmo, a):
       \end{matrix}
       \right.
   """
-  chi = radial_comoving_distance(cosmo, a)
-  if cosmo.k < 0:      # Open universe
-      return const.rh/cosmo.sqrtk*np.sinh(cosmo.sqrtk * chi/const.rh)
-  elif cosmo.k > 0:    # Closed Universe
-      return const.rh/cosmo.sqrtk*np.sin(cosmo.sqrtk * chi/const.rh)
-  else:
-      return chi
+    chi = radial_comoving_distance(cosmo, a)
+    if cosmo.k < 0:  # Open universe
+        return const.rh / cosmo.sqrtk * np.sinh(cosmo.sqrtk * chi / const.rh)
+    elif cosmo.k > 0:  # Closed Universe
+        return const.rh / cosmo.sqrtk * np.sin(cosmo.sqrtk * chi / const.rh)
+    else:
+        return chi
+
 
 def angular_diameter_distance(cosmo, a):
-  r"""Angular diameter distance in [Mpc/h] for a given scale factor.
+    r"""Angular diameter distance in [Mpc/h] for a given scale factor.
 
   Parameters
   ----------
@@ -345,10 +361,11 @@ def angular_diameter_distance(cosmo, a):
 
       d_A(a) = a f_k(a)
   """
-  return a * transverse_comoving_distance(cosmo, a)
+    return a * transverse_comoving_distance(cosmo, a)
+
 
 def growth_factor(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
-  """ Compute linear growth factor D(a) at a given scale factor,
+    """ Compute linear growth factor D(a) at a given scale factor,
   normalised such that D(a=1) = 1.
 
   Parameters
@@ -364,33 +381,40 @@ def growth_factor(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
   D:  ndarray, or float if input scalar
       Growth factor computed at requested scale factor
   """
-  #return np.ones_like(a)
-  # Check if growth has already been computed
-  if not 'background.growth_factor' in cosmo._workspace.keys():
-    # Compute tabulated array
-    atab = np.logspace(log10_amin, 0., steps)
+    # return np.ones_like(a)
+    # Check if growth has already been computed
+    if not "background.growth_factor" in cosmo._workspace.keys():
+        # Compute tabulated array
+        atab = np.logspace(log10_amin, 0.0, steps)
 
-    def D_derivs(y, x):
-      q = (2.0 - 0.5 * (Omega_m_a(cosmo, x) +
-                        (1.0 + 3.0 * w(cosmo, x)) * Omega_de_a(cosmo, x)) )/x
-      r = 1.5*Omega_m_a(cosmo, x)/x/x
-      return np.array([y[1], -q * y[1] + r * y[0]])
+        def D_derivs(y, x):
+            q = (
+                2.0
+                - 0.5
+                * (
+                    Omega_m_a(cosmo, x)
+                    + (1.0 + 3.0 * w(cosmo, x)) * Omega_de_a(cosmo, x)
+                )
+            ) / x
+            r = 1.5 * Omega_m_a(cosmo, x) / x / x
+            return np.array([y[1], -q * y[1] + r * y[0]])
 
-    y0 = np.array([atab[0], 1.0])
-    y = odeint(D_derivs, y0, atab)
-    y1 = y[:,0]
-    gtab = y1/y1[-1]
-    # To transform from dD/da to dlnD/dlna: dlnD/dlna = a / D dD/da
-    ftab = y[:,1]/y1[-1] * atab / gtab
+        y0 = np.array([atab[0], 1.0])
+        y = odeint(D_derivs, y0, atab)
+        y1 = y[:, 0]
+        gtab = y1 / y1[-1]
+        # To transform from dD/da to dlnD/dlna: dlnD/dlna = a / D dD/da
+        ftab = y[:, 1] / y1[-1] * atab / gtab
 
-    cache = {'a':atab, 'g':gtab, 'f': ftab}
-    cosmo._workspace['background.growth_factor'] = cache
-  else:
-    cache = cosmo._workspace['background.growth_factor']
-  return np.clip(interp(a, cache['a'], cache['g']), 0., 1.0)
+        cache = {"a": atab, "g": gtab, "f": ftab}
+        cosmo._workspace["background.growth_factor"] = cache
+    else:
+        cache = cosmo._workspace["background.growth_factor"]
+    return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
+
 
 def growth_rate(cosmo, a):
-  """ Compute growth rate dD/dlna at a given scale factor.
+    """ Compute growth rate dD/dlna at a given scale factor.
 
   Parameters
   ----------
@@ -402,8 +426,8 @@ def growth_rate(cosmo, a):
   f:  ndarray, or float if input scalar
       Growth rate computed at requested scale factor
   """
-  # Check if growth has already been computed, if not, compute it
-  if not 'background.growth_factor' in cosmo._workspace.keys():
-    growth_factor(cosmo, np.atleast_1d(1.0))
-  cache = cosmo._workspace['background.growth_factor']
-  return interp(a, cache['a'], cache['f'])
+    # Check if growth has already been computed, if not, compute it
+    if not "background.growth_factor" in cosmo._workspace.keys():
+        growth_factor(cosmo, np.atleast_1d(1.0))
+    cache = cosmo._workspace["background.growth_factor"]
+    return interp(a, cache["a"], cache["f"])

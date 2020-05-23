@@ -4,10 +4,7 @@ import jax.numpy as np
 from jax import vmap, jit
 import jax
 
-__all__ = [
-  "romb",
-  "simps"
-  ]
+__all__ = ["romb", "simps"]
 
 # Romberg quadratures for numeric integration.
 #
@@ -20,8 +17,9 @@ __all__ = [
 # Adapted to scipy by Travis Oliphant <oliphant.travis@ieee.org>
 # last revision: Dec 2001
 
+
 def _difftrap1(function, interval):
-  """
+    """
   Perform part of the trapezoidal rule to integrate a function.
   Assume that we had called difftrap with all lower powers-of-2
   starting with 1.  Calling difftrap only returns the summation
@@ -33,10 +31,11 @@ def _difftrap1(function, interval):
       'numtraps' is the number of trapezoids to use (must be a
                  power-of-2).
   """
-  return 0.5*(function(interval[0])+function(interval[1]))
+    return 0.5 * (function(interval[0]) + function(interval[1]))
+
 
 def _difftrapn(function, interval, numtraps):
-  """
+    """
   Perform part of the trapezoidal rule to integrate a function.
   Assume that we had called difftrap with all lower powers-of-2
   starting with 1.  Calling difftrap only returns the summation
@@ -48,23 +47,25 @@ def _difftrapn(function, interval, numtraps):
       'numtraps' is the number of trapezoids to use (must be a
                  power-of-2).
   """
-  numtosum = numtraps//2
-  h = (1.*interval[1]-1.*interval[0])/numtosum
-  lox = interval[0] + 0.5 * h
-  points = lox + h * np.arange(0, numtosum)
-  s = np.sum(function(points))
-  return s
+    numtosum = numtraps // 2
+    h = (1.0 * interval[1] - 1.0 * interval[0]) / numtosum
+    lox = interval[0] + 0.5 * h
+    points = lox + h * np.arange(0, numtosum)
+    s = np.sum(function(points))
+    return s
+
 
 def _romberg_diff(b, c, k):
-  """
+    """
   Compute the differences for the Romberg quadrature corrections.
   See Forman Acton's "Real Computing Made Real," p 143.
   """
-  tmp = 4.0**k
-  return (tmp * c - b)/(tmp - 1.0)
+    tmp = 4.0 ** k
+    return (tmp * c - b) / (tmp - 1.0)
+
 
 def romb(function, a, b, args=(), divmax=6, return_error=False):
-  """
+    """
   Romberg integration of a callable function or method.
   Returns the integral of `function` (a function of one variable)
   over the interval (`a`, `b`).
@@ -125,40 +126,41 @@ def romb(function, a, b, args=(), divmax=6, return_error=False):
   >>> print("%g %g" % (2*result, erf(1)))
   0.842701 0.842701
   """
-  vfunc = jit(lambda x: function(x, *args))
+    vfunc = jit(lambda x: function(x, *args))
 
-  n = 1
-  interval = [a,b]
-  intrange = b-a
-  ordsum = _difftrap1(vfunc, interval)
-  result = intrange * ordsum
-  state = np.repeat(np.atleast_1d(result), divmax+1, axis=-1)
-  err = np.inf
+    n = 1
+    interval = [a, b]
+    intrange = b - a
+    ordsum = _difftrap1(vfunc, interval)
+    result = intrange * ordsum
+    state = np.repeat(np.atleast_1d(result), divmax + 1, axis=-1)
+    err = np.inf
 
-  def scan_fn(carry, y):
-    x, k = carry
-    x = _romberg_diff(y, x, k+1)
-    return (x, k+1), x
+    def scan_fn(carry, y):
+        x, k = carry
+        x = _romberg_diff(y, x, k + 1)
+        return (x, k + 1), x
 
-  for i in range(1, divmax+1):
-    n = 2**i
-    ordsum = ordsum + _difftrapn(vfunc, interval, n)
+    for i in range(1, divmax + 1):
+        n = 2 ** i
+        ordsum = ordsum + _difftrapn(vfunc, interval, n)
 
-    x = intrange * ordsum / n
-    _, new_state = jax.lax.scan(scan_fn, (x, 0), state[:-1])
+        x = intrange * ordsum / n
+        _, new_state = jax.lax.scan(scan_fn, (x, 0), state[:-1])
 
-    new_state = np.concatenate([np.atleast_1d(x), new_state])
+        new_state = np.concatenate([np.atleast_1d(x), new_state])
 
-    err = np.abs(state[i-1] - new_state[i])
-    state = new_state
+        err = np.abs(state[i - 1] - new_state[i])
+        state = new_state
 
-  if return_error:
-    return state[i], err
-  else:
-    return state[i]
+    if return_error:
+        return state[i], err
+    else:
+        return state[i]
 
-def simps(f,a,b,N=128):
-    '''Approximate the integral of f(x) from a to b by Simpson's rule.
+
+def simps(f, a, b, N=128):
+    """Approximate the integral of f(x) from a to b by Simpson's rule.
 
     Simpson's rule approximates the integral \int_a^b f(x) dx by the sum:
     (dx/3) \sum_{k=1}^{N/2} (f(x_{2i-2} + 4f(x_{2i-1}) + f(x_{2i}))
@@ -187,11 +189,11 @@ def simps(f,a,b,N=128):
     Notes:
     ------
     Stolen from: https://www.math.ubc.ca/~pwalls/math-python/integration/simpsons-rule/
-    '''
+    """
     if N % 2 == 1:
         raise ValueError("N must be an even integer.")
-    dx = (b-a)/N
-    x = np.linspace(a,b,N+1)
+    dx = (b - a) / N
+    x = np.linspace(a, b, N + 1)
     y = f(x)
-    S = dx/3 * np.sum(y[0:-1:2] + 4*y[1::2] + y[2::2], axis=0)
+    S = dx / 3 * np.sum(y[0:-1:2] + 4 * y[1::2] + y[2::2], axis=0)
     return S
