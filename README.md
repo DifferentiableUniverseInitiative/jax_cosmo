@@ -1,11 +1,11 @@
-<h1 align="center">jax-cosmo</h1>
-<h2 align="center">Finally a differentiable cosmology library, and it's in JAX!</h2>
-
-<hr/>
+# jax-cosmo
 
 [![Join the chat at https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo](https://badges.gitter.im/DifferentiableUniverseInitiative/jax_cosmo.svg)](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) ![Python package](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/workflows/Python%20package/badge.svg) [![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![PyPI](https://img.shields.io/pypi/v/jax-cosmo)](https://pypi.org/project/jax-cosmo/) [![PyPI - License](https://img.shields.io/pypi/l/jax-cosmo)](https://github.com/google/jax-cosmo/blob/master/LICENSE)  <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 [![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
+
+<h3 align="center">Finally a differentiable cosmology library, and it's in JAX!</h3>
+
 
 **Note**: This package is still in the development phase, expect changes to the API. **We hope to make this project an open and collaborative community effort**, contributions of all kind are most welcome! A paper is being prepared [here](https://github.com/DifferentiableUniverseInitiative/jax-cosmo-paper), at this point, contributions to this project automatically grants you authorship to the paper :-)
 
