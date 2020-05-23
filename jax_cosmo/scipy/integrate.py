@@ -1,8 +1,9 @@
 from functools import partial
 
-import jax.numpy as np
-from jax import vmap, jit
 import jax
+import jax.numpy as np
+from jax import jit
+from jax import vmap
 
 __all__ = ["romb", "simps"]
 

@@ -4,14 +4,16 @@ from __future__ import division
 from __future__ import print_function
 
 import jax.numpy as np
-from jax import vmap, jit
-
-from jax_cosmo.scipy.integrate import simps
-import jax_cosmo.constants as const
-import jax_cosmo.background as bkgrd
-from jax_cosmo.utils import z2a, a2z
-from jax_cosmo.jax_utils import container
+from jax import jit
+from jax import vmap
 from jax.tree_util import register_pytree_node_class
+
+import jax_cosmo.background as bkgrd
+import jax_cosmo.constants as const
+from jax_cosmo.jax_utils import container
+from jax_cosmo.scipy.integrate import simps
+from jax_cosmo.utils import a2z
+from jax_cosmo.utils import z2a
 
 __all__ = ["WeakLensing", "NumberCounts"]
 

@@ -1,13 +1,15 @@
-import numpy as np
 import jax.numpy as jnp
-from numpy.testing import assert_allclose
-from jax_cosmo import Cosmology
-import jax_cosmo.background as bkgrd
-from jax_cosmo.redshift import smail_nz
-from jax_cosmo.angular_cl import angular_cl
-from jax_cosmo.bias import constant_linear_bias, inverse_growth_linear_bias
-from jax_cosmo import probes
+import numpy as np
 import pyccl as ccl
+from numpy.testing import assert_allclose
+
+import jax_cosmo.background as bkgrd
+from jax_cosmo import Cosmology
+from jax_cosmo import probes
+from jax_cosmo.angular_cl import angular_cl
+from jax_cosmo.bias import constant_linear_bias
+from jax_cosmo.bias import inverse_growth_linear_bias
+from jax_cosmo.redshift import smail_nz
 
 
 def test_lensing_cl():

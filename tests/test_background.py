@@ -1,9 +1,10 @@
-import numpy as np
 import jax.numpy as jnp
-from numpy.testing import assert_allclose
-from jax_cosmo import Cosmology
-import jax_cosmo.background as bkgrd
+import numpy as np
 import pyccl as ccl
+from numpy.testing import assert_allclose
+
+import jax_cosmo.background as bkgrd
+from jax_cosmo import Cosmology
 
 
 def test_distances_flat():

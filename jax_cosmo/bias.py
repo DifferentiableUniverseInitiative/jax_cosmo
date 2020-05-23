@@ -1,14 +1,15 @@
 # This module contains implementations of galaxy bias
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import jax.numpy as np
 from jax.tree_util import register_pytree_node_class
-from jax_cosmo.utils import a2z, z2a
-from jax_cosmo.jax_utils import container
+
 import jax_cosmo.background as bkgrd
+from jax_cosmo.jax_utils import container
+from jax_cosmo.utils import a2z
+from jax_cosmo.utils import z2a
 
 
 @register_pytree_node_class

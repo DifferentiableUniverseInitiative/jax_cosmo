@@ -3,8 +3,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
 import jax.numpy as np
+
 from jax_cosmo.angular_cl import gaussian_cl_covariance
 
 

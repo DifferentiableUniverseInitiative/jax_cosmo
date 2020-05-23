@@ -1,6 +1,6 @@
 # this module stores custom ode code
-import jax.numpy as np
 import jax
+import jax.numpy as np
 
 
 def odeint(fn, y0, t):
