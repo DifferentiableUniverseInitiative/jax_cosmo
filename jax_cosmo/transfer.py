@@ -5,8 +5,8 @@ from __future__ import print_function
 
 import jax.numpy as np
 
-import jax_cosmo.constants as const
 import jax_cosmo.background as bkgrd
+import jax_cosmo.constants as const
 
 __all__ = ["Eisenstein_Hu"]
 

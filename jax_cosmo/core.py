@@ -2,13 +2,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
-from jax.tree_util import register_pytree_node_class
 import jax.numpy as np
 from jax.experimental.ode import odeint
+from jax.tree_util import register_pytree_node_class
 
 import jax_cosmo.constants as const
-from jax_cosmo.utils import a2z, z2a
+from jax_cosmo.utils import a2z
+from jax_cosmo.utils import z2a
 
 __all__ = ["Cosmology"]
 

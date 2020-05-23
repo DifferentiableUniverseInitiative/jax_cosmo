@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 from functools import partial
+
 from jax_cosmo.core import Cosmology
 
 # To add new cosmologies, we just set the parameters to some default values using

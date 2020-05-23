@@ -3,12 +3,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from abc import ABC, abstractmethod
-import jax.numpy as np
+from abc import ABC
+from abc import abstractmethod
 
+import jax.numpy as np
 from jax.tree_util import register_pytree_node_class
-from jax_cosmo.scipy.integrate import simps
+
 from jax_cosmo.jax_utils import container
+from jax_cosmo.scipy.integrate import simps
 
 steradian_to_arcmin2 = 11818102.86004228
 

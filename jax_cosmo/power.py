@@ -5,12 +5,13 @@ from __future__ import print_function
 
 import jax
 import jax.numpy as np
-import jax_cosmo.constants as const
-from jax_cosmo.scipy.integrate import simps, romb
-from jax_cosmo.scipy.interpolate import interp
 
 import jax_cosmo.background as bkgrd
+import jax_cosmo.constants as const
 import jax_cosmo.transfer as tklib
+from jax_cosmo.scipy.integrate import romb
+from jax_cosmo.scipy.integrate import simps
+from jax_cosmo.scipy.interpolate import interp
 
 __all__ = ["primordial_matter_power", "linear_matter_power", "nonlinear_matter_power"]
 

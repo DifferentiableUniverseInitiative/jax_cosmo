@@ -1,10 +1,11 @@
-import numpy as np
 import jax.numpy as jnp
+import numpy as np
+import pyccl as ccl
 from numpy.testing import assert_allclose
-from jax_cosmo import Cosmology
+
 import jax_cosmo.power as power
 import jax_cosmo.transfer as tklib
-import pyccl as ccl
+from jax_cosmo import Cosmology
 
 
 def test_eisenstein_hu():
