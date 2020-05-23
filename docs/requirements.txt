@@ -1,0 +1,7 @@
+jax
+jaxlib
+sphinx
+sphinx_rtd_theme
+ipykernel
+nbsphinx
+.
