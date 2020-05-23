@@ -11,12 +11,12 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../"))
+sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "jax-cosmo"
 copyright = "2020, jax-cosmo developers"
-author = "jax-cosmo developers"
+author = "The jax-cosmo Authors"
 
 
 # -- General configuration ---------------------------------------------------
@@ -24,16 +24,33 @@ author = "jax-cosmo developers"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.napoleon", "sphinx.ext.autodoc"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "nbsphinx",
+]
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
+    "jax": ("https://jax.readthedocs.io/en/latest/", None),
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
+# The master toctree document.
+master_doc = "index"
+
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
-
+exclude_patterns = ["_build", "notebooks/dev", "**.ipynb_checkpoints"]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -47,6 +64,7 @@ html_theme = "sphinx_rtd_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
+autosummary_generate = True
 # -- Options for Napoleon
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
