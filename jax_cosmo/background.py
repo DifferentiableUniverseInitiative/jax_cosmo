@@ -419,9 +419,9 @@ def growth_rate(cosmo, a):
     growth will be solved.
     """
     if cosmo._flags["gamma_growth"]:
-        return growth_rate_gamma(cosmo, a)
+        return _growth_rate_gamma(cosmo, a)
     else:
-        return growth_rate_ODE(cosmo, a)
+        return _growth_rate_ODE(cosmo, a)
 
 
 def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
@@ -491,7 +491,7 @@ def _growth_rate_ODE(cosmo, a):
     """
     # Check if growth has already been computed, if not, compute it
     if not "background.growth_factor" in cosmo._workspace.keys():
-        growth_factor(cosmo, np.atleast_1d(1.0))
+        _growth_factor_ODE(cosmo, np.atleast_1d(1.0))
     cache = cosmo._workspace["background.growth_factor"]
     return interp(a, cache["a"], cache["f"])
 
@@ -521,7 +521,7 @@ def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
 
         def integrand(y, loga):
             xa = np.exp(loga)
-            return growth_rate_gamma(cosmo, xa)
+            return _growth_rate_gamma(cosmo, xa)
 
         gtab = np.exp(odeint(integrand, np.log(atab[0]), np.log(atab)))
         gtab = gtab / gtab[-1]  # Normalize to a=1.
