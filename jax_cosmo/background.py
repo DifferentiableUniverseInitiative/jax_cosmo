@@ -417,6 +417,19 @@ def growth_rate(cosmo, a):
     instance if the $\gamma$ parameter is defined, the growth will be computed
     assuming the $f = \Omega^\gamma$ growth rate, otherwise the usual ODE for
     growth will be solved.
+
+    The LCDM approximation to the growth rate :math:`f_{\gamma}(a)` is given by:
+
+    .. math::
+
+        f_{\gamma}(a) = \Omega_m^{\gamma} (a)
+
+     with :math: `\gamma` in LCDM, given approximately by:
+     .. math::
+
+        \gamma = 0.55
+
+    see :cite:`2019:Euclid Preparation VII, eqn.32`
     """
     if cosmo._flags["gamma_growth"]:
         return _growth_rate_gamma(cosmo, a)
