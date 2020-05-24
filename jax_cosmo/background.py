@@ -22,7 +22,6 @@ __all__ = [
     "angular_diameter_distance",
     "growth_factor",
     "growth_rate",
-    "gamma_growth_rate",
 ]
 
 
@@ -367,18 +366,57 @@ def angular_diameter_distance(cosmo, a):
 
 
 def growth_factor(cosmo, a):
-    """
-    Computes the growth factor
+    """ Compute linear growth factor D(a) at a given scale factor,
+    normalized such that D(a=1) = 1.
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    D:  ndarray, or float if input scalar
+        Growth factor computed at requested scale factor
+
+    Notes
+    -----
+    The growth computation will depend on the cosmology parametrization, for
+    instance if the $\gamma$ parameter is defined, the growth will be computed
+    assuming the $f = \Omega^\gamma$ growth rate, otherwise the usual ODE for
+    growth will be solved.
     """
     if cosmo._flags["gamma_growth"]:
-        return growth_factor_gamma(cosmo, a)
+        return _growth_factor_gamma(cosmo, a)
     else:
-        return growth_factor_ODE(cosmo, a)
+        return _growth_factor_ODE(cosmo, a)
 
 
 def growth_rate(cosmo, a):
-    """
-    Computes the growth rate
+    """ Compute growth rate dD/dlna at a given scale factor.
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    f:  ndarray, or float if input scalar
+        Growth rate computed at requested scale factor
+
+    Notes
+    -----
+    The growth computation will depend on the cosmology parametrization, for
+    instance if the $\gamma$ parameter is defined, the growth will be computed
+    assuming the $f = \Omega^\gamma$ growth rate, otherwise the usual ODE for
+    growth will be solved.
     """
     if cosmo._flags["gamma_growth"]:
         return growth_rate_gamma(cosmo, a)
@@ -386,7 +424,7 @@ def growth_rate(cosmo, a):
         return growth_rate_ODE(cosmo, a)
 
 
-def growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
+def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
     """ Compute linear growth factor D(a) at a given scale factor,
     normalised such that D(a=1) = 1.
 
@@ -403,7 +441,6 @@ def growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
     D:  ndarray, or float if input scalar
         Growth factor computed at requested scale factor
     """
-    # return np.ones_like(a)
     # Check if growth has already been computed
     if not "background.growth_factor" in cosmo._workspace.keys():
         # Compute tabulated array
@@ -434,12 +471,15 @@ def growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
         cache = cosmo._workspace["background.growth_factor"]
     return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
 
-
-def growth_rate_ODE(cosmo, a):
-    """ Compute growth rate dD/dlna at a given scale factor.
+def _growth_rate_ODE(cosmo, a):
+    """ Compute growth rate dD/dlna at a given scale factor by solving the linear
+    growth ODE.
 
     Parameters
     ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
     a: array_like
       Scale factor
 
@@ -455,8 +495,23 @@ def growth_rate_ODE(cosmo, a):
     return interp(a, cache["a"], cache["f"])
 
 
-def growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
-    r"""
+def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
+    r""" Computes growth factor by integrating the growth rate provided by the
+    \gamma parametrization. Normalized such that D( a=1) =1
+
+    Parameters
+    ----------
+    a: array_like
+      Scale factor
+
+    amin: float
+      Mininum scale factor, default 1e-3
+
+    Returns
+    -------
+    D:  ndarray, or float if input scalar
+        Growth factor computed at requested scale factor
+
     """
     # Check if growth has already been computed, if not, compute it
     if not "background.growth_factor" in cosmo._workspace.keys():
@@ -476,11 +531,14 @@ def growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
     return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
 
 
-def growth_rate_gamma(cosmo, a):
+def _growth_rate_gamma(cosmo, a):
     r"""Growth rate approximation at scale factor `a`.
 
     Parameters
     ----------
+    cosmo: `Cosmology`
+        Cosmology object
+
     a : array_like
         Scale factor
 

@@ -149,7 +149,7 @@ with code styling again. Here are the steps to follow:
 
 - Install `black` and `pre-commit`:
 ```bash
-$ pip install --user black pre-commit
+$ pip install --user black pre-commit reorder_python_imports
 ```
 `pre-commit` will be tasked with automatically running `black` formatting
 whenever you commit some code.
