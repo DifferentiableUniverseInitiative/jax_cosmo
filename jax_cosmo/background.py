@@ -471,6 +471,7 @@ def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
         cache = cosmo._workspace["background.growth_factor"]
     return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
 
+
 def _growth_rate_ODE(cosmo, a):
     """ Compute growth rate dD/dlna at a given scale factor by solving the linear
     growth ODE.
