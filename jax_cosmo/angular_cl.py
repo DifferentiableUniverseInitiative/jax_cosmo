@@ -10,7 +10,7 @@ from jax import vmap, lax, jit
 
 import jax_cosmo.constants as const
 from jax_cosmo.utils import z2a, a2z
-from jax_cosmo.scipy.integrate import simps
+from jax_cosmo.scipy.integrate import simps_loop as simps
 import jax_cosmo.background as bkgrd
 import jax_cosmo.power as power
 import jax_cosmo.transfer as tklib
@@ -94,7 +94,7 @@ def angular_cl(cosmo, ell, probes,
       # We transpose the result just to make sure that na is first
       return result.T
 
-    return simps(integrand, z2a(zmax), 1., 512) / const.c**2
+    return simps(integrand, z2a(zmax), 1., 256) / const.c**2
 
   return cl(ell)
 

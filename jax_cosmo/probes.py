@@ -33,7 +33,7 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
     return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.)
 
   # Computes the radial weak lensing kernel
-  radial_kernel = np.squeeze(simps(integrand, z, zmax, 256) * (1. + z ) * chi)
+  radial_kernel = np.squeeze(simps(integrand, z, zmax, 128) * (1. + z ) * chi)
   # Constant term
   constant_factor = 3.0 * const.H0**2 * cosmo.Omega_m / 2.0 / const.c
   # Ell dependent factor

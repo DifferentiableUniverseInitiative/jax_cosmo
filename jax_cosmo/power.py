@@ -75,7 +75,7 @@ def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax = 1000.0, ksteps=5, **kwar
     w = 3.0*(np.sin(x) - x*np.cos(x))/(x*x*x)
     pk = transfer_fn(cosmo, k, **kwargs)**2 * primordial_matter_power(cosmo, k)
     return k * (k*w)**2 * pk
-  y = romb(int_sigma, np.log10(kmin), np.log10(kmax), divmax=7)
+  y = simps(int_sigma, np.log10(kmin), np.log10(kmax), 128) #romb(int_sigma, np.log10(kmin), np.log10(kmax), divmax=7)
   return 1.0/(2.0*np.pi**2.0) * y
 
 def linear(cosmo, k, a, transfer_fn):
