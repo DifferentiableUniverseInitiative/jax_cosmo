@@ -10,7 +10,7 @@ Install jax-cosmo
 
 Because jax-cosmo is written in plain Python, installing it is trivial:
 
-      $ pip install cosmicpy
+      $ pip install jax-cosmo
 
 That's all there is to it.
 
