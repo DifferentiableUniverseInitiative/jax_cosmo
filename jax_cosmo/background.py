@@ -21,6 +21,7 @@ __all__ = [
     "transverse_comoving_distance",
     "angular_diameter_distance",
     "growth_factor",
+    "growth_rate",
 ]
 
 
@@ -364,7 +365,79 @@ def angular_diameter_distance(cosmo, a):
     return a * transverse_comoving_distance(cosmo, a)
 
 
-def growth_factor(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
+def growth_factor(cosmo, a):
+    """ Compute linear growth factor D(a) at a given scale factor,
+    normalized such that D(a=1) = 1.
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    D:  ndarray, or float if input scalar
+        Growth factor computed at requested scale factor
+
+    Notes
+    -----
+    The growth computation will depend on the cosmology parametrization, for
+    instance if the $\gamma$ parameter is defined, the growth will be computed
+    assuming the $f = \Omega^\gamma$ growth rate, otherwise the usual ODE for
+    growth will be solved.
+    """
+    if cosmo._flags["gamma_growth"]:
+        return _growth_factor_gamma(cosmo, a)
+    else:
+        return _growth_factor_ODE(cosmo, a)
+
+
+def growth_rate(cosmo, a):
+    """ Compute growth rate dD/dlna at a given scale factor.
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    f:  ndarray, or float if input scalar
+        Growth rate computed at requested scale factor
+
+    Notes
+    -----
+    The growth computation will depend on the cosmology parametrization, for
+    instance if the $\gamma$ parameter is defined, the growth will be computed
+    assuming the $f = \Omega^\gamma$ growth rate, otherwise the usual ODE for
+    growth will be solved.
+
+    The LCDM approximation to the growth rate :math:`f_{\gamma}(a)` is given by:
+
+    .. math::
+
+        f_{\gamma}(a) = \Omega_m^{\gamma} (a)
+
+     with :math: `\gamma` in LCDM, given approximately by:
+     .. math::
+
+        \gamma = 0.55
+
+    see :cite:`2019:Euclid Preparation VII, eqn.32`
+    """
+    if cosmo._flags["gamma_growth"]:
+        return _growth_rate_gamma(cosmo, a)
+    else:
+        return _growth_rate_ODE(cosmo, a)
+
+
+def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
     """ Compute linear growth factor D(a) at a given scale factor,
     normalised such that D(a=1) = 1.
 
@@ -381,7 +454,6 @@ def growth_factor(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
     D:  ndarray, or float if input scalar
         Growth factor computed at requested scale factor
     """
-    # return np.ones_like(a)
     # Check if growth has already been computed
     if not "background.growth_factor" in cosmo._workspace.keys():
         # Compute tabulated array
@@ -413,11 +485,15 @@ def growth_factor(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
     return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
 
 
-def growth_rate(cosmo, a):
-    """ Compute growth rate dD/dlna at a given scale factor.
+def _growth_rate_ODE(cosmo, a):
+    """ Compute growth rate dD/dlna at a given scale factor by solving the linear
+    growth ODE.
 
     Parameters
     ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
     a: array_like
       Scale factor
 
@@ -428,6 +504,76 @@ def growth_rate(cosmo, a):
     """
     # Check if growth has already been computed, if not, compute it
     if not "background.growth_factor" in cosmo._workspace.keys():
-        growth_factor(cosmo, np.atleast_1d(1.0))
+        _growth_factor_ODE(cosmo, np.atleast_1d(1.0))
     cache = cosmo._workspace["background.growth_factor"]
     return interp(a, cache["a"], cache["f"])
+
+
+def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
+    r""" Computes growth factor by integrating the growth rate provided by the
+    \gamma parametrization. Normalized such that D( a=1) =1
+
+    Parameters
+    ----------
+    a: array_like
+      Scale factor
+
+    amin: float
+      Mininum scale factor, default 1e-3
+
+    Returns
+    -------
+    D:  ndarray, or float if input scalar
+        Growth factor computed at requested scale factor
+
+    """
+    # Check if growth has already been computed, if not, compute it
+    if not "background.growth_factor" in cosmo._workspace.keys():
+        # Compute tabulated array
+        atab = np.logspace(log10_amin, 0.0, steps)
+
+        def integrand(y, loga):
+            xa = np.exp(loga)
+            return _growth_rate_gamma(cosmo, xa)
+
+        gtab = np.exp(odeint(integrand, np.log(atab[0]), np.log(atab)))
+        gtab = gtab / gtab[-1]  # Normalize to a=1.
+        cache = {"a": atab, "g": gtab}
+        cosmo._workspace["background.growth_factor"] = cache
+    else:
+        cache = cosmo._workspace["background.growth_factor"]
+    return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
+
+
+def _growth_rate_gamma(cosmo, a):
+    r"""Growth rate approximation at scale factor `a`.
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+        Cosmology object
+
+    a : array_like
+        Scale factor
+
+    Returns
+    -------
+    f_gamma : ndarray, or float if input scalar
+        Growth rate approximation at the requested scale factor
+
+    Notes
+    -----
+    The LCDM approximation to the growth rate :math:`f_{\gamma}(a)` is given by:
+
+    .. math::
+
+        f_{\gamma}(a) = \Omega_m^{\gamma} (a)
+
+     with :math: `\gamma` in LCDM, given approximately by:
+     .. math::
+
+        \gamma = 0.55
+
+    see :cite:`2019:Euclid Preparation VII, eqn.32`
+    """
+    return Omega_m_a(cosmo, a) ** cosmo.gamma
