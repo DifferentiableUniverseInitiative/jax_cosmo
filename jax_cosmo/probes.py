@@ -43,6 +43,38 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
     ell_factor = np.sqrt((ell - 1) * (ell) * (ell + 1) * (ell + 2)) / (ell + 0.5) ** 2
     return constant_factor * ell_factor * radial_kernel
 
+@jit
+def mag_kernel(cosmo, pzs, z, ell, s):
+    """
+    Returns a magnification kernel
+    
+    Needs magnification bias function 
+    s = logarithmic derivative of the numbero f sources with magnitude limit
+    
+    """
+    z = np.atleast_1d(z)
+    zmax = max([pz.zmax for pz in pzs])
+    # Retrieve comoving distance corresponding to z
+    chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
+    
+    @vmap
+    def integrand(z_prime):
+        chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
+        # Stack the dndz of all redshift bins
+        dndz = np.stack([pz(z_prime) for pz in pzs], axis=0)
+        
+        mag_lim = (2.0-5.0*s(z_prime))  2.0
+        
+        return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
+
+    # Computes the radial weak lensing kernel
+    radial_kernel = np.squeeze(simps(integrand, z, zmax, 256) * (1.0 + z) * chi)
+    # Constant term (maybe one too many 2.0?)
+    constant_factor = 3.0 * const.H0 ** 2 * cosmo.Omega_m / 2.0 / const.c / 2.0
+    # Ell dependent factor
+    ell_factor = ell*(ell+1)
+    return constant_factor * ell_factor * radial_kernel
+
 
 @jit
 def density_kernel(cosmo, pzs, bias, z, ell):
@@ -63,7 +95,6 @@ def density_kernel(cosmo, pzs, bias, z, ell):
     # Ell dependent factor
     ell_factor = 1.0
     return constant_factor * ell_factor * radial_kernel
-
 
 @jit
 def nla_kernel(cosmo, pzs, bias, z, ell):
@@ -89,6 +120,31 @@ def nla_kernel(cosmo, pzs, bias, z, ell):
     # Ell dependent factor
     ell_factor = np.sqrt((ell - 1) * (ell) * (ell + 1) * (ell + 2)) / (ell + 0.5) ** 2
     return constant_factor * ell_factor * radial_kernel
+
+
+@jit
+def rsd_kernel(cosmo, pzs, bias, z, ell, z1):
+    """
+    Computes the RSD kernel
+    """
+    # stack the dndz of all redshift bins
+    dndz = np.stack([pz(z) for pz in pzs], axis=0)
+    
+    # Normalization,
+    constant_factor = 1.0
+    # Ell dependent factor
+    ell_factor1 = (1+8*ell)/np.pow((2*ell+1),2)
+    # stack the dndz of all redshift bins
+    dndz = np.stack([pz(z) for pz in pzs], axis=0)
+    radial_kernel1 = dndz * bkgrd.growth_factor(cosmo, z2a(z)) * bkgrd.H(cosmo, z2a(z))
+    
+    # Ell dependent factor
+    ell_factor2 = (4)/(2*ell+1) *np.sqrt((2*ell+1)/(2*ell+3))
+    # stack the dndz of all redshift bins
+    dndz = np.stack([pz(z1) for pz in pzs], axis=0)
+    radial_kernel2 = dndz * bkgrd.growth_factor(cosmo, z2a(z1)) * bkgrd.H(cosmo, z2a(z1))
+
+    return constant_factor (ell_factor1 * radial_kernel1 + ell_factor2*radial_kernel2)
 
 
 @register_pytree_node_class
