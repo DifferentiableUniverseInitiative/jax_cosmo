@@ -1,7 +1,10 @@
 # This module contains some missing ops from jax
-from jax import vmap
 import functools
 import jax.numpy as np
+from jax import jit
+from jax import vmap
+from jax import grad
+from jax import ops
 
 __all__ = ["interp"]
 
