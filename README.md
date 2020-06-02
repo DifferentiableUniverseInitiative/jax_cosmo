@@ -1,11 +1,13 @@
 # jax-cosmo
 
-[![Join the chat at https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo](https://badges.gitter.im/DifferentiableUniverseInitiative/jax_cosmo.svg)](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) ![Python package](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/workflows/Python%20package/badge.svg)  [![PyPI](https://img.shields.io/pypi/v/jax-cosmo)](https://pypi.org/project/jax-cosmo/) [![PyPI - License](https://img.shields.io/pypi/l/jax-cosmo)](https://github.com/google/jax-cosmo/blob/master/LICENSE)
+[![Join the chat at https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo](https://badges.gitter.im/DifferentiableUniverseInitiative/jax_cosmo.svg)](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Documentation Status](https://readthedocs.org/projects/jax-cosmo/badge/?version=latest)](https://jax-cosmo.readthedocs.io/en/latest/?badge=latest) [![CI Test](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/workflows/Python%20package/badge.svg)]() [![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![PyPI](https://img.shields.io/pypi/v/jax-cosmo)](https://pypi.org/project/jax-cosmo/) [![PyPI - License](https://img.shields.io/pypi/l/jax-cosmo)](https://github.com/google/jax-cosmo/blob/master/LICENSE)  <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-A differentiable cosmology library in JAX.
+<h3 align="center">Finally a differentiable cosmology library, and it's in JAX!</h3>
 
-**Note**: This package is still in the development phase, expect changes to the API. **We hope to make this project an open and collaborative community effort**, contributions of all kind are most welcome! A paper is being prepared [here](https://github.com/DifferentiableUniverseInitiative/jax-cosmo-paper), at this point, contributions to this project automatically grants you authorship to the paper :-) 
 
+**Note**: This package is still in the development phase, expect changes to the API. **We hope to make this project an open and collaborative community effort**, contributions of all kind are most welcome! A paper is being prepared [here](https://github.com/DifferentiableUniverseInitiative/jax-cosmo-paper), at this point, contributions to this project automatically grants you authorship to the paper :-)  
 Have a look at the [GitHub issues](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues) to see what is needed or if you have any thoughts on the design, and don't hesitate to join the [Gitter room](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo) for discussions.
 
 ## TL;DR
@@ -29,7 +31,7 @@ F = - jax.hessian(likelihood)(cosmo)
 This is how you can compute **gradients and hessians of any functions in `jax-cosmo`**,
 all of this without any finite differences.
 
-Check out a full example here: [![colab link](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/DifferentiableUniverseInitiative/jax_cosmo/blob/master/notebooks/jax-cosmo-intro.ipynb)
+Check out a full example here: [![colab link](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/DifferentiableUniverseInitiative/jax_cosmo/blob/master/docs/notebooks/jax-cosmo-intro.ipynb)
 
 Have a look at the [design document](design.md) to learn more about the structure of the code.
 
@@ -74,7 +76,27 @@ can come in several forms
   - (Pull) requests for more features
   - Examples and notebooks of cool things that can be done with the code
 
-You can chime-in on any aspects of the design by proposing a PR to the [design document](design.md).
+You can chime-in on any aspects of the design by proposing a PR to the [design document](design.md). The issue page is a good place to start, but don't hesitate to come chat in the Gitter room.
 
-The issue page is a good place to start, but don't hesitate to come chat in the
-Gitter room.
+This project follows the [All Contributors](https://allcontributors.org/) guidelines aiming at recognizing and valorizing
+contributions at any levels.  
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tr>
+    <td align="center"><a href="http://flanusse.net"><img src="https://avatars0.githubusercontent.com/u/861591?v=4" width="100px;" alt=""/><br /><sub><b>Francois Lanusse</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=EiffL" title="Code">💻</a></td>
+    <td align="center"><a href="http://www.cosmostat.org/people/santiago-casas"><img src="https://avatars0.githubusercontent.com/u/6987716?v=4" width="100px;" alt=""/><br /><sub><b>Santiago Casas</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues?q=author%3Asantiagocasas" title="Bug reports">🐛</a> <a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=santiagocasas" title="Code">💻</a></td>
+  </tr>
+</table>
+
+<!-- markdownlint-enable -->
+<!-- prettier-ignore-end -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!

@@ -128,4 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+docs/notebooks/dev
 notebooks/dev
