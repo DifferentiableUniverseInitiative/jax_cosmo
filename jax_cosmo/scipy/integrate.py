@@ -2,10 +2,11 @@ from functools import partial
 
 import jax
 import jax.numpy as np
+from jax import custom_jvp
 from jax import jit
 from jax import vmap
 
-__all__ = ["romb", "simps"]
+__all__ = ["romb", "simps", "my_simps"]
 
 # Romberg quadratures for numeric integration.
 #
@@ -197,4 +198,43 @@ def simps(f, a, b, N=128):
     x = np.linspace(a, b, N + 1)
     y = f(x)
     S = dx / 3 * np.sum(y[0:-1:2] + 4 * y[1::2] + y[2::2], axis=0)
+    return S
+
+
+def my_simps(func, a, b, *args, N=128):
+    if N % 2 == 1:
+        raise ValueError("N must be an even integer.")
+    dx = (b - a) / N
+    x = np.linspace(a, b, N + 1)
+    return _custom_simps(func, x, dx, *args)
+
+
+@partial(custom_jvp, nondiff_argnums=(0, 1, 2))
+def _custom_simps(func, x, dx, *args):
+    f = lambda x: func(x, *args)
+
+    @jax.remat
+    def loop_fn(carry, x):
+        y = f(x)
+        s = 4 * y[0] + 2 * y[1]
+        return carry + s, 0
+
+    r, _ = jax.lax.scan(loop_fn, f(np.atleast_1d(x[0]))[0], x[1:].reshape((-1, 2)))
+    S = dx / 3 * (r - f(np.atleast_1d(x[-1]))[0])
+    return S
+
+
+@_custom_simps.defjvp
+def _custom_simps_jvp(func, x, dx, primals, tangents):
+    # Define a new function that computes the jvp
+    f = lambda x: jax.jvp(lambda *args: func(x, *args), primals, tangents)
+
+    def loop_fn(carry, x):
+        c, *args = carry
+        s1 = f(x[0])
+        s2 = f(x[1])
+        return jax.tree_multimap(lambda a, b, c: a + 4 * b + 2 * c, carry, s1, s2), 0
+
+    r, _ = jax.lax.scan(loop_fn, f(x[0]), x[1:].reshape((-1, 2)))
+    S = jax.tree_multimap(lambda a, b: dx / 3 * (a - b), r, f(x[-1]))
     return S

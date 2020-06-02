@@ -14,6 +14,7 @@ import jax_cosmo.background as bkgrd
 import jax_cosmo.constants as const
 import jax_cosmo.power as power
 import jax_cosmo.transfer as tklib
+from jax_cosmo.scipy.integrate import my_simps
 from jax_cosmo.scipy.integrate import simps
 from jax_cosmo.utils import a2z
 from jax_cosmo.utils import z2a
@@ -72,7 +73,7 @@ def angular_cl(
     # We define a function that computes a single l, and vectorize it
     @partial(vmap, out_axes=1)
     def cl(ell):
-        def integrand(a):
+        def integrand(a, cosmo, probes):
             # Step 1: retrieve the associated comoving distance
             chi = bkgrd.radial_comoving_distance(cosmo, a)
 
@@ -99,7 +100,7 @@ def angular_cl(
             # We transpose the result just to make sure that na is first
             return result.T
 
-        return simps(integrand, z2a(zmax), 1.0, 512) / const.c ** 2
+        return my_simps(integrand, z2a(zmax), 1.0, cosmo, probes, N=256) / const.c ** 2
 
     return cl(ell)
 
