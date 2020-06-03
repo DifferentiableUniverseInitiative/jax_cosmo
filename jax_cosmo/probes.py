@@ -63,9 +63,9 @@ def mag_kernel(cosmo, pzs, z, ell, s):
         # Stack the dndz of all redshift bins
         dndz = np.stack([pz(z_prime) for pz in pzs], axis=0)
         
-        mag_lim = (2.0-5.0*s(z_prime))/2.0
+        mag_lim = (2.0-5.0*s(cosmo, z_prime))/2.0
         
-        return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
+        return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)*mag_lim
 
     # Computes the radial weak lensing kernel
     radial_kernel = np.squeeze(simps(integrand, z, zmax, 256) * (1.0 + z) * chi)

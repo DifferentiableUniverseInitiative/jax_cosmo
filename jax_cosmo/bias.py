@@ -26,6 +26,22 @@ class constant_linear_bias(container):
         b = self.params[0]
         return b * np.ones_like(z)
 
+    
+
+@register_pytree_node_class
+class test_mag_bias(container):
+    """
+    Class representing a more complex bias for magnitude biasing term, just for testing?
+
+    Parameters:
+    -----------
+    b: redshift independent bias value
+    """
+
+    def __call__(self, cosmo, z):
+        b = self.params[0]
+        return 2.0/5.0 + b * np.sqrt(1.0+z)
+
 
 @register_pytree_node_class
 class inverse_growth_linear_bias(container):
