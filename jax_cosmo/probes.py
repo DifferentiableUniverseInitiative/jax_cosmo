@@ -49,7 +49,7 @@ def mag_kernel(cosmo, pzs, z, ell, s):
     Returns a magnification kernel
     
     Needs magnification bias function 
-    s = logarithmic derivative of the numbero f sources with magnitude limit
+    s = "logarithmic derivative of the number of sources with magnitude limit", a function valid for all z in z_prime
     
     """
     z = np.atleast_1d(z)
@@ -63,7 +63,7 @@ def mag_kernel(cosmo, pzs, z, ell, s):
         # Stack the dndz of all redshift bins
         dndz = np.stack([pz(z_prime) for pz in pzs], axis=0)
         
-        mag_lim = (2.0-5.0*s(z_prime))  2.0
+        mag_lim = (2.0-5.0*s(z_prime))/2.0
         
         return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
 
@@ -241,23 +241,22 @@ class WeakLensing(container):
         return sigma_e ** 2 / ngals
 
 
-@register_pytree_node_class
 class NumberCounts(container):
     """ Class representing a galaxy clustering probe, with a bunch of bins
-
     Parameters:
     -----------
     redshift_bins: nzredshift distributions
-
     Configuration:
     --------------
     has_rsd....
+    mag_bias....
     """
 
-    def __init__(self, redshift_bins, bias, has_rsd=False, **kwargs):
+    def __init__(self, redshift_bins, bias, has_rsd=False,mag_bias=False, **kwargs):
         super(NumberCounts, self).__init__(
-            redshift_bins, bias, has_rsd=has_rsd, **kwargs
+            redshift_bins, bias, has_rsd=has_rsd,mag_bias=mag_bias, **kwargs
         )
+        self.mag_bias =mag_bias
 
     @property
     def zmax(self):
@@ -288,6 +287,10 @@ class NumberCounts(container):
         pzs, bias = self.params
         # Retrieve density kernel
         kernel = density_kernel(cosmo, pzs, bias, z, ell)
+        
+        if self.mag_bias:
+            kernel += mag_kernel(cosmo, pzs, z, ell, self.mag_bias)
+           
         return kernel
 
     def noise(self):
