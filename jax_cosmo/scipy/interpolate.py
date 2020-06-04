@@ -1,10 +1,10 @@
 # This module contains some missing ops from jax
 import functools
 import jax.numpy as np
+from jax.numpy import zeros, ones, array, concatenate
 from jax import jit
 from jax import vmap
 from jax import grad
-from jax import ops
 
 __all__ = ["interp"]
 
@@ -35,7 +35,7 @@ def interp(x, xp, fp):
 
 
 class InterpolatedUnivariateSpline(object):
-    def __init__(self, x, y, k, endpoints="natural"):
+    def __init__(self, x, y, k, endpoints="not-a-knot"):
         """JAX implementation of kth-order spline interpolation.
 
         This class aims to reproduce scipy's InterpolatedUnivariateSpline
@@ -85,17 +85,16 @@ class InterpolatedUnivariateSpline(object):
         The number of data points must be larger than the spline degree `k`.
 
         The general form of the spline can be written as
-            f[i](t) = a[i] + b[i] * t + c[i] * t**2 + d[i] * t**3,
-            0 <= t <= 1,
-            i = 0, ..., m-1,
+          f[i](x) = a[i] + b[i](x - x[i]) + c[i](x - x[i])^2 + d[i](x - x[i])^3,
+          i = 0, ..., n-1,
         where d = 0 for `k` = 2, and c = d = 0 for `k` = 1.
 
         The unknown coefficients (a, b, c, d) define a symmetric, diagonal
-        linear system of equations, Ab = s, where b are the values of the first
-        derivatives of the spline at anchor points x (i.e., t = 0). In all
-        three `k` cases, the coefficients defining each spline piece can be
-        expressed in terms of only b[i], b[i+1], y[i], and y[i+1]. They are
-        solved for using `np.linalg.solve` when `k` = {2, 3}.
+        linear system of equations, Az = s, where z = b for `k` = 1 and `k` = 2,
+        and z = c for `k` = 3. In each case, the coefficients defining each
+        spline piece can be expressed in terms of only z[i], z[i+1],
+        y[i], and y[i+1]. The coefficients are solved for using
+        `np.linalg.solve` when `k` = 2 and `k` = 3.
 
         """
         # Verify inputs
@@ -107,55 +106,64 @@ class InterpolatedUnivariateSpline(object):
         assert x.ndim == 1 and y.ndim == 1, "Input arrays must be 1D."
         n_data = len(x)
 
-        # Build the matrix for the linear system of equations depending on k
+        # Difference vectors
+        h = np.diff(x)  # x[i+1] - x[i] for i=0,...,n-1
+        p = np.diff(y)  # y[i+1] - y[i]
+
+        # Build the linear system of equations depending on k
+        # (No matrix necessary for k=1)
+        if k == 1:
+            assert n_data > 1, "Not enough input points for linear spline."
+            self._b = p / h
+
         if k == 2:
             assert n_data > 2, "Not enough input points for quadratic spline."
 
             # Construct the bi-diagonal matrix A
-            main_diag = np.ones(n_data)
-            off_diag = np.ones(n_data - 1)
-            A = np.diag(main_diag) + np.diag(off_diag, k=1)
+            A = np.diag(ones(n_data)) + np.diag(ones(n_data - 1), k=-1)
 
             # Build the RHS vector s
-            s = np.zeros(n_data)
-            s = ops.index_update(s, ops.index[:-1], 2 * (y[1:] - y[:-1]))
+            s = concatenate((array([0.]), 2 * p / h))
+
+            # Compute spline coefficients by solving the system
+            self._b = np.linalg.solve(A, s)
 
         if k == 3:
             assert n_data > 3, "Not enough input points for cubic spline."
 
-            # Construct the tri-diagonal matrix A
-            main_diag = 2 * np.ones(n_data)
-            main_diag = ops.index_update(main_diag, ops.index[1:-1], 4)
-            off_diag = np.ones(n_data - 1)
-            A = np.diag(main_diag) + np.diag(off_diag, k=-1) + np.diag(off_diag, k=1)
-
-            # Build the RHS vector s
-            s = np.zeros(n_data)
-            s = ops.index_update(s, ops.index[1:-1], 3 * (y[2:] - y[:-2]))
-            s = ops.index_update(s, ops.index[0], 3 * (y[1] - y[0]))
-            s = ops.index_update(s, ops.index[-1], 3 * (y[-1] - y[-2]))
-
-            # Modify first and last equations depending on endpoints
             if endpoints not in ("natural", "not-a-knot"):
                 print("Warning : endpoints not recognized. Using natural.")
-            if endpoints == "not-a-knot":
-                A = ops.index_update(A, ops.index[0, :3], [1, 0, -1])
-                A = ops.index_update(A, ops.index[-1, -3:], [1, 0, -1])
-                s = ops.index_update(s, ops.index[0],
-                                     2 * (2 * y[1] - y[0] - y[2]))
-                s = ops.index_update(s, ops.index[-1],
-                                     2 * (2 * y[-2] - y[-3] - y[-1]))
+                endpoints = "natural"
 
-        # Compute spline coefficients by solving the system
-        if k == 1:
-            assert n_data > 1, "Not enough input points for linear spline."
-            self._b = y[1:] - y[:-1]
-        else:
-            self._b = np.linalg.solve(A, s)
+            # Special values for the first and last equations
+            zero = array([0.])
+            one = array([1.])
+            A00 = one if endpoints == "natural" else array([h[1]])
+            A01 = zero if endpoints == "natural" else array([-(h[0] + h[1])])
+            A02 = zero if endpoints == "natural" else array([h[0]])
+            ANN = one if endpoints == "natural" else array([h[-2]])
+            AN1 = -one if endpoints == "natural" else array([-(h[-2] + h[-1])])  # A[N, N-1]
+            AN2 = zero if endpoints == "natural" else array([h[-1]])  # A[N, N-2]
+
+            # Construct the tri-diagonal matrix A
+            A = np.diag(concatenate((A00, 2 * (h[:-1] + h[1:]), ANN)))
+            upper_diag1 = np.diag(concatenate((A01, h[1:])), k=1)
+            upper_diag2 = np.diag(concatenate((A02, zeros(n_data - 3))), k=2)
+            lower_diag1 = np.diag(concatenate((h[:-1], AN1)), k=-1)
+            lower_diag2 = np.diag(concatenate((zeros(n_data - 3), AN2)), k=-2)
+            A += upper_diag1 + upper_diag2 + lower_diag1 + lower_diag2
+
+            # Construct RHS vector s
+            center = 3 * (p[1:] / h[1:] - p[:-1] / h[:-1])
+            s = concatenate((zero, center, zero))
+
+            # Compute spline coefficients by solving the system
+            self._c = np.linalg.solve(A, s)
 
         # Save for evaluations
         self.k = k
         self.x = x
+        self._h = h
         self.y = y
         self.n_data = n_data
 
@@ -165,59 +173,63 @@ class InterpolatedUnivariateSpline(object):
 
         Notes
         -----
-        No extrapolation is currently implemented. Input values
-        should lie within the bounds x[0] <= x <= x[-1].
+        Values are extrapolated if x is outside of the original domain
+        of knots. If x is less than the left-most knot, the spline piece
+        f[0] is used for the evaluation; similarly for x beyond the
+        right-most point.
 
         """
         if self.k == 1:
-            t, h, a, b = self._compute_coeffs(x)
+            t, a, b = self._compute_coeffs(x)
             result = a + b * t
 
         if self.k == 2:
-            t, h, a, b, c = self._compute_coeffs(x)
+            t, a, b, c = self._compute_coeffs(x)
             result = a + b * t + c * np.power(t, 2)
 
         if self.k == 3:
-            t, h, a, b, c, d = self._compute_coeffs(x)
+            t, a, b, c, d = self._compute_coeffs(x)
             result = a + b * t + c * np.power(t, 2) + d * np.power(t, 3)
 
         return result
 
     @functools.partial(jit, static_argnums=(0,))
     def _compute_coeffs(self, x):
-        """Compute spline coeffs and parameter t for a given x.
-
-        Notes
-        -----
-        An implicit extrapolation occurs here if x is outside of
-        the original domain of fixed interpolation points. If
-        x is less than the left-most point, f[0] is used for the
-        evaluation; similarly for x beyond the right-most point.
-
-        """
+        """Compute the spline coefficients for a given x."""
         # Determine the interval that x lies in
         ind = np.digitize(x, self.x) - 1
         # Include the right endpoint in spline piece C[m-1]
         ind = np.clip(ind, 0, self.n_data - 2)
 
-
-        h = self.x[ind + 1] - self.x[ind]
-        t = (x - self.x[ind]) / h
+        t = x - self.x[ind]
         a = self.y[ind]
-        b = self._b[ind]
-        b1 = self._b[ind + 1]
 
         if self.k == 1:
-            result = (t, h, a, b)
+            result = (t, a, self._b[ind])
 
         if self.k == 2:
-            c = 0.5 * (b1 - b)
-            result = (t, h, a, b, c)
+            # Necessities
+            h = self._h[ind]
+            a1 = self.y[ind + 1]
+            b = self._b[ind]
+
+            # Remaining coefficient
+            c = (a1 - a) / np.power(h, 2) - b / h
+
+            result = (t, a, b, c)
 
         if self.k == 3:
-            c = 3 * (self.y[ind + 1] - self.y[ind]) - 2 * b - b1
-            d = 2 * (self.y[ind] - self.y[ind + 1]) + b + b1
-            result = (t, h, a, b, c, d)
+            # Necessities
+            h = self._h[ind]
+            a1 = self.y[ind + 1]
+            c = self._c[ind]
+            c1 = self._c[ind + 1]
+
+            # Remaining coefficients of the spline
+            b = (a1 - a) / h - (2 * c + c1) * h / 3.
+            d = (c1 - c) / (3 * h)
+
+            result = (t, a, b, c, d)
 
         return result
 
@@ -235,26 +247,26 @@ class InterpolatedUnivariateSpline(object):
         else:
             # Linear
             if self.k == 1:
-                t, h, a, b = self._compute_coeffs(x)
-                result = b / h
+                t, a, b = self._compute_coeffs(x)
+                result = b
 
             # Quadratic
             if self.k == 2:
-                t, h, a, b, c = self._compute_coeffs(x)
+                t, a, b, c = self._compute_coeffs(x)
                 if n == 1:
-                    result = (b + 2 * c * t) / h
+                    result = b + 2 * c * t
                 if n == 2:
-                    result = 2 * c / np.power(h, 2)
+                    result = 2 * c
 
             # Cubic
             if self.k == 3:
-                t, h, a, b, c, d = self._compute_coeffs(x)
+                t, a, b, c, d = self._compute_coeffs(x)
                 if n == 1:
-                    result = (b + 2 * c * t + 3 * d * np.power(t, 2)) / h
+                    result = b + 2 * c * t + 3 * d * np.power(t, 2)
                 if n == 2:
-                    result = (2 * c + 6 * d * t) / np.power(h, 2)
+                    result = 2 * c + 6 * d * t
                 if n == 3:
-                    result = 6 * d / np.power(h, 3)
+                    result = 6 * d
 
         return result
 
