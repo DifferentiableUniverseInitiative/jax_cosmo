@@ -439,7 +439,7 @@ def growth_rate(cosmo, a):
         return _growth_rate_ODE(cosmo, a)
 
 
-def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=32):
+def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=64):
     """ Compute linear growth factor D(a) at a given scale factor,
     normalised such that D(a=1) = 1.
 
@@ -514,7 +514,7 @@ def _growth_rate_ODE(cosmo, a):
     return cache["f"](a)
 
 
-def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=32):
+def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=64):
     r""" Computes growth factor by integrating the growth rate provided by the
     \gamma parametrization. Normalized such that D( a=1) =1
 

@@ -22,7 +22,7 @@ def test_lensing_cl():
         n_s=0.96,
         Neff=0,
         transfer_function="eisenstein_hu",
-        matter_power_spectrum="halofit",
+        matter_power_spectrum="linear",
     )
 
     cosmo_jax = Cosmology(
@@ -43,13 +43,13 @@ def test_lensing_cl():
     tracer_jax = probes.WeakLensing([nz])
 
     # Get an ell range for the cls
-    ell = np.logspace(0.1, 4)
+    ell = np.logspace(1, 4)
 
     # Compute the cls
     cl_ccl = ccl.angular_cl(cosmo_ccl, tracer_ccl, tracer_ccl, ell)
     cl_jax = angular_cl(cosmo_jax, ell, [tracer_jax])
 
-    assert_allclose(cl_ccl, cl_jax[0], rtol=0.5e-2)
+    assert_allclose(cl_ccl, cl_jax[0], rtol=5e-3)
 
 
 def test_lensing_cl_IA():
@@ -62,7 +62,7 @@ def test_lensing_cl_IA():
         n_s=0.96,
         Neff=0,
         transfer_function="eisenstein_hu",
-        matter_power_spectrum="halofit",
+        matter_power_spectrum="linear",
     )
 
     cosmo_jax = Cosmology(
@@ -90,13 +90,13 @@ def test_lensing_cl_IA():
     tracer_jax = probes.WeakLensing([nz], bias)
 
     # Get an ell range for the cls
-    ell = np.logspace(0.1, 4)
+    ell = np.logspace(1, 4)
 
     # Compute the cls
     cl_ccl = ccl.angular_cl(cosmo_ccl, tracer_ccl, tracer_ccl, ell)
     cl_jax = angular_cl(cosmo_jax, ell, [tracer_jax])
 
-    assert_allclose(cl_ccl, cl_jax[0], rtol=1e-2)
+    assert_allclose(cl_ccl, cl_jax[0], rtol=5e-3)
 
 
 def test_clustering_cl():
@@ -109,7 +109,7 @@ def test_clustering_cl():
         n_s=0.96,
         Neff=0,
         transfer_function="eisenstein_hu",
-        matter_power_spectrum="halofit",
+        matter_power_spectrum="linear",
     )
 
     cosmo_jax = Cosmology(
@@ -136,10 +136,10 @@ def test_clustering_cl():
     tracer_jax = probes.NumberCounts([nz], bias)
 
     # Get an ell range for the cls
-    ell = np.logspace(0.1, 4)
+    ell = np.logspace(1, 4)
 
     # Compute the cls
     cl_ccl = ccl.angular_cl(cosmo_ccl, tracer_ccl, tracer_ccl, ell)
     cl_jax = angular_cl(cosmo_jax, ell, [tracer_jax])
 
-    assert_allclose(cl_ccl, cl_jax[0], rtol=0.5e-2)
+    assert_allclose(cl_ccl, cl_jax[0], rtol=5e-3)
