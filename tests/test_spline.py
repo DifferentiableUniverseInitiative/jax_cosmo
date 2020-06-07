@@ -28,6 +28,11 @@ def test_linear_spline():
 
     assert_allclose(spl_ref(t), spl(t), rtol=1e-10)
 
+    # Test the antiderivative, up to integration constant
+    a = spl_ref.antiderivative()(t) - spl_ref.antiderivative()(0.01)
+    b = spl.antiderivative(t) - spl.antiderivative(0.01)
+    assert_allclose(a, b, rtol=1e-10)
+
 
 def test_quadratic_spline():
     # We sample some irregularly sampled points
@@ -43,6 +48,11 @@ def test_quadratic_spline():
 
     assert_allclose(spl_ref(t), spl(t), rtol=1e-10)
 
+    # Test the antiderivative, up to integration constant
+    a = spl_ref.antiderivative()(t) - spl_ref.antiderivative()(0.01)
+    b = spl.antiderivative(t) - spl.antiderivative(0.01)
+    assert_allclose(a, b, rtol=1e-10)
+
 
 def test_cubic_spline():
     # We sample some irregularly sampled points
@@ -57,3 +67,8 @@ def test_cubic_spline():
     t = np.linspace(-1, 11, 128)
 
     assert_allclose(spl_ref(t), spl(t), rtol=1e-10)
+
+    # Test the antiderivative, up to integration constant
+    a = spl_ref.antiderivative()(t) - spl_ref.antiderivative()(0.01)
+    b = spl.antiderivative(t) - spl.antiderivative(0.01)
+    assert_allclose(a, b, rtol=1e-10)

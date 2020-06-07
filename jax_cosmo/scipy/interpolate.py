@@ -242,7 +242,7 @@ class InterpolatedUnivariateSpline(object):
         return cls(x, y, coefficients=coefficients, **aux_data)
 
     def __call__(self, x):
-        """Jitted evaluation of the spline.
+        """Evaluation of the spline.
 
         Notes
         -----
@@ -316,7 +316,7 @@ class InterpolatedUnivariateSpline(object):
         return result
 
     def derivative(self, x, n=1):
-        """Jitted analytic nth derivative of the spline.
+        """Analytic nth derivative of the spline.
 
         The spline has derivatives up to its order k.
 
@@ -350,3 +350,93 @@ class InterpolatedUnivariateSpline(object):
                     result = 6 * d
 
         return result
+
+    def antiderivative(self, xs):
+        """
+        Computes the antiderivative of first order of this spline
+        """
+        # Retrieve parameters
+        x, y, coefficients = self._x, self._y, self._coefficients
+
+        # In case of quadratic, we redefine the knots
+        if self.k == 2:
+            knots = (x[1:] + x[:-1]) / 2.0
+            # We add 2 artificial knots before and after
+            knots = np.concatenate(
+                [
+                    np.array([x[0] - (x[1] - x[0]) / 2.0]),
+                    knots,
+                    np.array([x[-1] + (x[-1] - x[-2]) / 2.0]),
+                ]
+            )
+        else:
+            knots = x
+
+        # Determine the interval that x lies in
+        ind = np.digitize(xs, knots) - 1
+        # Include the right endpoint in spline piece C[m-1]
+        ind = np.clip(ind, 0, len(knots) - 2)
+        t = xs - knots[ind]
+
+        if self.k == 1:
+            a = y[:-1]
+            b = coefficients
+            h = np.diff(knots)
+            cst = np.concatenate([np.zeros(1), np.cumsum(a * h + b * h ** 2 / 2)])
+            return cst[ind] + a[ind] * t + b[ind] * t ** 2 / 2
+
+        if self.k == 2:
+            h = np.diff(knots)
+            dt = x - knots[:-1]
+            b = coefficients[:-1]
+            b1 = coefficients[1:]
+            a = y - b * dt - (b1 - b) * dt ** 2 / (2 * h)
+            c = (b1 - b) / (2 * h)
+            cst = np.concatenate(
+                [np.zeros(1), np.cumsum(a * h + b * h ** 2 / 2 + c * h ** 3 / 3)]
+            )
+            return cst[ind] + a[ind] * t + b[ind] * t ** 2 / 2 + c[ind] * t ** 3 / 3
+
+        if self.k == 3:
+            h = np.diff(knots)
+            c = coefficients[:-1]
+            c1 = coefficients[1:]
+            a = y[:-1]
+            a1 = y[1:]
+            b = (a1 - a) / h - (2 * c + c1) * h / 3.0
+            d = (c1 - c) / (3 * h)
+            cst = np.concatenate(
+                [
+                    np.zeros(1),
+                    np.cumsum(a * h + b * h ** 2 / 2 + c * h ** 3 / 3 + d * h ** 4 / 4),
+                ]
+            )
+            return (
+                cst[ind]
+                + a[ind] * t
+                + b[ind] * t ** 2 / 2
+                + c[ind] * t ** 3 / 3
+                + d[ind] * t ** 4 / 4
+            )
+
+    def integral(self, a, b):
+        """
+        Compute a definite integral over a piecewise polynomial.
+        Parameters
+        ----------
+        a : float
+            Lower integration bound
+        b : float
+            Upper integration bound
+        Returns
+        -------
+        ig : array_like
+            Definite integral of the piecewise polynomial over [a, b]
+        """
+        # Swap integration bounds if needed
+        sign = 1
+        if b < a:
+            a, b = b, a
+            sign = -1
+        xs = np.array([a, b])
+        return sign * np.diff(self.antiderivative(xs))
