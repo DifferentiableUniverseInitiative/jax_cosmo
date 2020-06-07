@@ -1,16 +1,20 @@
 # This module contains some missing ops from jax
 import functools
+
 import jax.numpy as np
-from jax.numpy import zeros, ones, array, concatenate
-from jax import jit
 from jax import vmap
-from jax import grad
+from jax.numpy import array
+from jax.numpy import concatenate
+from jax.numpy import ones
+from jax.numpy import zeros
+from jax.tree_util import register_pytree_node_class
 
 __all__ = ["interp"]
 
+
 @functools.partial(vmap, in_axes=(0, None, None))
 def interp(x, xp, fp):
-  """
+    """
   Simple equivalent of np.interp that compute a linear interpolation.
 
   We are not doing any checks, so make sure your query points are lying
@@ -20,22 +24,25 @@ def interp(x, xp, fp):
 
   x, xp, fp need to be 1d arrays
   """
-  # First we find the nearest neighbour
-  ind = np.argmin((x - xp)**2)
+    # First we find the nearest neighbour
+    ind = np.argmin((x - xp) ** 2)
 
-  # Perform linear interpolation
-  ind = np.clip(ind, 1, len(xp)-2)
+    # Perform linear interpolation
+    ind = np.clip(ind, 1, len(xp) - 2)
 
-  xi = xp[ind]
-  # Figure out if we are on the right or the left of nearest
-  s = np.sign(np.clip(x, xp[1], xp[-2]) - xi).astype(np.int64)
-  a = (fp[ind + np.copysign(1,s)] - fp[ind])/(xp[ind+ np.copysign(1,s)] - xp[ind])
-  b = fp[ind] - a*xp[ind]
-  return a*x + b
+    xi = xp[ind]
+    # Figure out if we are on the right or the left of nearest
+    s = np.sign(np.clip(x, xp[1], xp[-2]) - xi).astype(np.int64)
+    a = (fp[ind + np.copysign(1, s)] - fp[ind]) / (
+        xp[ind + np.copysign(1, s)] - xp[ind]
+    )
+    b = fp[ind] - a * xp[ind]
+    return a * x + b
 
 
+@register_pytree_node_class
 class InterpolatedUnivariateSpline(object):
-    def __init__(self, x, y, k, endpoints="not-a-knot"):
+    def __init__(self, x, y, k=3, endpoints="not-a-knot", coefficients=None):
         """JAX implementation of kth-order spline interpolation.
 
         This class aims to reproduce scipy's InterpolatedUnivariateSpline
@@ -70,6 +77,9 @@ class InterpolatedUnivariateSpline(object):
             left-most `x` of the domain, as well as for the two
             right-most `x`. The original scipy implementation uses
             'not-a-knot'.
+        coefficients: list, optional
+            Precomputed parameters for spline interpolation. Shouldn't be set
+            manually.
 
         See Also
         --------
@@ -110,64 +120,127 @@ class InterpolatedUnivariateSpline(object):
         h = np.diff(x)  # x[i+1] - x[i] for i=0,...,n-1
         p = np.diff(y)  # y[i+1] - y[i]
 
-        # Build the linear system of equations depending on k
-        # (No matrix necessary for k=1)
-        if k == 1:
-            assert n_data > 1, "Not enough input points for linear spline."
-            self._b = p / h
+        if coefficients is None:
+            # Build the linear system of equations depending on k
+            # (No matrix necessary for k=1)
+            if k == 1:
+                assert n_data > 1, "Not enough input points for linear spline."
+                coefficients = p / h
 
-        if k == 2:
-            assert n_data > 2, "Not enough input points for quadratic spline."
+            if k == 2:
+                assert n_data > 2, "Not enough input points for quadratic spline."
+                assert endpoints == "not-a-knot"  # I have only validated this
+                # And actually I think it's probably the best choice of border condition
 
-            # Construct the bi-diagonal matrix A
-            A = np.diag(ones(n_data)) + np.diag(ones(n_data - 1), k=-1)
+                # The knots are actually in between data points
+                knots = (x[1:] + x[:-1]) / 2.0
+                # We add 2 artificial knots before and after
+                knots = np.concatenate(
+                    [
+                        np.array([x[0] - (x[1] - x[0]) / 2.0]),
+                        knots,
+                        np.array([x[-1] + (x[-1] - x[-2]) / 2.0]),
+                    ]
+                )
+                n = len(knots)
+                # Compute interval lenghts for these new knots
+                h = np.diff(knots)
+                # postition of data point inside the interval
+                dt = x - knots[:-1]
 
-            # Build the RHS vector s
-            s = concatenate((array([0.]), 2 * p / h))
+                # Now we build the system natrix
+                A = np.diag(
+                    np.concatenate(
+                        [
+                            np.ones(1),
+                            (
+                                2 * dt[1:]
+                                - dt[1:] ** 2 / h[1:]
+                                - dt[:-1] ** 2 / h[:-1]
+                                + h[:-1]
+                            ),
+                            np.ones(1),
+                        ]
+                    )
+                )
 
-            # Compute spline coefficients by solving the system
-            self._b = np.linalg.solve(A, s)
+                A += np.diag(
+                    np.concatenate([-np.array([1 + h[0] / h[1]]), dt[1:] ** 2 / h[1:]]),
+                    k=1,
+                )
+                A += np.diag(
+                    np.concatenate([np.atleast_1d(h[0] / h[1]), np.zeros(n - 3)]), k=2
+                )
 
-        if k == 3:
-            assert n_data > 3, "Not enough input points for cubic spline."
+                A += np.diag(
+                    np.concatenate(
+                        [
+                            h[:-1] - 2 * dt[:-1] + dt[:-1] ** 2 / h[:-1],
+                            -np.array([1 + h[-1] / h[-2]]),
+                        ]
+                    ),
+                    k=-1,
+                )
+                A += np.diag(
+                    np.concatenate([np.zeros(n - 3), np.atleast_1d(h[-1] / h[-2])]),
+                    k=-2,
+                )
 
-            if endpoints not in ("natural", "not-a-knot"):
-                print("Warning : endpoints not recognized. Using natural.")
-                endpoints = "natural"
+                # And now we build the RHS vector
+                s = np.concatenate([np.zeros(1), 2 * p, np.zeros(1)])
 
-            # Special values for the first and last equations
-            zero = array([0.])
-            one = array([1.])
-            A00 = one if endpoints == "natural" else array([h[1]])
-            A01 = zero if endpoints == "natural" else array([-(h[0] + h[1])])
-            A02 = zero if endpoints == "natural" else array([h[0]])
-            ANN = one if endpoints == "natural" else array([h[-2]])
-            AN1 = -one if endpoints == "natural" else array([-(h[-2] + h[-1])])  # A[N, N-1]
-            AN2 = zero if endpoints == "natural" else array([h[-1]])  # A[N, N-2]
+                # Compute spline coefficients by solving the system
+                coefficients = np.linalg.solve(A, s)
 
-            # Construct the tri-diagonal matrix A
-            A = np.diag(concatenate((A00, 2 * (h[:-1] + h[1:]), ANN)))
-            upper_diag1 = np.diag(concatenate((A01, h[1:])), k=1)
-            upper_diag2 = np.diag(concatenate((A02, zeros(n_data - 3))), k=2)
-            lower_diag1 = np.diag(concatenate((h[:-1], AN1)), k=-1)
-            lower_diag2 = np.diag(concatenate((zeros(n_data - 3), AN2)), k=-2)
-            A += upper_diag1 + upper_diag2 + lower_diag1 + lower_diag2
+            if k == 3:
+                assert n_data > 3, "Not enough input points for cubic spline."
+                if endpoints not in ("natural", "not-a-knot"):
+                    print("Warning : endpoints not recognized. Using natural.")
+                    endpoints = "natural"
 
-            # Construct RHS vector s
-            center = 3 * (p[1:] / h[1:] - p[:-1] / h[:-1])
-            s = concatenate((zero, center, zero))
+                # Special values for the first and last equations
+                zero = array([0.0])
+                one = array([1.0])
+                A00 = one if endpoints == "natural" else array([h[1]])
+                A01 = zero if endpoints == "natural" else array([-(h[0] + h[1])])
+                A02 = zero if endpoints == "natural" else array([h[0]])
+                ANN = one if endpoints == "natural" else array([h[-2]])
+                AN1 = (
+                    -one if endpoints == "natural" else array([-(h[-2] + h[-1])])
+                )  # A[N, N-1]
+                AN2 = zero if endpoints == "natural" else array([h[-1]])  # A[N, N-2]
 
-            # Compute spline coefficients by solving the system
-            self._c = np.linalg.solve(A, s)
+                # Construct the tri-diagonal matrix A
+                A = np.diag(concatenate((A00, 2 * (h[:-1] + h[1:]), ANN)))
+                upper_diag1 = np.diag(concatenate((A01, h[1:])), k=1)
+                upper_diag2 = np.diag(concatenate((A02, zeros(n_data - 3))), k=2)
+                lower_diag1 = np.diag(concatenate((h[:-1], AN1)), k=-1)
+                lower_diag2 = np.diag(concatenate((zeros(n_data - 3), AN2)), k=-2)
+                A += upper_diag1 + upper_diag2 + lower_diag1 + lower_diag2
 
-        # Save for evaluations
+                # Construct RHS vector s
+                center = 3 * (p[1:] / h[1:] - p[:-1] / h[:-1])
+                s = concatenate((zero, center, zero))
+                # Compute spline coefficients by solving the system
+                coefficients = np.linalg.solve(A, s)
+
+        # Saving spline parameters for evaluation later
         self.k = k
-        self.x = x
-        self._h = h
-        self.y = y
-        self.n_data = n_data
+        self._x = x
+        self._y = y
+        self._coefficients = coefficients
 
-    @functools.partial(jit, static_argnums=(0,))
+    # Operations for flattening/unflattening representation
+    def tree_flatten(self):
+        children = (self._x, self._y, self._coefficients)
+        aux_data = {"endpoints": self._endpoints, "k": self.k}
+        return (children, aux_data)
+
+    @classmethod
+    def tree_unflatten(cls, aux_data, children):
+        x, y, coefficients = children
+        return cls(x, y, coefficients=coefficients, **aux_data)
+
     def __call__(self, x):
         """Jitted evaluation of the spline.
 
@@ -185,56 +258,64 @@ class InterpolatedUnivariateSpline(object):
 
         if self.k == 2:
             t, a, b, c = self._compute_coeffs(x)
-            result = a + b * t + c * np.power(t, 2)
+            result = a + b * t + c * t ** 2
 
         if self.k == 3:
             t, a, b, c, d = self._compute_coeffs(x)
-            result = a + b * t + c * np.power(t, 2) + d * np.power(t, 3)
+            result = a + b * t + c * t ** 2 + d * t ** 3
 
         return result
 
-    @functools.partial(jit, static_argnums=(0,))
-    def _compute_coeffs(self, x):
+    def _compute_coeffs(self, xs):
         """Compute the spline coefficients for a given x."""
-        # Determine the interval that x lies in
-        ind = np.digitize(x, self.x) - 1
-        # Include the right endpoint in spline piece C[m-1]
-        ind = np.clip(ind, 0, self.n_data - 2)
+        # Retrieve parameters
+        x, y, coefficients = self._x, self._y, self._coefficients
 
-        t = x - self.x[ind]
-        a = self.y[ind]
+        # In case of quadratic, we redefine the knots
+        if self.k == 2:
+            knots = (x[1:] + x[:-1]) / 2.0
+            # We add 2 artificial knots before and after
+            knots = np.concatenate(
+                [
+                    np.array([x[0] - (x[1] - x[0]) / 2.0]),
+                    knots,
+                    np.array([x[-1] + (x[-1] - x[-2]) / 2.0]),
+                ]
+            )
+        else:
+            knots = x
+
+        # Determine the interval that x lies in
+        ind = np.digitize(xs, knots) - 1
+        # Include the right endpoint in spline piece C[m-1]
+        ind = np.clip(ind, 0, len(knots) - 2)
+        t = xs - knots[ind]
+        h = np.diff(knots)[ind]
 
         if self.k == 1:
-            result = (t, a, self._b[ind])
+            a = y[ind]
+            result = (t, a, coefficients[ind])
 
         if self.k == 2:
-            # Necessities
-            h = self._h[ind]
-            a1 = self.y[ind + 1]
-            b = self._b[ind]
-
-            # Remaining coefficient
-            c = (a1 - a) / np.power(h, 2) - b / h
-
+            dt = (x - knots[:-1])[ind]
+            b = coefficients[ind]
+            b1 = coefficients[ind + 1]
+            a = y[ind] - b * dt - (b1 - b) * dt ** 2 / (2 * h)
+            c = (b1 - b) / (2 * h)
             result = (t, a, b, c)
 
         if self.k == 3:
-            # Necessities
-            h = self._h[ind]
-            a1 = self.y[ind + 1]
-            c = self._c[ind]
-            c1 = self._c[ind + 1]
-
-            # Remaining coefficients of the spline
-            b = (a1 - a) / h - (2 * c + c1) * h / 3.
+            c = coefficients[ind]
+            c1 = coefficients[ind + 1]
+            a = y[ind]
+            a1 = y[ind + 1]
+            b = (a1 - a) / h - (2 * c + c1) * h / 3.0
             d = (c1 - c) / (3 * h)
-
             result = (t, a, b, c, d)
 
         return result
 
-    @functools.partial(jit, static_argnums=(0, 2,))
-    def derivative(self, x, n):
+    def derivative(self, x, n=1):
         """Jitted analytic nth derivative of the spline.
 
         The spline has derivatives up to its order k.
@@ -262,30 +343,10 @@ class InterpolatedUnivariateSpline(object):
             if self.k == 3:
                 t, a, b, c, d = self._compute_coeffs(x)
                 if n == 1:
-                    result = b + 2 * c * t + 3 * d * np.power(t, 2)
+                    result = b + 2 * c * t + 3 * d * t ** 2
                 if n == 2:
                     result = 2 * c + 6 * d * t
                 if n == 3:
                     result = 6 * d
 
         return result
-
-    @functools.partial(jit, static_argnums=(0, 2,))
-    @functools.partial(vmap, in_axes=(None, 0, None))
-    def autodiff(self, x, n):
-        """Jitted autodiff nth derivative of the spline.
-
-        The spline has derivatives up to its order k.
-
-        """
-        assert n in range(self.k + 1), "Invalid n."
-
-        if n == 0:
-            return self.__call__(x)
-        else:
-            if n == 1:
-                return grad(self.__call__)(x)
-            if n == 2:
-                return grad(grad(self.__call__))(x)
-            if n == 3:
-                return grad(grad(grad(self.__call__)))(x)
