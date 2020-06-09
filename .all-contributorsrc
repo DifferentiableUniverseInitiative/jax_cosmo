@@ -23,6 +23,15 @@
         "bug",
         "code"
       ]
+    },
+    {
+      "login": "austinpeel",
+      "name": "Austin Peel",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/17024310?v=4",
+      "profile": "https://github.com/austinpeel",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
