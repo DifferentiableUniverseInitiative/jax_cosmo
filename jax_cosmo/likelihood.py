@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 import jax.numpy as np
+import jax.scipy as sp
 
 from jax_cosmo.angular_cl import gaussian_cl_covariance
 
@@ -18,14 +19,14 @@ def gaussian_log_likelihood(data, mu, C, constant_cov=True, inverse_method="inve
     # TODO: check what is the fastest and works the best between cholesky+solve
     # and just inversion
     if inverse_method == "inverse":
-        y = np.linalg.inv(C) @ r
+        y = np.dot(np.linalg.inv(C), r)
     elif inverse_method == "cholesky":
-        raise NotImplementedError
+        y = sp.linalg.cho_solve(sp.linalg.cho_factor(C,lower=True), r)
     else:
         raise NotImplementedError
 
     if constant_cov:
-        return -0.5 * (r.T @ y)
+        return -0.5 * r.dot(y)
     else:
         _, logdet = np.linalg.slogdet(C)
-        return -0.5 * (r.T @ y) - 0.5 * logdet
+        return -0.5 * r.dot(y) - 0.5 * logdet
