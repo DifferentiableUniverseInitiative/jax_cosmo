@@ -21,7 +21,7 @@ def gaussian_log_likelihood(data, mu, C, constant_cov=True, inverse_method="inve
     if inverse_method == "inverse":
         y = np.dot(np.linalg.inv(C), r)
     elif inverse_method == "cholesky":
-        y = sp.linalg.cho_solve(sp.linalg.cho_factor(C,lower=True), r)
+        y = sp.linalg.cho_solve(sp.linalg.cho_factor(C, lower=True), r)
     else:
         raise NotImplementedError
 
