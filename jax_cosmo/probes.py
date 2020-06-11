@@ -123,7 +123,7 @@ def nla_kernel(cosmo, pzs, bias, z, ell):
 
 
 @jit
-def rsd_kernel(cosmo, pzs, bias, z, ell, z1):
+def rsd_kernel(cosmo, pzs, z, ell, z1):
     """
     Computes the RSD kernel
     """
@@ -133,7 +133,7 @@ def rsd_kernel(cosmo, pzs, bias, z, ell, z1):
     # Normalization,
     constant_factor = 1.0
     # Ell dependent factor
-    ell_factor1 = (1+8*ell)/np.pow((2*ell+1),2)
+    ell_factor1 = (1+8*ell)/((2*ell+1)**2.0)
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
     radial_kernel1 = dndz * bkgrd.growth_factor(cosmo, z2a(z)) * bkgrd.H(cosmo, z2a(z))
@@ -144,7 +144,7 @@ def rsd_kernel(cosmo, pzs, bias, z, ell, z1):
     dndz = np.stack([pz(z1) for pz in pzs], axis=0)
     radial_kernel2 = dndz * bkgrd.growth_factor(cosmo, z2a(z1)) * bkgrd.H(cosmo, z2a(z1))
 
-    return constant_factor (ell_factor1 * radial_kernel1 + ell_factor2*radial_kernel2)
+    return constant_factor*(ell_factor1 * radial_kernel1 + ell_factor2*radial_kernel2)
 
 
 @register_pytree_node_class
@@ -203,7 +203,7 @@ class WeakLensing(container):
         pzs = self.params[0]
         return max([pz.zmax for pz in pzs])
 
-    def kernel(self, cosmo, z, ell):
+    def kernel(self, cosmo, z, ell, z1):
         """
         Compute the radial kernel for all nz bins in this probe.
 
@@ -257,6 +257,7 @@ class NumberCounts(container):
             redshift_bins, bias, has_rsd=has_rsd,mag_bias=mag_bias, **kwargs
         )
         self.mag_bias =mag_bias
+        self.has_rsd = has_rsd
 
     @property
     def zmax(self):
@@ -275,7 +276,7 @@ class NumberCounts(container):
         pzs = self.params[0]
         return len(pzs)
 
-    def kernel(self, cosmo, z, ell):
+    def kernel(self, cosmo, z, ell, z1):
         """ Compute the radial kernel for all nz bins in this probe.
 
         Returns:
@@ -290,7 +291,10 @@ class NumberCounts(container):
         
         if self.mag_bias:
             kernel += mag_kernel(cosmo, pzs, z, ell, self.mag_bias)
-           
+        
+        if self.has_rsd:
+            kernel += rsd_kernel(cosmo, pzs, z, ell, z1)
+        
         return kernel
 
     def noise(self):
