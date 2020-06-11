@@ -32,6 +32,16 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "minaskar",
+      "name": "Minas Karamanis",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/23280751?v=4",
+      "profile": "https://minaskaramanis.com",
+      "contributions": [
+        "projectManagement",
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
