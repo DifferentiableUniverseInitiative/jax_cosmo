@@ -136,13 +136,13 @@ def rsd_kernel(cosmo, pzs, z, ell, z1):
     ell_factor1 = (1+8*ell)/((2*ell+1)**2.0)
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
-    radial_kernel1 = dndz * bkgrd.growth_factor(cosmo, z2a(z)) * bkgrd.H(cosmo, z2a(z))
+    radial_kernel1 = dndz * bkgrd.growth_rate(cosmo, z2a(z))/bkgrd.growth_factor(cosmo, z2a(z)) * bkgrd.H(cosmo, z2a(z))
     
     # Ell dependent factor
-    ell_factor2 = (4)/(2*ell+1) *np.sqrt((2*ell+1)/(2*ell+3))
+    ell_factor2 = (4)/(2*ell+3) *np.sqrt((2*ell+1)/(2*ell+3))
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z1) for pz in pzs], axis=0)
-    radial_kernel2 = dndz * bkgrd.growth_factor(cosmo, z2a(z1)) * bkgrd.H(cosmo, z2a(z1))
+    radial_kernel2 = dndz * bkgrd.growth_rate(cosmo, z2a(z1))/bkgrd.growth_factor(cosmo, z2a(z1)) * bkgrd.H(cosmo, z2a(z1))
 
     return constant_factor*(ell_factor1 * radial_kernel1 + ell_factor2*radial_kernel2)
 
