@@ -87,7 +87,7 @@ def angular_cl(
             
             #RSD inversion
             
-            a_1 = bkgrd.a_of_chi(cosmo,k / (ell+1.5))
+            a_1 = np.clip(bkgrd.a_of_chi(cosmo, (ell+1.5)/k),0.00001)
             
             # Compute the kernels for all probes
             kernels = np.vstack([p.kernel(cosmo, a2z(a), ell, a2z(a_1)) for p in probes])

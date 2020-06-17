@@ -127,6 +127,7 @@ def rsd_kernel(cosmo, pzs, z, ell, z1):
     """
     Computes the RSD kernel
     """
+    print(z,z1)
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
     
@@ -144,7 +145,7 @@ def rsd_kernel(cosmo, pzs, z, ell, z1):
     dndz = np.stack([pz(z1) for pz in pzs], axis=0)
     radial_kernel2 = dndz * bkgrd.growth_rate(cosmo, z2a(z1))/bkgrd.growth_factor(cosmo, z2a(z1)) * bkgrd.H(cosmo, z2a(z1))
 
-    return constant_factor*(ell_factor1 * radial_kernel1 + ell_factor2*radial_kernel2)
+    return constant_factor*(ell_factor1 * radial_kernel1 - ell_factor2*radial_kernel2)
 
 
 @register_pytree_node_class
