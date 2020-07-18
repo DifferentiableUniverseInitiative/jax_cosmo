@@ -6,7 +6,7 @@ from __future__ import print_function
 import jax.numpy as np
 
 import jax_cosmo.constants as const
-from jax_cosmo.scipy.interpolate import interp
+from jax_cosmo.scipy.interpolate import InterpolatedUnivariateSpline
 from jax_cosmo.scipy.ode import odeint
 
 __all__ = [
@@ -202,7 +202,7 @@ def Omega_de_a(cosmo, a):
     return cosmo.Omega_de * np.power(a, f_de(cosmo, a)) / Esqr(cosmo, a)
 
 
-def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
+def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=64):
     r"""Radial comoving distance in [Mpc/h] for a given scale factor.
 
     Parameters
@@ -235,17 +235,19 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
             return dchioverda(cosmo, xa) * xa
 
         chitab = odeint(dchioverdlna, 0.0, np.log(atab))
-        # np.clip(- 3000*np.log(atab), 0, 10000)#odeint(dchioverdlna, 0., np.log(atab), cosmo)
         chitab = chitab[-1] - chitab
 
-        cache = {"a": atab, "chi": chitab}
+        cache = {
+            "a2chi": InterpolatedUnivariateSpline(atab, chitab),
+            "chi2a": InterpolatedUnivariateSpline(chitab, atab),
+        }
         cosmo._workspace["background.radial_comoving_distance"] = cache
     else:
         cache = cosmo._workspace["background.radial_comoving_distance"]
 
     a = np.atleast_1d(a)
     # Return the results as an interpolation of the table
-    return np.clip(interp(a, cache["a"], cache["chi"]), 0.0)
+    return np.clip(cache["a2chi"](a), 0.0)
 
 
 def a_of_chi(cosmo, chi):
@@ -270,7 +272,7 @@ def a_of_chi(cosmo, chi):
         radial_comoving_distance(cosmo, 1.0)
     cache = cosmo._workspace["background.radial_comoving_distance"]
     chi = np.atleast_1d(chi)
-    return interp(chi, cache["chi"], cache["a"])
+    return cache["chi2a"](chi)
 
 
 def dchioverda(cosmo, a):
@@ -437,7 +439,7 @@ def growth_rate(cosmo, a):
         return _growth_rate_ODE(cosmo, a)
 
 
-def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
+def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=64):
     """ Compute linear growth factor D(a) at a given scale factor,
     normalised such that D(a=1) = 1.
 
@@ -478,11 +480,14 @@ def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
         # To transform from dD/da to dlnD/dlna: dlnD/dlna = a / D dD/da
         ftab = y[:, 1] / y1[-1] * atab / gtab
 
-        cache = {"a": atab, "g": gtab, "f": ftab}
+        cache = {
+            "g": InterpolatedUnivariateSpline(atab, gtab),
+            "f": InterpolatedUnivariateSpline(atab, ftab),
+        }
         cosmo._workspace["background.growth_factor"] = cache
     else:
         cache = cosmo._workspace["background.growth_factor"]
-    return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
+    return np.clip(cache["g"](a), 0.0, 1.0)
 
 
 def _growth_rate_ODE(cosmo, a):
@@ -506,10 +511,10 @@ def _growth_rate_ODE(cosmo, a):
     if not "background.growth_factor" in cosmo._workspace.keys():
         _growth_factor_ODE(cosmo, np.atleast_1d(1.0))
     cache = cosmo._workspace["background.growth_factor"]
-    return interp(a, cache["a"], cache["f"])
+    return cache["f"](a)
 
 
-def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
+def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=64):
     r""" Computes growth factor by integrating the growth rate provided by the
     \gamma parametrization. Normalized such that D( a=1) =1
 
@@ -538,11 +543,11 @@ def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
 
         gtab = np.exp(odeint(integrand, np.log(atab[0]), np.log(atab)))
         gtab = gtab / gtab[-1]  # Normalize to a=1.
-        cache = {"a": atab, "g": gtab}
+        cache = {"g": InterpolatedUnivariateSpline(atab, gtab)}
         cosmo._workspace["background.growth_factor"] = cache
     else:
         cache = cosmo._workspace["background.growth_factor"]
-    return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
+    return np.clip(cache["g"](a), 0.0, 1.0)
 
 
 def _growth_rate_gamma(cosmo, a):
