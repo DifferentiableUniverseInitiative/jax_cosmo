@@ -37,3 +37,16 @@ def test_inv():
 
     with assert_raises(ValueError):
         inv(jnp.ones((2, 3, 4)))
+
+
+def test_vecdot():
+    X_sparse = [
+        [[1, 2, 3], [4, 5, 6], [-1, -2, -3]],
+        [[1, 2, 3], [-4, -5, -6], [7, 8, 9]],
+    ]
+    y_in = [1, 0.1, -1, 2, 0.2, -2, 3, 0.3, -3]
+    y_out = to_dense(X_sparse).dot(jnp.array(y_in))
+    assert_allclose(y_out, vecdot(X_sparse, y_in))
+
+    with assert_raises(ValueError):
+        vecdot(X_sparse, jnp.ones(5))

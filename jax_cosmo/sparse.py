@@ -17,7 +17,7 @@ from jax import vmap
 def check_sparse(sparse, square=False):
     """Check for a valid sparse matrix.
     """
-    sparse = np.array(sparse)
+    sparse = np.asarray(sparse)
     if sparse.ndim != 3:
         raise ValueError("Expected 3D array of sparse diagonals.")
     if square and (sparse.shape[0] != sparse.shape[1]):
@@ -65,3 +65,29 @@ def inv(sparse):
     """
     sparse = check_sparse(sparse, square=True)
     return np.transpose(np.linalg.inv(np.transpose(sparse, (2, 0, 1))), (1, 2, 0))
+
+
+@jit
+def vecdot(sparse, vec):
+    """Multiply a sparse matrix by a vector.
+
+    Parameters
+    ----------
+    sparse : array
+        3D array of shape (ny, nx, ndiag) of block diagonal elements.
+    vec : array
+        1D array of shape (nx).
+
+    Returns
+    -------
+    array
+        1D array of shape (ny).
+    """
+    sparse = check_sparse(sparse)
+    vec = np.asarray(vec)
+    if vec.ndim != 1 or sparse.shape[1] * sparse.shape[2] != vec.size:
+        raise ValueError("Vector has the wrong shape for this sparse matrix.")
+    return vmap(
+        lambda row, vec: np.sum(vmap(np.multiply)(row, vec.reshape(row.shape)), axis=0),
+        in_axes=(0, None),
+    )(sparse, vec).reshape(-1)
