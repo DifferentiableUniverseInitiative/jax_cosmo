@@ -1,6 +1,8 @@
 import jax.numpy as jnp
 import numpy as numpy
-from numpy.testing import assert_allclose, assert_array_equal, assert_raises
+from numpy.testing import assert_allclose
+from numpy.testing import assert_array_equal
+from numpy.testing import assert_raises
 
 from jax_cosmo.sparse import *
 
