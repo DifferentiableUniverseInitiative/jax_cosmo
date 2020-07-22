@@ -150,9 +150,10 @@ with code styling again. Here are the steps to follow:
 - Install `black` and `pre-commit`:
 ```bash
 $ pip install --user black pre-commit reorder_python_imports
+$ pre-commit install
 ```
-`pre-commit` will be tasked with automatically running `black` formatting
-whenever you commit some code.
+`pre-commit` will be tasked with automatically running `black` and `reorder_python_imports` formatting
+whenever you commit some code. The import guidelines are documented [here](https://github.com/asottile/reorder_python_imports#what-does-it-do).
 
 - Manually running black formatting:
 ```bash
@@ -160,7 +161,7 @@ $ black .
 ```
 from the root directory.
 
-- Automatically running black at each commit: You actually have nothing
+- Automatically running `black` and `reorder_python_imports` at each commit: You actually have nothing
 else to do. If pre-commit is installed it will happen automatically for
 you.
 
