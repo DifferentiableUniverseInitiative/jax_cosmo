@@ -1,12 +1,14 @@
 import jax.numpy as jnp
 import numpy as np
 import pyccl as ccl
-from numpy.testing import assert_allclose, assert_array_equal
+from numpy.testing import assert_allclose
+from numpy.testing import assert_array_equal
 
 import jax_cosmo.background as bkgrd
 from jax_cosmo import Cosmology
 from jax_cosmo import probes
-from jax_cosmo.angular_cl import angular_cl, gaussian_cl_covariance
+from jax_cosmo.angular_cl import angular_cl
+from jax_cosmo.angular_cl import gaussian_cl_covariance
 from jax_cosmo.bias import constant_linear_bias
 from jax_cosmo.bias import inverse_growth_linear_bias
 from jax_cosmo.redshift import smail_nz
