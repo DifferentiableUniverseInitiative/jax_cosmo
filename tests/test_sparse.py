@@ -52,3 +52,13 @@ def test_vecdot():
 
     with assert_raises(ValueError):
         vecdot(X_sparse, jnp.ones(5))
+
+
+def test_matmul():
+    X1 = [[[1.0, 2, 3], [4, 5, 6], [0, -1, 0]], [[-4, -5, -6], [3, 2, 1], [1, 0, 1]]]
+    X2 = [
+        [[1.0, 2, 3], [4, 5, 6]],
+        [[-4, -5, -6], [3, 2, 1]],
+        [[-4, -5, -6], [3, 2, 1]],
+    ]
+    assert_allclose(to_dense(matmul(X1, X2)), to_dense(X1) @ to_dense(X2))

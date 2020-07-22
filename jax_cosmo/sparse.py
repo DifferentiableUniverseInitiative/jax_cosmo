@@ -91,3 +91,36 @@ def vecdot(sparse, vec):
         lambda row, vec: np.sum(vmap(np.multiply)(row, vec.reshape(row.shape)), axis=0),
         in_axes=(0, None),
     )(sparse, vec).reshape(-1)
+
+
+@jit
+def matmul(sparse1, sparse2):
+    """Multiply sparse matrices and return a sparse result.
+
+    Parameters
+    ----------
+    sparse1 : array
+        3D array of shape (a, b, ndiag) of block diagonal elements.
+    sparse2 : array
+        3D array of shape (b, c, ndiag) of block diagonal elements.
+
+    Returns
+    -------
+    array
+        3D array of shape (a, c, ndiag) of block diagonal elements.
+    """
+    sparse1 = check_sparse(sparse1)
+    sparse2 = check_sparse(sparse2)
+    if sparse1.shape[1] != sparse2.shape[0]:
+        raise ValueError("Matrix shapes are not compatible for multiplication.")
+    return vmap(
+        # Sparse multiply row @ col
+        vmap(
+            # Sparse multiply blocks B1 and B2
+            lambda B1, B2: np.sum(np.multiply(B1, B2), axis=0),
+            (0, None),
+            0,
+        ),
+        (None, 1),
+        1,
+    )(sparse1, sparse2)
