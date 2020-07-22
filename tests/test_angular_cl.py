@@ -1,15 +1,16 @@
 import jax.numpy as jnp
 import numpy as np
 import pyccl as ccl
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_array_equal
 
 import jax_cosmo.background as bkgrd
 from jax_cosmo import Cosmology
 from jax_cosmo import probes
-from jax_cosmo.angular_cl import angular_cl
+from jax_cosmo.angular_cl import angular_cl, gaussian_cl_covariance
 from jax_cosmo.bias import constant_linear_bias
 from jax_cosmo.bias import inverse_growth_linear_bias
 from jax_cosmo.redshift import smail_nz
+from jax_cosmo.sparse import to_dense
 
 
 def test_lensing_cl():
@@ -143,3 +144,18 @@ def test_clustering_cl():
     cl_jax = angular_cl(cosmo_jax, ell, [tracer_jax])
 
     assert_allclose(cl_ccl, cl_jax[0], rtol=1e-2)
+
+
+def test_sparse_cov():
+    n_ell = 25
+    ell = jnp.logspace(1, 3, n_ell)
+    nz1 = smail_nz(1.0, 2.0, 1.0)
+    nz2 = smail_nz(1.0, 2.0, 0.5)
+    n_cls = 3
+    P = [probes.NumberCounts([nz1, nz2], constant_linear_bias(1.0))]
+    cl_signal = jnp.ones((n_cls, n_ell))
+    cl_noise = jnp.ones_like(cl_signal)
+    cov_dense = gaussian_cl_covariance(ell, P, cl_signal, cl_noise, sparse=False)
+    cov_sparse = gaussian_cl_covariance(ell, P, cl_signal, cl_noise, sparse=True)
+    assert cov_sparse.shape == (n_cls, n_cls, n_ell)
+    assert_array_equal(to_dense(cov_sparse), cov_dense)

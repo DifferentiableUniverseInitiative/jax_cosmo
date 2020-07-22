@@ -144,7 +144,7 @@ def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25, sparse=
     norm = (2 * ell + 1) * np.gradient(ell) * f_sky
 
     # Retrieve ordering for blocks of the covariance matrix
-    cov_blocks = np.array(jax_cosmo.angular_cl._get_cov_blocks_ordering(probes))
+    cov_blocks = np.array(_get_cov_blocks_ordering(probes))
 
     def get_cov_block(inds):
         a, b, c, d = inds
