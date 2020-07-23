@@ -9,6 +9,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import functools
+
 import jax.numpy as np
 from jax import jit
 from jax import vmap
@@ -124,3 +126,41 @@ def matmul(sparse1, sparse2):
         (None, 1),
         1,
     )(sparse1, sparse2)
+
+
+# We split the determinant calculation for a matrix with N x N blocks
+# into n pieces that can be evaluated in parallel, following eqn (2.2)
+# of https://arxiv.org/abs/1112.4379.  First build a helper function
+# to calculate one piece indexed by 0 <= k < N:
+@functools.partial(jit, static_argnums=(1, 2, 3))
+def _block_det(sparse, k, N, P):
+    u = sparse[k : k + 1, k + 1 : N, 0:P]
+    S = sparse[k + 1 : N, k + 1 : N, 0:P]
+    v = sparse[k + 1 : N, k : k + 1, 0:P]
+    Sinv_v = matmul(inv(S), v)
+    return np.product(sparse[k, k] - matmul(u, Sinv_v))
+
+
+@jit
+def det(sparse):
+    """Calculate the determinant of a sparse matrix.
+
+    Parameters
+    ----------
+    sparse : array
+        3D array of shape (ny, nx, ndiag) of block diagonal elements.
+
+    Returns
+    -------
+    float
+        Determinant result.
+    """
+    sparse = check_sparse(sparse, square=True)
+    N, _, P = sparse.shape
+    result = np.product(sparse[-1, -1])
+    # The individual blocks can be calculated in any order so there
+    # should be a better way to express this using lax.map but I
+    # can't get it to work without "concretization" errors.
+    for i in range(N - 1):
+        result *= _block_det(sparse, i, N, P)
+    return result

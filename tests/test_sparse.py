@@ -62,3 +62,12 @@ def test_matmul():
         [[-4, -5, -6], [3, 2, 1]],
     ]
     assert_allclose(to_dense(matmul(X1, X2)), to_dense(X1) @ to_dense(X2))
+
+
+def test_det():
+    X = [
+        [[1, 2, 3], [4, 5, 6], [-1, 7, -2]],
+        [[1, 2, 3], [-4, -5, -6], [2, -3, 9]],
+        [[7, 8, 9], [5, -4, 6], [-3, -2, -1]],
+    ]
+    assert_allclose(det(X), np.linalg.det(to_dense(X)), rtol=1e-6)
