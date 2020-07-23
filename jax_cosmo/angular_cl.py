@@ -180,6 +180,10 @@ def gaussian_cl_covariance_and_mean(
     """
     Computes a Gaussian covariance for the angular cls of the provided probes
 
+    Set sparse True to return a sparse matrix representation that uses a factor
+    of n_ell less memory and is compatible with the linear algebra operations
+    in :mod:`jax_cosmo.sparse`.
+
     return_cls: (returns signal + noise cl, covariance)
     """
     ell = np.atleast_1d(ell)
