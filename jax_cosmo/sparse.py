@@ -15,13 +15,17 @@ The scipy.sparse dia format has a similar memory efficiency but does not take
 advantage of the block structure we exploit here for efficient operations.
 
 For dot products involving a sparse matrix, use :func:`dot` to automatically
-select the correct jit-compiled algorithm, with some input validation. You
-can also use the lower-level algorithms (with no input validation) directly:
+select the correct jit-compiled algorithm, with some input validation. All
+pairs of vector, dense matrix and at least one sparse matrix are
+supported. The special bilinear form (dense, sparse, dense) is also supported.
+
+You can also use the lower-level algorithms (with no input validation) directly:
  - :fun:`sparse_dot_vec`
  - :fun:`sparse_dot_dense`
  - :fun:`vec_dot_sparse`
  - :fun:`dense_dot_sparse`
  - :fun:`sparse_dot_sparse`
+ - :fun:`dense_dot_sparse_dot_dense`
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -71,8 +75,12 @@ def to_dense(sparse):
 
 
 @jit
-def dot(A, B):
-    """Calculate A @ B where A and B are either sparse or dense.
+def dot(*args):
+    """Calculate A @ B where at least one of A or B is sparse.
+
+    All combinations of vector, dense matrix and at least one
+    sparse matrix are supported. The bilinear form A @ B @ C is
+    also supported where A and C are dense and B is sparse.
 
     Checks the inputs and calls the appropriate *_dot_* specialized
     jit-compiled method defined below.  Input types are identified
@@ -84,43 +92,55 @@ def dot(A, B):
 
     Parameters
     ----------
-    A : array
-        Left hand matrix or vector to multiply.
-    B : array
-        Right-hand marix or vector to multiply.
+    args
+        2 or 3 arrays to multiply.
 
     Returns
     -------
     array
-        Result of A @ B as a 1 (vector), 2 (dense matrix), or 3 (sparse
-        matrix) dimensional array.
+        Result of A @ B or A @ B @ C.
     """
-    A = np.asarray(A)
-    B = np.asarray(B)
-    if is_sparse(A):
-        Acols = A.shape[1] * A.shape[2]
-    else:
-        if A.ndim < 1 or A.ndim > 2:
-            raise ValueError(f"A has invalid dimension {A.ndim} (expected 1 or 2).")
-        Acols = A.shape[-1]
-    if is_sparse(B):
-        Brows = B.shape[0] * B.shape[2]
-    else:
-        if B.ndim < 1 or B.ndim > 2:
-            raise ValueError(f"B has invalid dimension {B.ndim} (expected 1 or 2).")
-        Brows = B.shape[0]
-    if Acols != Brows:
-        raise ValueError(
-            f"Shapes of A {A.shape} and B {B.shape} not compatible for dot product."
-        )
-
-    if is_sparse(A):
-        if is_sparse(B):
-            return sparse_dot_sparse(A, B)
+    if len(args) == 2:
+        A, B = args
+        A = np.asarray(A)
+        B = np.asarray(B)
+        if is_sparse(A):
+            Acols = A.shape[1] * A.shape[2]
         else:
-            return sparse_dot_vec(A, B) if B.ndim == 1 else sparse_dot_dense(A, B)
+            if A.ndim < 1 or A.ndim > 2:
+                raise ValueError(f"A has invalid dimension {A.ndim} (expected 1 or 2).")
+            Acols = A.shape[-1]
+        if is_sparse(B):
+            Brows = B.shape[0] * B.shape[2]
+        else:
+            if B.ndim < 1 or B.ndim > 2:
+                raise ValueError(f"B has invalid dimension {B.ndim} (expected 1 or 2).")
+            Brows = B.shape[0]
+        if Acols != Brows:
+            raise ValueError(
+                f"Shapes of A {A.shape} and B {B.shape} not compatible for dot product."
+            )
+        if is_sparse(A):
+            if is_sparse(B):
+                return sparse_dot_sparse(A, B)
+            else:
+                return sparse_dot_vec(A, B) if B.ndim == 1 else sparse_dot_dense(A, B)
+        else:
+            return vec_dot_sparse(A, B) if A.ndim == 1 else dense_dot_sparse(A, B)
+    elif len(args) == 3:
+        A, B, C = args
+        if A.ndim != 2 or B.ndim != 3 or C.ndim != 2:
+            raise ValueError("Can only handle dense @ sparse @ dense bilinear form.")
+        if (
+            A.shape[1] != B.shape[0] * B.shape[2]
+            or B.shape[1] * B.shape[2] != C.shape[0]
+        ):
+            raise ValueError(
+                "Shapes of A {A.shape}, B {B.shape}, C {C.shape} not compatible for dot product."
+            )
+        return dense_dot_sparse_dot_dense(A, B, C)
     else:
-        return vec_dot_sparse(A, B) if A.ndim == 1 else dense_dot_sparse(A, B)
+        raise ValueError(f"Expected 2 or 3 input arrays but got {len(args)}.")
 
 
 @jit
@@ -250,7 +270,7 @@ def sparse_dot_sparse(sparse1, sparse2):
 
 
 @jit
-def bilinear(X, Y, Z):
+def dense_dot_sparse_dot_dense(X, Y, Z):
     """Calculate the bilinear form X @ Y @ Z where B is sparse.
 
     Inputs must be jax numpy arrays. No error checking is performed.

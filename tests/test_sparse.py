@@ -49,6 +49,19 @@ def test_dot():
     assert_allclose(X2d @ X1d, to_dense(dot(X2, X1)))
 
 
+def test_bilinear():
+    X1 = [[[1.0, 2], [3, 4], [5, 6]], [[4, 5], [6, 7], [8, 9]]]
+    X2 = [[[1.0, -2], [3, -4]], [[5, 4], [6, -7]], [[5, 6], [9, 8]]]
+    X1d = to_dense(X1)
+    X2d = to_dense(X2)
+    X12 = dot(X2, X1)
+    X21 = dot(X1, X2)
+    X12d = X2d @ X1d
+    X21d = X1d @ X2d
+    assert_allclose(X1d @ X12d @ X2d, dot(X1d, X12, X2d))
+    assert_allclose(X2d @ X21d @ X1d, dot(X2d, X21, X1d))
+
+
 def test_inv():
     X_sparse = jnp.array([[[1.0, 1.0], [1.0, 1.0]], [[1.0, 1.0], [2.0, 2.0]]])
     X_inv_sparse = inv(X_sparse)
