@@ -31,6 +31,24 @@ def test_to_dense():
         to_dense(jnp.ones((2, 3, 4, 5)))
 
 
+def test_dot():
+    X1 = [[[1.0, 2], [3, 4], [5, 6]], [[4, 5], [6, 7], [8, 9]]]
+    X2 = [[[1.0, -2], [3, -4]], [[5, 4], [6, -7]], [[5, 6], [9, 8]]]
+    X1d = to_dense(X1)
+    X2d = to_dense(X2)
+    v1 = np.arange(6)
+    v2 = np.arange(4)
+
+    assert_allclose(X2d @ v2, dot(X2, v2))
+    assert_allclose(X1d @ v1, dot(X1, v1))
+    assert_allclose(v2 @ X1d, dot(v2, X1))
+    assert_allclose(v1 @ X2d, dot(v1, X2))
+    assert_allclose(X1d @ X2d, dot(X1, X2d))
+    assert_allclose(X1d @ X2d, dot(X1d, X2))
+    assert_allclose(X1d @ X2d, to_dense(dot(X1, X2)))
+    assert_allclose(X2d @ X1d, to_dense(dot(X2, X1)))
+
+
 def test_inv():
     X_sparse = jnp.array([[[1.0, 1.0], [1.0, 1.0]], [[1.0, 1.0], [2.0, 2.0]]])
     X_inv_sparse = inv(X_sparse)
@@ -39,29 +57,6 @@ def test_inv():
 
     with assert_raises(ValueError):
         inv(jnp.ones((2, 3, 4)))
-
-
-def test_vecdot():
-    X_sparse = [
-        [[1, 2, 3], [4, 5, 6], [-1, -2, -3]],
-        [[1, 2, 3], [-4, -5, -6], [7, 8, 9]],
-    ]
-    y_in = [1, 0.1, -1, 2, 0.2, -2, 3, 0.3, -3]
-    y_out = to_dense(X_sparse).dot(jnp.array(y_in))
-    assert_allclose(y_out, vecdot(X_sparse, y_in))
-
-    with assert_raises(ValueError):
-        vecdot(X_sparse, jnp.ones(5))
-
-
-def test_matmul():
-    X1 = [[[1.0, 2, 3], [4, 5, 6], [0, -1, 0]], [[-4, -5, -6], [3, 2, 1], [1, 0, 1]]]
-    X2 = [
-        [[1.0, 2, 3], [4, 5, 6]],
-        [[-4, -5, -6], [3, 2, 1]],
-        [[-4, -5, -6], [3, 2, 1]],
-    ]
-    assert_allclose(to_dense(matmul(X1, X2)), to_dense(X1) @ to_dense(X2))
 
 
 def test_det():

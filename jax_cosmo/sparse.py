@@ -3,7 +3,25 @@
 The motivating example is a Gaussian covariance matrix computed in angular_cl.
 The sparse matrix is represented as a 3D array of shape (ny, nx, ndiag) composed
 of ny x nx square blocks of size ndiag x ndiag.  The vector at [ny, nx] is the
-diagonal of the corresponding block.
+diagonal of the corresponding block.  The memory savings is a factor of ndiag
+and most algorithms are sped up by a comparable factor.
+
+We do not assume that the corresponding dense matrix is square or symmetric, even
+though a covariance has these properties, since this streamlines the implementation
+for a relatively small (factor of 2) increase in memory.
+
+This sparse format is not one of those currently supported by scipy.sparse.
+The scipy.sparse dia format has a similar memory efficiency but does not take
+advantage of the block structure we exploit here for efficient operations.
+
+For dot products involving a sparse matrix, use :func:`dot` to automatically
+select the correct jit-compiled algorithm, with some input validation. You
+can also use the lower-level algorithms (with no input validation) directly:
+ - :fun:`sparse_dot_vec`
+ - :fun:`sparse_dot_dense`
+ - :fun:`vec_dot_sparse`
+ - :fun:`dense_dot_sparse`
+ - :fun:`sparse_dot_sparse`
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -16,6 +34,12 @@ from jax import jit
 from jax import vmap
 
 
+def is_sparse(sparse):
+    """Test if the input is interpretable as a sparse matrix.
+    """
+    return np.asarray(sparse).ndim == 3
+
+
 def check_sparse(sparse, square=False):
     """Check for a valid sparse matrix.
     """
@@ -23,7 +47,7 @@ def check_sparse(sparse, square=False):
     if sparse.ndim != 3:
         raise ValueError("Expected 3D array of sparse diagonals.")
     if square and (sparse.shape[0] != sparse.shape[1]):
-        raise ValueError("Can only invert a square matrix.")
+        raise ValueError("Expected a square matrix.")
     return sparse
 
 
@@ -34,16 +58,195 @@ def to_dense(sparse):
     Parameters
     ----------
     sparse : array
-        3D array of shape (ny, nx, ndiag) of block diagonal elements.
+        3D array of shape (a, b, ndiag) of block diagonal elements.
 
     Returns
     -------
     array
-        2D array of shape (ny * ndiag, nx * ndiag) with the same dtype
+        2D array of shape (a * ndiag, b * ndiag) with the same dtype
         as the input array.
     """
     sparse = check_sparse(sparse)
     return np.vstack(vmap(lambda row: np.hstack(vmap(np.diag)(row)))(sparse))
+
+
+@jit
+def dot(A, B):
+    """Calculate A @ B where A and B are either sparse or dense.
+
+    Checks the inputs and calls the appropriate *_dot_* specialized
+    jit-compiled method defined below.  Input types are identified
+    by their array dimension: 1 = vector, 2 = dense matrix,
+    3 = sparse matrix.
+
+    Returns a dense 1D or 2D array except where A and B are both
+    sparse matrices, when the result is also a sparse matrix.
+
+    Parameters
+    ----------
+    A : array
+        Left hand matrix or vector to multiply.
+    B : array
+        Right-hand marix or vector to multiply.
+
+    Returns
+    -------
+    array
+        Result of A @ B as a 1 (vector), 2 (dense matrix), or 3 (sparse
+        matrix) dimensional array.
+    """
+    A = np.asarray(A)
+    B = np.asarray(B)
+    if is_sparse(A):
+        Acols = A.shape[1] * A.shape[2]
+    else:
+        if A.ndim < 1 or A.ndim > 2:
+            raise ValueError(f"A has invalid dimension {A.ndim} (expected 1 or 2).")
+        Acols = A.shape[-1]
+    if is_sparse(B):
+        Brows = B.shape[0] * B.shape[2]
+    else:
+        if B.ndim < 1 or B.ndim > 2:
+            raise ValueError(f"B has invalid dimension {B.ndim} (expected 1 or 2).")
+        Brows = B.shape[0]
+    if Acols != Brows:
+        raise ValueError(
+            f"Shapes of A {A.shape} and B {B.shape} not compatible for dot product."
+        )
+
+    if is_sparse(A):
+        if is_sparse(B):
+            return sparse_dot_sparse(A, B)
+        else:
+            return sparse_dot_vec(A, B) if B.ndim == 1 else sparse_dot_dense(A, B)
+    else:
+        return vec_dot_sparse(A, B) if A.ndim == 1 else dense_dot_sparse(A, B)
+
+
+@jit
+def sparse_dot_vec(sparse, vec):
+    """Calculate M @ v where M is a sparse matrix.
+
+    Inputs must be jax numpy arrays. No error checking is performed.
+    Use :func:`dot` for a more convenient front-end with error checking.
+
+    Parameters
+    ----------
+    sparse : array
+        3D array of shape (a, b, ndiag) of block diagonal elements.
+    vec : array
+        1D array of shape (b * ndiag).
+
+    Returns
+    -------
+    array
+        1D array of shape (a * ndiag).
+    """
+    return vmap(
+        lambda row, vec: np.sum(vmap(np.multiply)(row, vec.reshape(row.shape)), axis=0),
+        in_axes=(0, None),
+    )(sparse, vec).reshape(-1)
+
+
+@jit
+def sparse_dot_dense(sparse, dense):
+    """Calculate A @ B where A is sparse and B is dense and return dense.
+
+    Inputs must be jax numpy arrays. No error checking is performed.
+    Use :func:`dot` for a more convenient front-end with error checking.
+
+    Parameters
+    ----------
+    sparse : array
+        3D array of shape (a, b, ndiag) of block diagonal elements.
+    dense : array
+        2D array of shape (b * ndiag, c).
+
+    Returns
+    -------
+    array
+        2D array of shape (a * ndiag, c).
+    """
+    return vmap(sparse_dot_vec, (None, 1), 1)(sparse, dense)
+
+
+@jit
+def vec_dot_sparse(vec, sparse):
+    """Calculate vec @ M where M is a sparse matrix.
+
+    Inputs must be jax numpy arrays. No error checking is performed.
+    Use :func:`dot` for a more convenient front-end with error checking.
+
+    Parameters
+    ----------
+    vec : array
+        1D array of shape (a * ndiag).
+    sparse : array
+        3D array of shape (a, b, ndiag) of block diagonal elements.
+
+    Returns
+    -------
+    array
+        1D array of shape (b * ndiag).
+    """
+    return vmap(
+        lambda vec, col: np.sum(vmap(np.multiply)(vec.reshape(col.shape), col), axis=0),
+        in_axes=(None, 1),
+    )(vec, sparse).reshape(-1)
+
+
+@jit
+def dense_dot_sparse(dense, sparse):
+    """Calculate A @ B where A is dense and B is sparse and return dense.
+
+    Inputs must be jax numpy arrays. No error checking is performed.
+    Use :func:`dot` for a more convenient front-end with error checking.
+
+    Parameters
+    ----------
+    dense : array
+        2D array of shape (a * ndiag, b * ndiag).
+    sparse : array
+        3D array of shape (b, c, ndiag) of block diagonal elements.
+
+    Returns
+    -------
+    array
+        2D array of shape (a * ndiag, c * ndiag).
+    """
+    return vmap(vec_dot_sparse, (0, None), 0)(dense, sparse)
+
+
+@jit
+def sparse_dot_sparse(sparse1, sparse2):
+    """Calculate A @ B where A and B are both sparse and return sparse.
+
+    Inputs must be jax numpy arrays. No error checking is performed.
+    Use :func:`dot` for a more convenient front-end with error checking.
+
+    Parameters
+    ----------
+    sparse1 : array
+        3D array of shape (a, b, ndiag) of block diagonal elements.
+    sparse2 : array
+        3D array of shape (b, c, ndiag) of block diagonal elements.
+
+    Returns
+    -------
+    array
+        3D array of shape (a, c, ndiag) of block diagonal elements.
+    """
+    return vmap(
+        # Sparse multiply row @ col
+        vmap(
+            # Sparse multiply blocks B1 and B2
+            lambda B1, B2: np.sum(np.multiply(B1, B2), axis=0),
+            (0, None),
+            0,
+        ),
+        (None, 1),
+        1,
+    )(sparse1, sparse2)
 
 
 @jit
@@ -69,65 +272,6 @@ def inv(sparse):
     return np.transpose(np.linalg.inv(np.transpose(sparse, (2, 0, 1))), (1, 2, 0))
 
 
-@jit
-def vecdot(sparse, vec):
-    """Multiply a sparse matrix by a vector.
-
-    Parameters
-    ----------
-    sparse : array
-        3D array of shape (ny, nx, ndiag) of block diagonal elements.
-    vec : array
-        1D array of shape (nx).
-
-    Returns
-    -------
-    array
-        1D array of shape (ny).
-    """
-    sparse = check_sparse(sparse)
-    vec = np.asarray(vec)
-    if vec.ndim != 1 or sparse.shape[1] * sparse.shape[2] != vec.size:
-        raise ValueError("Vector has the wrong shape for this sparse matrix.")
-    return vmap(
-        lambda row, vec: np.sum(vmap(np.multiply)(row, vec.reshape(row.shape)), axis=0),
-        in_axes=(0, None),
-    )(sparse, vec).reshape(-1)
-
-
-@jit
-def matmul(sparse1, sparse2):
-    """Multiply sparse matrices and return a sparse result.
-
-    Parameters
-    ----------
-    sparse1 : array
-        3D array of shape (a, b, ndiag) of block diagonal elements.
-    sparse2 : array
-        3D array of shape (b, c, ndiag) of block diagonal elements.
-
-    Returns
-    -------
-    array
-        3D array of shape (a, c, ndiag) of block diagonal elements.
-    """
-    sparse1 = check_sparse(sparse1)
-    sparse2 = check_sparse(sparse2)
-    if sparse1.shape[1] != sparse2.shape[0]:
-        raise ValueError("Matrix shapes are not compatible for multiplication.")
-    return vmap(
-        # Sparse multiply row @ col
-        vmap(
-            # Sparse multiply blocks B1 and B2
-            lambda B1, B2: np.sum(np.multiply(B1, B2), axis=0),
-            (0, None),
-            0,
-        ),
-        (None, 1),
-        1,
-    )(sparse1, sparse2)
-
-
 # We split the determinant calculation for a matrix with N x N blocks
 # into n pieces that can be evaluated in parallel, following eqn (2.2)
 # of https://arxiv.org/abs/1112.4379.  First build a helper function
@@ -144,6 +288,8 @@ def _block_det(sparse, k, N, P):
 @jit
 def det(sparse):
     """Calculate the determinant of a sparse matrix.
+
+    Based on equation (2.2) of https://arxiv.org/abs/1112.4379
 
     Parameters
     ----------
