@@ -28,7 +28,7 @@ def interp(x, xp, fp):
     ind = np.argmin((x - xp) ** 2)
 
     # Perform linear interpolation
-    ind = np.clip(ind, 1, len(xp) - 2)
+    ind = np.clip(ind.astype("float32"), 1, len(xp) - 2).astype("int32")
 
     xi = xp[ind]
     # Figure out if we are on the right or the left of nearest
