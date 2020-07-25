@@ -331,14 +331,48 @@ def _block_det(sparse, k, N, P):
     S = sparse[k + 1 : N, k + 1 : N, 0:P]
     v = sparse[k + 1 : N, k : k + 1, 0:P]
     Sinv_v = sparse_dot_sparse(inv(S), v)
-    return np.product(sparse[k, k] - sparse_dot_sparse(u, Sinv_v))
+    M = sparse[k, k] - sparse_dot_sparse(u, Sinv_v)
+    sign = np.product(np.sign(M))
+    logdet = np.sum(np.log(np.abs(M)))
+    return sign, logdet
+
+
+@jit
+def slogdet(sparse):
+    """Calculate the log(determinant) of a sparse matrix.
+
+    Based on equation (2.2) of https://arxiv.org/abs/1112.4379
+
+    Parameters
+    ----------
+    sparse : array
+        3D array of shape (ny, nx, ndiag) of block diagonal elements.
+
+    Returns
+    -------
+    tuple
+        Tuple (sign, logdet) such that sign * exp(logdet) is the
+        determinant. If the determinant is zero, logdet = -inf.
+    """
+    sparse = check_sparse(sparse, square=True)
+    N, _, P = sparse.shape
+    sign = np.product(np.sign(sparse[-1, -1]))
+    logdet = np.sum(np.log(np.abs(sparse[-1, -1])))
+    # The individual blocks can be calculated in any order so there
+    # should be a better way to express this using lax.map but I
+    # can't get it to work without "concretization" errors.
+    for i in range(N - 1):
+        s, ld = _block_det(sparse, i, N, P)
+        sign *= s
+        logdet += ld
+    return sign, logdet
 
 
 @jit
 def det(sparse):
     """Calculate the determinant of a sparse matrix.
 
-    Based on equation (2.2) of https://arxiv.org/abs/1112.4379
+    Uses :func:`slogdet`.
 
     Parameters
     ----------
@@ -350,12 +384,5 @@ def det(sparse):
     float
         Determinant result.
     """
-    sparse = check_sparse(sparse, square=True)
-    N, _, P = sparse.shape
-    result = np.product(sparse[-1, -1])
-    # The individual blocks can be calculated in any order so there
-    # should be a better way to express this using lax.map but I
-    # can't get it to work without "concretization" errors.
-    for i in range(N - 1):
-        result *= _block_det(sparse, i, N, P)
-    return result
+    sign, logdet = slogdet(sparse)
+    return sign * np.exp(logdet)

@@ -73,9 +73,13 @@ def test_inv():
 
 
 def test_det():
-    X = [
-        [[1, 2, 3], [4, 5, 6], [-1, 7, -2]],
-        [[1, 2, 3], [-4, -5, -6], [2, -3, 9]],
-        [[7, 8, 9], [5, -4, 6], [-3, -2, -1]],
-    ]
+    X = np.array(
+        [
+            [[1, 2, 3], [4, 5, 6], [-1, 7, -2]],
+            [[1, 2, 3], [-4, -5, -6], [2, -3, 9]],
+            [[7, 8, 9], [5, -4, 6], [-3, -2, -1]],
+        ]
+    )
+    assert_array_equal(-det(-X), det(X))
+    assert_array_equal(det(0.0 * X), 0.0)
     assert_allclose(det(X), np.linalg.det(to_dense(X)), rtol=1e-6)
