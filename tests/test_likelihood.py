@@ -22,12 +22,16 @@ def test_gaussian_log_likelihood():
     mu, cov_sparse = gaussian_cl_covariance_and_mean(cosmo, ell, P, sparse=True)
     cov_dense = to_dense(cov_sparse)
     data = 1.1 * mu
-    for constant_cov in (True, False):
+    for include_logdet in (True, False):
         loglike_sparse = gaussian_log_likelihood(
-            data, mu, cov_sparse, constant_cov=constant_cov
+            data, mu, cov_sparse, include_logdet=include_logdet
         )
         for method in "inverse", "cholesky":
             loglike_dense = gaussian_log_likelihood(
-                data, mu, cov_dense, constant_cov=constant_cov, inverse_method=method
+                data,
+                mu,
+                cov_dense,
+                include_logdet=include_logdet,
+                inverse_method=method,
             )
             assert_allclose(loglike_sparse, loglike_dense, rtol=1e-6)
