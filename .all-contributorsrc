@@ -41,6 +41,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "dkirkby",
+      "name": "David Kirkby",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/185007?v=4",
+      "profile": "https://faculty.sites.uci.edu/dkirkby/",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
