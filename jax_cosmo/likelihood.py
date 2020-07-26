@@ -12,10 +12,31 @@ from jax_cosmo.angular_cl import gaussian_cl_covariance
 
 def gaussian_log_likelihood(data, mu, C, constant_cov=True, inverse_method="inverse"):
     """
-    Computes the likelihood for some cl
+    Computes the log likelihood for a given data vector under a multivariate
+    Gaussian distribution.
 
     If the covariance C is sparse (according to :meth:`jax_cosmo.sparse.is_sparse`)
     use sparse inverse and determinant algorithms (and ignore ``inverse_method``).
+
+    Parameters
+    ----------
+    data: array_like
+        Data vector, with shape [N].
+
+    mu: array_like, 1d
+        Mean of the Gaussian likelihood, with shape [N].
+
+    C: array_like or sparse matrix
+        Covariance of Gaussian likelihood with shape [N,N]
+
+    constant_cov: boolean
+        Whether to include the log determinant of the covariance matrix in the
+        likelihood. If `constant_cov` is true, the log determinant is ignored
+        (default: True)
+
+    inverse_method: string
+        Methods for computing the precision matrix. Either "inverse", "cholesky".
+        Note that this option is ignored when the covariance is sparse. (default: "inverse")
     """
     # Computes residuals
     r = mu - data
