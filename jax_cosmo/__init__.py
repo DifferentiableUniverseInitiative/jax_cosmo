@@ -22,3 +22,4 @@ import jax_cosmo.redshift as redshift
 import jax_cosmo.transfer as transfer
 from jax_cosmo.core import *
 from jax_cosmo.parameters import *
+import jax_cosmo.sparse as sparse

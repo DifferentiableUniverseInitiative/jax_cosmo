@@ -122,14 +122,19 @@ def noise_cl(ell, probes):
     return lax.map(get_noise_cl, cl_index)
 
 
-def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25):
+def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25, sparse=True):
     """
     Computes a Gaussian covariance for the angular cls of the provided probes
+
+    Set sparse True to return a sparse matrix representation that uses a factor
+    of n_ell less memory and is compatible with the linear algebra operations
+    in :mod:`jax_cosmo.sparse`.
 
     return_cls: (returns covariance)
     """
     ell = np.atleast_1d(ell)
     n_ell = len(ell)
+    one = 1.0 if sparse else np.eye(n_ell)
 
     # Adding noise to auto-spectra
     cl_obs = cl_signal + cl_noise
@@ -144,15 +149,22 @@ def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25):
     def get_cov_block(inds):
         a, b, c, d = inds
         cov = (cl_obs[a] * cl_obs[b] + cl_obs[c] * cl_obs[d]) / norm
-        return cov * np.eye(n_ell)
+        return cov * one
 
+    # Return a sparse representation of the matrix containing only the diagonals
+    # for each of the n_cls x n_cls blocks of size n_ell x n_ell.
+    # We could compress this further using the symmetry of the blocks, but
+    # it is easier to invert this matrix with this redundancy included.
     cov_mat = lax.map(get_cov_block, cov_blocks)
 
     # Reshape covariance matrix into proper matrix
-    cov_mat = cov_mat.reshape((n_cls, n_cls, n_ell, n_ell))
-    cov_mat = cov_mat.transpose(axes=(0, 2, 1, 3)).reshape(
-        (n_ell * n_cls, n_ell * n_cls)
-    )
+    if sparse:
+        cov_mat = cov_mat.reshape((n_cls, n_cls, n_ell))
+    else:
+        cov_mat = cov_mat.reshape((n_cls, n_cls, n_ell, n_ell))
+        cov_mat = cov_mat.transpose(axes=(0, 2, 1, 3)).reshape(
+            (n_ell * n_cls, n_ell * n_cls)
+        )
     return cov_mat
 
 
@@ -163,9 +175,14 @@ def gaussian_cl_covariance_and_mean(
     transfer_fn=tklib.Eisenstein_Hu,
     nonlinear_fn=power.halofit,
     f_sky=0.25,
+    sparse=False,
 ):
     """
     Computes a Gaussian covariance for the angular cls of the provided probes
+
+    Set sparse True to return a sparse matrix representation that uses a factor
+    of n_ell less memory and is compatible with the linear algebra operations
+    in :mod:`jax_cosmo.sparse`.
 
     return_cls: (returns signal + noise cl, covariance)
     """
@@ -179,6 +196,6 @@ def gaussian_cl_covariance_and_mean(
     cl_noise = noise_cl(ell, probes)
 
     # retrieve the covariance
-    cov_mat = gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky)
+    cov_mat = gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky, sparse)
 
     return cl_signal.flatten(), cov_mat
