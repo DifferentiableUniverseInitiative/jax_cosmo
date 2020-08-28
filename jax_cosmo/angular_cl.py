@@ -13,7 +13,6 @@ from jax import vmap
 import jax_cosmo.background as bkgrd
 import jax_cosmo.constants as const
 import jax_cosmo.power as power
-import jax_cosmo.transfer as tklib
 from jax_cosmo.scipy.integrate import simps
 from jax_cosmo.utils import a2z
 from jax_cosmo.utils import z2a
@@ -54,7 +53,7 @@ def _get_cov_blocks_ordering(probes):
 
 
 def angular_cl(
-    cosmo, ell, probes, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=power.halofit
+    cosmo, ell, probes, transfer_fn=None, nonlinear_fn=None
 ):
     """
     Computes angular Cls for the provided probes
@@ -66,6 +65,13 @@ def angular_cl(
 
     cls: [ell, ncls]
     """
+    # Use transfer_fn and nonlinear_fn if provided, else fallback to what is 
+    # defined in cosmo
+    if transfer_fn is None:
+        transfer_fn = cosmo.transfer_fn
+    if nonlinear_fn is None:
+        nonlinear_fn = cosmo.nonlinear_fn
+
     # Retrieve the maximum redshift probed
     zmax = max([p.zmax for p in probes])
 
@@ -172,8 +178,8 @@ def gaussian_cl_covariance_and_mean(
     cosmo,
     ell,
     probes,
-    transfer_fn=tklib.Eisenstein_Hu,
-    nonlinear_fn=power.halofit,
+    transfer_fn=None,
+    nonlinear_fn=None,
     f_sky=0.25,
     sparse=False,
 ):
@@ -186,6 +192,13 @@ def gaussian_cl_covariance_and_mean(
 
     return_cls: (returns signal + noise cl, covariance)
     """
+    # Use transfer_fn and nonlinear_fn if provided, else fallback to what is 
+    # defined in cosmo
+    if transfer_fn is None:
+        transfer_fn = cosmo.transfer_fn
+    if nonlinear_fn is None:
+        nonlinear_fn = cosmo.nonlinear_fn
+        
     ell = np.atleast_1d(ell)
     n_ell = len(ell)
 
