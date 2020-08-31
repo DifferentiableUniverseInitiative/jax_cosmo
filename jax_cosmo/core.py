@@ -40,8 +40,12 @@ class Cosmology:
           First order term of dark energy equation
         wa, float
           Second order term of dark energy equation of state
-        gamma: float
+        gamma: float, optional
           Index of the growth rate (optional)
+        transfer_fn: transfer_fn(cosmo, k, **kwargs), optional
+          Transfer function. 
+        nonlinear_fn: nonlinear_fn(cosmo, k, **kwargs), optional
+          Non-linear matter power spectrum function. 
 
         Notes:
         ------

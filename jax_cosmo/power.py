@@ -33,8 +33,8 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=None, **kwargs):
     a: array_like, optional
         Scale factor (def: 1.0)
 
-    transfer_fn: transfer_fn(cosmo, k, **kwargs)
-        Transfer function
+    transfer_fn: transfer_fn(cosmo, k, **kwargs), optional
+        Transfer function, if None uses cosmo.transfer_fn
 
     Returns
     -------
@@ -156,6 +156,9 @@ def halofit(cosmo, k, a, transfer_fn, prescription="takahashi2012"):
 
     a: array_like, optional
         Scale factor (def: 1.0)
+
+    transfer_fn: transfer_fn(cosmo, k, **kwargs), optional
+        Transfer function, if None uses cosmo.transfer_fn
 
     prescription: str, optional
         Either 'smith2003' or 'takahashi2012'
