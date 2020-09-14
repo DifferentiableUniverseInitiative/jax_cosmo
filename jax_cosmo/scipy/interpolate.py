@@ -33,8 +33,8 @@ def interp(x, xp, fp):
     xi = xp[ind]
     # Figure out if we are on the right or the left of nearest
     s = np.sign(np.clip(x, xp[1], xp[-2]) - xi).astype(np.int64)
-    a = (fp[ind + np.copysign(1, s)] - fp[ind]) / (
-        xp[ind + np.copysign(1, s)] - xp[ind]
+    a = (fp[ind + np.copysign(1, s).astype(np.int64)] - fp[ind]) / (
+        xp[ind + np.copysign(1, s).astype(np.int64)] - xp[ind]
     )
     b = fp[ind] - a * xp[ind]
     return a * x + b
