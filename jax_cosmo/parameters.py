@@ -1,8 +1,4 @@
 # This module defines a few default cosmologies
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from functools import partial
 
 from jax_cosmo.core import Cosmology

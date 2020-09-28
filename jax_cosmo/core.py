@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import jax.numpy as np
 from jax.experimental.ode import odeint
 from jax.tree_util import register_pytree_node_class

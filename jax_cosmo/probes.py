@@ -1,8 +1,4 @@
 # This module defines kernel functions for various tracers
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import jax.numpy as np
 from jax import jit
 from jax import vmap
@@ -187,7 +183,7 @@ class WeakLensing(container):
 
 @register_pytree_node_class
 class NumberCounts(container):
-    """ Class representing a galaxy clustering probe, with a bunch of bins
+    """Class representing a galaxy clustering probe, with a bunch of bins
 
     Parameters:
     -----------
@@ -214,14 +210,13 @@ class NumberCounts(container):
 
     @property
     def n_tracers(self):
-        """ Returns the number of tracers for this probe, i.e. redshift bins
-        """
+        """Returns the number of tracers for this probe, i.e. redshift bins"""
         # Extract parameters
         pzs = self.params[0]
         return len(pzs)
 
     def kernel(self, cosmo, z, ell):
-        """ Compute the radial kernel for all nz bins in this probe.
+        """Compute the radial kernel for all nz bins in this probe.
 
         Returns:
         --------
@@ -235,7 +230,7 @@ class NumberCounts(container):
         return kernel
 
     def noise(self):
-        """ Returns the noise power for all redshifts
+        """Returns the noise power for all redshifts
         return: shape [nbins]
         """
         # Extract parameters

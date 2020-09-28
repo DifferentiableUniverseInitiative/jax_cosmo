@@ -27,10 +27,6 @@ You can also use the lower-level algorithms (with no input validation) directly:
  - :fun:`sparse_dot_sparse`
  - :fun:`dense_dot_sparse_dot_dense`
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import functools
 
 import jax.numpy as np
@@ -39,14 +35,12 @@ from jax import vmap
 
 
 def is_sparse(sparse):
-    """Test if the input is interpretable as a sparse matrix.
-    """
+    """Test if the input is interpretable as a sparse matrix."""
     return np.asarray(sparse).ndim == 3
 
 
 def check_sparse(sparse, square=False):
-    """Check for a valid sparse matrix.
-    """
+    """Check for a valid sparse matrix."""
     sparse = np.asarray(sparse)
     if sparse.ndim != 3:
         raise ValueError("Expected 3D array of sparse diagonals.")
