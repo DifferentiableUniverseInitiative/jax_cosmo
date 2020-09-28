@@ -6,6 +6,7 @@ from __future__ import print_function
 from functools import partial
 
 from jax_cosmo.core import Cosmology
+from jax_cosmo.power import halofit
 
 # To add new cosmologies, we just set the parameters to some default values using
 # partial
@@ -22,3 +23,7 @@ Planck15 = partial(
     w0=-1.0,
     wa=0.0,
 )
+
+# Shortcuts for the different halofit implementations
+halofit_smith2003 = partial(halofit, prescription="smith2003")
+halofit_takahashi2012 = partial(halofit, prescription="takahashi2012")

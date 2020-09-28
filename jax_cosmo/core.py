@@ -7,6 +7,8 @@ from jax.experimental.ode import odeint
 from jax.tree_util import register_pytree_node_class
 
 import jax_cosmo.constants as const
+import jax_cosmo.power as power
+import jax_cosmo.transfer as tklib
 from jax_cosmo.utils import a2z
 from jax_cosmo.utils import z2a
 
@@ -15,7 +17,8 @@ __all__ = ["Cosmology"]
 
 @register_pytree_node_class
 class Cosmology:
-    def __init__(self, Omega_c, Omega_b, h, n_s, sigma8, Omega_k, w0, wa, gamma=None):
+    def __init__(self, Omega_c, Omega_b, h, n_s, sigma8, Omega_k, w0, wa, gamma=None,
+                 transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=power.halofit):
         """
         Cosmology object, stores primary and derived cosmological parameters.
 
@@ -37,8 +40,12 @@ class Cosmology:
           First order term of dark energy equation
         wa, float
           Second order term of dark energy equation of state
-        gamma: float
+        gamma: float, optional
           Index of the growth rate (optional)
+        transfer_fn: transfer_fn(cosmo, k, **kwargs), optional
+          Transfer function. 
+        nonlinear_fn: nonlinear_fn(cosmo, k, **kwargs), optional
+          Non-linear matter power spectrum function. 
 
         Notes:
         ------
@@ -63,6 +70,8 @@ class Cosmology:
         # Secondary optional parameters
         self._gamma = gamma
         self._flags["gamma_growth"] = gamma is not None
+        self._flags["config"] = {"transfer_fn" : transfer_fn,
+                                 "nonlinear_fn" : nonlinear_fn}
 
         # Create a workspace where functions can store some precomputed
         # results
@@ -143,6 +152,7 @@ class Cosmology:
             w0=w0,
             wa=wa,
             gamma=gamma,
+            **aux_data["config"]
         )
 
     # Cosmological parameters, base and derived
@@ -181,7 +191,7 @@ class Cosmology:
         return k
 
     @property
-    def sqrtk(self):
+    def _sqrtk(self):
         return np.sqrt(np.abs(self._Omega_k))
 
     @property
@@ -211,3 +221,20 @@ class Cosmology:
     @property
     def gamma(self):
         return self._gamma
+
+    # Options
+    @property
+    def transfer_fn(self):
+        return self._flags["config"]["transfer_fn"]
+
+    @transfer_fn.setter
+    def transfer_fn(self, value):
+        self._flags["config"]["transfer_fn"] = value
+
+    @property
+    def nonlinear_fn(self):
+        return self._flags["config"]["nonlinear_fn"]
+
+    @nonlinear_fn.setter
+    def nonlinear_fn(self, value):
+        self._flags["config"]["nonlinear_fn"] = value

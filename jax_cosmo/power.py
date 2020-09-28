@@ -8,7 +8,6 @@ import jax.numpy as np
 
 import jax_cosmo.background as bkgrd
 import jax_cosmo.constants as const
-import jax_cosmo.transfer as tklib
 from jax_cosmo.scipy.integrate import romb
 from jax_cosmo.scipy.integrate import simps
 from jax_cosmo.scipy.interpolate import interp
@@ -23,7 +22,7 @@ def primordial_matter_power(cosmo, k):
     return k ** cosmo.n_s
 
 
-def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwargs):
+def linear_matter_power(cosmo, k, a=1.0, transfer_fn=None, **kwargs):
     r""" Computes the linear matter power spectrum.
 
     Parameters
@@ -34,8 +33,8 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwar
     a: array_like, optional
         Scale factor (def: 1.0)
 
-    transfer_fn: transfer_fn(cosmo, k, **kwargs)
-        Transfer function
+    transfer_fn: transfer_fn(cosmo, k, **kwargs), optional
+        Transfer function, if None uses cosmo.transfer_fn
 
     Returns
     -------
@@ -44,6 +43,10 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwar
         and scale factor.
 
     """
+    # Use transfer_fn if provided, else fallback to what is defined in cosmo
+    if transfer_fn is None:
+        transfer_fn = cosmo.transfer_fn
+
     k = np.atleast_1d(k)
     a = np.atleast_1d(a)
     g = bkgrd.growth_factor(cosmo, a)
@@ -153,6 +156,9 @@ def halofit(cosmo, k, a, transfer_fn, prescription="takahashi2012"):
 
     a: array_like, optional
         Scale factor (def: 1.0)
+
+    transfer_fn: transfer_fn(cosmo, k, **kwargs), optional
+        Transfer function, if None uses cosmo.transfer_fn
 
     prescription: str, optional
         Either 'smith2003' or 'takahashi2012'
@@ -269,10 +275,16 @@ def halofit(cosmo, k, a, transfer_fn, prescription="takahashi2012"):
 
 
 def nonlinear_matter_power(
-    cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=halofit
+    cosmo, k, a=1.0, transfer_fn=None, nonlinear_fn=None
 ):
     """ Computes the non-linear matter power spectrum.
 
     This function is just a wrapper over several nonlinear power spectra.
     """
+    # Use transfer_fn and nonlinear_fn if provided, else fallback to what is 
+    # defined in cosmo
+    if transfer_fn is None:
+        transfer_fn = cosmo.transfer_fn
+    if nonlinear_fn is None:
+        nonlinear_fn = cosmo.nonlinear_fn
     return nonlinear_fn(cosmo, k, a, transfer_fn=transfer_fn)
