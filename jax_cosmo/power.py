@@ -17,14 +17,14 @@ __all__ = ["primordial_matter_power", "linear_matter_power", "nonlinear_matter_p
 
 
 def primordial_matter_power(cosmo, k):
-    """ Primordial power spectrum
-        Pk = k^n
+    """Primordial power spectrum
+    Pk = k^n
     """
     return k ** cosmo.n_s
 
 
 def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwargs):
-    r""" Computes the linear matter power spectrum.
+    r"""Computes the linear matter power spectrum.
 
     Parameters
     ----------
@@ -59,7 +59,7 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwar
 
 
 def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax=1000.0, ksteps=5, **kwargs):
-    """ Computes the energy of the fluctuations within a sphere of R h^{-1} Mpc
+    """Computes the energy of the fluctuations within a sphere of R h^{-1} Mpc
 
     .. math::
 
@@ -84,15 +84,14 @@ def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax=1000.0, ksteps=5, **kwargs
 
 
 def linear(cosmo, k, a, transfer_fn):
-    """Linear matter power spectrum
-    """
+    """Linear matter power spectrum"""
     return linear_matter_power(cosmo, k, a, transfer_fn)
 
 
 def _halofit_parameters(cosmo, a, transfer_fn):
-    r""" Computes the non linear scale,
-         effective spectral index,
-         spectral curvature
+    r"""Computes the non linear scale,
+    effective spectral index,
+    spectral curvature
     """
     # Step 1: Finding the non linear scale for which sigma(R)=1
     # That's our search range for the non linear scale
@@ -144,7 +143,7 @@ def _halofit_parameters(cosmo, a, transfer_fn):
 
 
 def halofit(cosmo, k, a, transfer_fn, prescription="takahashi2012"):
-    r""" Computes the non linear halofit correction to the matter power spectrum.
+    r"""Computes the non linear halofit correction to the matter power spectrum.
 
     Parameters
     ----------
@@ -271,7 +270,7 @@ def halofit(cosmo, k, a, transfer_fn, prescription="takahashi2012"):
 def nonlinear_matter_power(
     cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=halofit
 ):
-    """ Computes the non-linear matter power spectrum.
+    """Computes the non-linear matter power spectrum.
 
     This function is just a wrapper over several nonlinear power spectra.
     """

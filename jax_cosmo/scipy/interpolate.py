@@ -15,15 +15,15 @@ __all__ = ["interp"]
 @functools.partial(vmap, in_axes=(0, None, None))
 def interp(x, xp, fp):
     """
-  Simple equivalent of np.interp that compute a linear interpolation.
+    Simple equivalent of np.interp that compute a linear interpolation.
 
-  We are not doing any checks, so make sure your query points are lying
-  inside the array.
+    We are not doing any checks, so make sure your query points are lying
+    inside the array.
 
-  TODO: Implement proper interpolation!
+    TODO: Implement proper interpolation!
 
-  x, xp, fp need to be 1d arrays
-  """
+    x, xp, fp need to be 1d arrays
+    """
     # First we find the nearest neighbour
     ind = np.argmin((x - xp) ** 2)
 

@@ -12,7 +12,7 @@ __all__ = ["Eisenstein_Hu"]
 
 
 def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
-    """ Computes the Eisenstein & Hu matter transfer function.
+    """Computes the Eisenstein & Hu matter transfer function.
 
     Parameters
     ----------
