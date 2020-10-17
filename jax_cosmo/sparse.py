@@ -39,14 +39,12 @@ from jax import vmap
 
 
 def is_sparse(sparse):
-    """Test if the input is interpretable as a sparse matrix.
-    """
+    """Test if the input is interpretable as a sparse matrix."""
     return np.asarray(sparse).ndim == 3
 
 
 def check_sparse(sparse, square=False):
-    """Check for a valid sparse matrix.
-    """
+    """Check for a valid sparse matrix."""
     sparse = np.asarray(sparse)
     if sparse.ndim != 3:
         raise ValueError("Expected 3D array of sparse diagonals.")

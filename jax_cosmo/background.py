@@ -249,7 +249,7 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
 
 
 def a_of_chi(cosmo, chi):
-    r""" Computes the scale factor for corresponding (array) of radial comoving
+    r"""Computes the scale factor for corresponding (array) of radial comoving
     distance by reverse linear interpolation.
 
     Parameters:
@@ -366,7 +366,7 @@ def angular_diameter_distance(cosmo, a):
 
 
 def growth_factor(cosmo, a):
-    """ Compute linear growth factor D(a) at a given scale factor,
+    """Compute linear growth factor D(a) at a given scale factor,
     normalized such that D(a=1) = 1.
 
     Parameters
@@ -396,7 +396,7 @@ def growth_factor(cosmo, a):
 
 
 def growth_rate(cosmo, a):
-    """ Compute growth rate dD/dlna at a given scale factor.
+    """Compute growth rate dD/dlna at a given scale factor.
 
     Parameters
     ----------
@@ -438,7 +438,7 @@ def growth_rate(cosmo, a):
 
 
 def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
-    """ Compute linear growth factor D(a) at a given scale factor,
+    """Compute linear growth factor D(a) at a given scale factor,
     normalised such that D(a=1) = 1.
 
     Parameters
@@ -486,7 +486,7 @@ def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
 
 
 def _growth_rate_ODE(cosmo, a):
-    """ Compute growth rate dD/dlna at a given scale factor by solving the linear
+    """Compute growth rate dD/dlna at a given scale factor by solving the linear
     growth ODE.
 
     Parameters
@@ -510,7 +510,7 @@ def _growth_rate_ODE(cosmo, a):
 
 
 def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
-    r""" Computes growth factor by integrating the growth rate provided by the
+    r"""Computes growth factor by integrating the growth rate provided by the
     \gamma parametrization. Normalized such that D( a=1) =1
 
     Parameters
