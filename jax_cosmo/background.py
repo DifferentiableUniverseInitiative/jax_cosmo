@@ -1,8 +1,4 @@
 # This module implements various functions for the background COSMOLOGY
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import jax.numpy as np
 
 import jax_cosmo.constants as const

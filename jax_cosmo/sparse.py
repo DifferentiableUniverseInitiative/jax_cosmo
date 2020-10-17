@@ -27,10 +27,6 @@ You can also use the lower-level algorithms (with no input validation) directly:
  - :fun:`sparse_dot_sparse`
  - :fun:`dense_dot_sparse_dot_dense`
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import functools
 
 import jax.numpy as np
