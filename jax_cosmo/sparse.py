@@ -343,6 +343,10 @@ def slogdet(sparse):
 
     Based on equation (2.2) of https://arxiv.org/abs/1112.4379
 
+    For a zero sparse matrix, the result of this computation is
+    currently undefined and will return nan.
+    TODO: support null matrix as input.
+
     Parameters
     ----------
     sparse : array
@@ -352,7 +356,7 @@ def slogdet(sparse):
     -------
     tuple
         Tuple (sign, logdet) such that sign * exp(logdet) is the
-        determinant. If the determinant is zero, logdet = -inf.
+        determinant.
     """
     sparse = check_sparse(sparse, square=True)
     N, _, P = sparse.shape
@@ -373,6 +377,9 @@ def det(sparse):
     """Calculate the determinant of a sparse matrix.
 
     Uses :func:`slogdet`.
+
+    For a zero sparse matrix, the result of this computation is
+    currently undefined and will return nan.
 
     Parameters
     ----------
