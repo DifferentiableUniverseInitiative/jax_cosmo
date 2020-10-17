@@ -1,8 +1,4 @@
 # This module contains various transfer functions from the literatu
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import jax.numpy as np
 
 import jax_cosmo.background as bkgrd
@@ -12,7 +8,7 @@ __all__ = ["Eisenstein_Hu"]
 
 
 def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
-    """ Computes the Eisenstein & Hu matter transfer function.
+    """Computes the Eisenstein & Hu matter transfer function.
 
     Parameters
     ----------

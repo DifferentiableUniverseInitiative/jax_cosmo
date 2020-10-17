@@ -27,10 +27,6 @@ You can also use the lower-level algorithms (with no input validation) directly:
  - :fun:`sparse_dot_sparse`
  - :fun:`dense_dot_sparse_dot_dense`
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import functools
 
 import jax.numpy as np
@@ -39,14 +35,12 @@ from jax import vmap
 
 
 def is_sparse(sparse):
-    """Test if the input is interpretable as a sparse matrix.
-    """
+    """Test if the input is interpretable as a sparse matrix."""
     return np.asarray(sparse).ndim == 3
 
 
 def check_sparse(sparse, square=False):
-    """Check for a valid sparse matrix.
-    """
+    """Check for a valid sparse matrix."""
     sparse = np.asarray(sparse)
     if sparse.ndim != 3:
         raise ValueError("Expected 3D array of sparse diagonals.")
@@ -343,6 +337,10 @@ def slogdet(sparse):
 
     Based on equation (2.2) of https://arxiv.org/abs/1112.4379
 
+    For a zero sparse matrix, the result of this computation is
+    currently undefined and will return nan.
+    TODO: support null matrix as input.
+
     Parameters
     ----------
     sparse : array
@@ -352,7 +350,7 @@ def slogdet(sparse):
     -------
     tuple
         Tuple (sign, logdet) such that sign * exp(logdet) is the
-        determinant. If the determinant is zero, logdet = -inf.
+        determinant.
     """
     sparse = check_sparse(sparse, square=True)
     N, _, P = sparse.shape
@@ -373,6 +371,9 @@ def det(sparse):
     """Calculate the determinant of a sparse matrix.
 
     Uses :func:`slogdet`.
+
+    For a zero sparse matrix, the result of this computation is
+    currently undefined and will return nan.
 
     Parameters
     ----------
