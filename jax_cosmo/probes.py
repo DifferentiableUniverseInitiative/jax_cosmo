@@ -5,6 +5,7 @@ from jax import vmap
 from jax.tree_util import register_pytree_node_class
 
 import jax_cosmo.background as bkgrd
+import jax_cosmo.redshift as rds
 import jax_cosmo.constants as const
 from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
@@ -23,21 +24,31 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
     zmax = max([pz.zmax for pz in pzs])
     # Retrieve comoving distance corresponding to z
     chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
-
-    @vmap
-    def integrand(z_prime):
-        chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
-        # Stack the dndz of all redshift bins
-        dndz = np.stack([pz(z_prime) for pz in pzs], axis=0)
-        return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
-
-    # Computes the radial weak lensing kernel
-    radial_kernel = np.squeeze(simps(integrand, z, zmax, 256) * (1.0 + z) * chi)
+    radial_kernel=[]
+    for pz in pzs:
+        if isinstance(pz, rds.single_plane):
+            z0=pz.params[0]
+            #@vmap
+            def integrand(z_prime):
+                chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
+                return 1. * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
+            # Computes the radial weak lensing kernel
+            radial_kernel.append(integrand(z0) * (1.0 + z) * chi)
+        else:
+            @vmap
+            def integrand(z_prime):
+                chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
+                # Stack the dndz of all redshift bins
+                dndz = pz(z_prime) 
+                return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
+            # Computes the radial weak lensing kernel
+            radial_kernel.append(simps(integrand, z, zmax, 256) * (1.0 + z) * chi)
     # Constant term
     constant_factor = 3.0 * const.H0 ** 2 * cosmo.Omega_m / 2.0 / const.c
     # Ell dependent factor
     ell_factor = np.sqrt((ell - 1) * (ell) * (ell + 1) * (ell + 2)) / (ell + 0.5) ** 2
-    return constant_factor * ell_factor * radial_kernel
+    results=np.array([constant_factor * ell_factor * rk for rk in radial_kernel])
+    return results
 
 
 @jit
