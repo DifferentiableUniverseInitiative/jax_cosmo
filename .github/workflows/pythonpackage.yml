@@ -19,22 +19,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
+
     - uses: conda-incubator/setup-miniconda@v2
       with:
         python-version: ${{ matrix.python-version }}
         channels: conda-forge,defaults
         channel-priority: strict
         show-channel-urls: true
+
     - name: Install dependencies
       run: |
         conda config --set always_yes yes
-        conda install pytest
+        conda install pytest pip 
         conda install -c conda-forge pyccl
         pip install .
+  
     - name: Test with pytest
       run: |
         pytest
