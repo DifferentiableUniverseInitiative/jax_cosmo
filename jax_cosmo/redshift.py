@@ -77,6 +77,7 @@ class smail_nz(redshift_distribution):
         a, b, z0 = self.params
         return z ** a * np.exp(-((z / z0) ** b))
 
+
 @register_pytree_node_class
 class single_plane(redshift_distribution):
     """Defines a single plane redshift distribution with these arguments
@@ -84,11 +85,13 @@ class single_plane(redshift_distribution):
     -----------
     z0:
     """
-    #self._norm = 1.
-    
+
+    # self._norm = 1.
+
     def pz_fn(self, z):
         z0 = self.params
-        return np.where(z == z0, 1., 0)
+        return np.where(z == z0, 1.0, 0)
+
 
 @register_pytree_node_class
 class kde_nz(redshift_distribution):
