@@ -11,8 +11,8 @@ from jax_cosmo.angular_cl import angular_cl
 from jax_cosmo.angular_cl import gaussian_cl_covariance
 from jax_cosmo.bias import constant_linear_bias
 from jax_cosmo.bias import inverse_growth_linear_bias
+from jax_cosmo.redshift import delta_nz
 from jax_cosmo.redshift import kde_nz
-from jax_cosmo.redshift import single_plane
 from jax_cosmo.redshift import smail_nz
 from jax_cosmo.sparse import to_dense
 
@@ -87,7 +87,7 @@ def test_lensing_cl_single_plane():
     pz = np.zeros_like(z)
     pz[np.argmin(abs(z0 - z))] = 1.0
     nzs_s = kde_nz(z, pz, bw=0.01)
-    nz = single_plane(z0)
+    nz = delta_nz(z0)
     tracer_ccl = ccl.WeakLensingTracer(cosmo_ccl, (z, nzs_s(z)), use_A_ia=False)
     tracer_jax = probes.WeakLensing([nz])
 

@@ -26,7 +26,7 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
     chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
     radial_kernel = []
     for pz in pzs:
-        if isinstance(pz, rds.single_plane):
+        if isinstance(pz, rds.delta_nz):
             z0 = pz.params[0]
             # @vmap
             def integrand(z_prime):
