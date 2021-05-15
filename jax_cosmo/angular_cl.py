@@ -158,7 +158,7 @@ def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25, sparse=
         cov_mat = cov_mat.reshape((n_cls, n_cls, n_ell))
     else:
         cov_mat = cov_mat.reshape((n_cls, n_cls, n_ell, n_ell))
-        cov_mat = cov_mat.transpose(axes=(0, 2, 1, 3)).reshape(
+        cov_mat = cov_mat.transpose((0, 2, 1, 3)).reshape(
             (n_ell * n_cls, n_ell * n_cls)
         )
     return cov_mat
