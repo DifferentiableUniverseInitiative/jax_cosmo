@@ -57,7 +57,7 @@ def test_lensing_cl():
     assert_allclose(cl_ccl, cl_jax[0], rtol=1.0e-2)
 
 
-def test_lensing_cl_single_plane():
+def test_lensing_cl_delta():
     # We first define equivalent CCL and jax_cosmo cosmologies
     cosmo_ccl = ccl.Cosmology(
         Omega_c=0.3,
@@ -88,8 +88,12 @@ def test_lensing_cl_single_plane():
     pz[np.argmin(abs(z0 - z))] = 1.0
     nzs_s = kde_nz(z, pz, bw=0.01)
     nz = delta_nz(z0)
+    nz_smail1 = smail_nz(1.0, 2.0, 1.0)
+    nz_smail2 = smail_nz(1.4, 2.0, 1.0)
     tracer_ccl = ccl.WeakLensingTracer(cosmo_ccl, (z, nzs_s(z)), use_A_ia=False)
+    tracer_cclb = ccl.WeakLensingTracer(cosmo_ccl, (z, nz_smail2(z)), use_A_ia=False)
     tracer_jax = probes.WeakLensing([nz])
+    tracer_jaxb = probes.WeakLensing([nz, nz_smail1, nz_smail2])
 
     # Get an ell range for the cls
     ell = np.logspace(0.1, 4)
@@ -98,6 +102,11 @@ def test_lensing_cl_single_plane():
     cl_ccl = ccl.angular_cl(cosmo_ccl, tracer_ccl, tracer_ccl, ell)
     cl_jax = angular_cl(cosmo_jax, ell, [tracer_jax])
     assert_allclose(cl_ccl, cl_jax[0], rtol=1.0e-2)
+
+    # Also test if several nzs are provided
+    cl_ccl = ccl.angular_cl(cosmo_ccl, tracer_cclb, tracer_cclb, ell)
+    cl_jax = angular_cl(cosmo_jax, ell, [tracer_jaxb])
+    assert_allclose(cl_ccl, cl_jax[-1], rtol=1.0e-2)
 
 
 def test_lensing_cl_IA():
