@@ -60,6 +60,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "dlanzieri",
+      "name": "Denise Lanzieri",
+      "avatar_url": "https://avatars.githubusercontent.com/u/72620117?v=4",
+      "profile": "https://www.cosmostat.org/people/denise-lanzieri",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

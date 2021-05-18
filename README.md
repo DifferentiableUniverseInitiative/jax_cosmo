@@ -1,7 +1,7 @@
 # jax-cosmo
 
 [![Join the chat at https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo](https://badges.gitter.im/DifferentiableUniverseInitiative/jax_cosmo.svg)](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Documentation Status](https://readthedocs.org/projects/jax-cosmo/badge/?version=latest)](https://jax-cosmo.readthedocs.io/en/latest/?badge=latest) [![CI Test](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/workflows/Python%20package/badge.svg)]() [![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![PyPI](https://img.shields.io/pypi/v/jax-cosmo)](https://pypi.org/project/jax-cosmo/) [![PyPI - License](https://img.shields.io/pypi/l/jax-cosmo)](https://github.com/google/jax-cosmo/blob/master/LICENSE)  <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-6-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <h3 align="center">Finally a differentiable cosmology library, and it's in JAX!</h3>
@@ -90,17 +90,19 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- markdownlint-disable -->
 <table>
   <tr>
-    <td align="center"><a href="http://flanusse.net"><img src="https://avatars0.githubusercontent.com/u/861591?v=4" width="100px;" alt=""/><br /><sub><b>Francois Lanusse</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=EiffL" title="Code">💻</a></td>
-    <td align="center"><a href="http://www.cosmostat.org/people/santiago-casas"><img src="https://avatars0.githubusercontent.com/u/6987716?v=4" width="100px;" alt=""/><br /><sub><b>Santiago Casas</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues?q=author%3Asantiagocasas" title="Bug reports">🐛</a> <a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=santiagocasas" title="Code">💻</a></td>
-    <td align="center"><a href="https://github.com/austinpeel"><img src="https://avatars0.githubusercontent.com/u/17024310?v=4" width="100px;" alt=""/><br /><sub><b>Austin Peel</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=austinpeel" title="Code">💻</a></td>
-    <td align="center"><a href="https://minaskaramanis.com"><img src="https://avatars2.githubusercontent.com/u/23280751?v=4" width="100px;" alt=""/><br /><sub><b>Minas Karamanis</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=minaskar" title="Code">💻</a></td>
-    <td align="center"><a href="https://faculty.sites.uci.edu/dkirkby/"><img src="https://avatars1.githubusercontent.com/u/185007?v=4" width="100px;" alt=""/><br /><sub><b>David Kirkby</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=dkirkby" title="Code">💻</a> <a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues?q=author%3Adkirkby" title="Bug reports">🐛</a></td>
-    <td align="center"><a href="https://aboucaud.github.io"><img src="https://avatars0.githubusercontent.com/u/3065310?v=4" width="100px;" alt=""/><br /><sub><b>Alexandre Boucaud</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=aboucaud" title="Code">💻</a></td>
+    <td align="center"><a href="http://flanusse.net"><img src="https://avatars0.githubusercontent.com/u/861591?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Francois Lanusse</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=EiffL" title="Code">💻</a></td>
+    <td align="center"><a href="http://www.cosmostat.org/people/santiago-casas"><img src="https://avatars0.githubusercontent.com/u/6987716?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Santiago Casas</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues?q=author%3Asantiagocasas" title="Bug reports">🐛</a> <a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=santiagocasas" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/austinpeel"><img src="https://avatars0.githubusercontent.com/u/17024310?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Austin Peel</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=austinpeel" title="Code">💻</a></td>
+    <td align="center"><a href="https://minaskaramanis.com"><img src="https://avatars2.githubusercontent.com/u/23280751?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Minas Karamanis</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=minaskar" title="Code">💻</a></td>
+    <td align="center"><a href="https://faculty.sites.uci.edu/dkirkby/"><img src="https://avatars1.githubusercontent.com/u/185007?v=4?s=100" width="100px;" alt=""/><br /><sub><b>David Kirkby</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=dkirkby" title="Code">💻</a> <a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues?q=author%3Adkirkby" title="Bug reports">🐛</a></td>
+    <td align="center"><a href="https://aboucaud.github.io"><img src="https://avatars0.githubusercontent.com/u/3065310?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Alexandre Boucaud</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=aboucaud" title="Code">💻</a></td>
+    <td align="center"><a href="https://www.cosmostat.org/people/denise-lanzieri"><img src="https://avatars.githubusercontent.com/u/72620117?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Denise Lanzieri</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=dlanzieri" title="Code">💻</a></td>
   </tr>
 </table>
 
-<!-- markdownlint-enable -->
+<!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
+
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
