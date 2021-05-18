@@ -10,7 +10,7 @@ from jax_cosmo.scipy.integrate import simps
 
 steradian_to_arcmin2 = 11818102.86004228
 
-__all__ = ["smail_nz", "kde_nz"]
+__all__ = ["smail_nz", "kde_nz", "delta_nz"]
 
 
 class redshift_distribution(container):
@@ -76,6 +76,24 @@ class smail_nz(redshift_distribution):
     def pz_fn(self, z):
         a, b, z0 = self.params
         return z ** a * np.exp(-((z / z0) ** b))
+
+
+@register_pytree_node_class
+class delta_nz(redshift_distribution):
+    """Defines a single plane redshift distribution with these arguments
+    Parameters:
+    -----------
+    z0:
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the parameters of the redshift distribution"""
+        super(delta_nz, self).__init__(*args, **kwargs)
+        self._norm = 1.0
+
+    def pz_fn(self, z):
+        z0 = self.params
+        return np.where(z == z0, 1.0, 0)
 
 
 @register_pytree_node_class

@@ -6,6 +6,7 @@ from jax.tree_util import register_pytree_node_class
 
 import jax_cosmo.background as bkgrd
 import jax_cosmo.constants as const
+import jax_cosmo.redshift as rds
 from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
 from jax_cosmo.utils import a2z
@@ -18,21 +19,56 @@ __all__ = ["WeakLensing", "NumberCounts"]
 def weak_lensing_kernel(cosmo, pzs, z, ell):
     """
     Returns a weak lensing kernel
+
+    Note: this function handles differently nzs that correspond to extended redshift
+    distribution, and delta functions.
     """
     z = np.atleast_1d(z)
     zmax = max([pz.zmax for pz in pzs])
     # Retrieve comoving distance corresponding to z
     chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
 
-    @vmap
-    def integrand(z_prime):
-        chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
-        # Stack the dndz of all redshift bins
-        dndz = np.stack([pz(z_prime) for pz in pzs], axis=0)
-        return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
+    # Extract the indices of pzs that can be treated as extended distributions,
+    # and the ones that need to be treated as delta functions.
+    pzs_extended_idx = [
+        i for i, pz in enumerate(pzs) if not isinstance(pz, rds.delta_nz)
+    ]
+    pzs_delta_idx = [i for i, pz in enumerate(pzs) if isinstance(pz, rds.delta_nz)]
+    # Here we define a permutation that would put all extended pzs at the begining of the list
+    perm = pzs_extended_idx + pzs_delta_idx
+    # Compute inverse permutation
+    inv = np.argsort(np.array(perm, dtype=np.int32))
 
-    # Computes the radial weak lensing kernel
-    radial_kernel = np.squeeze(simps(integrand, z, zmax, 256) * (1.0 + z) * chi)
+    # Process extended distributions, if any
+    radial_kernels = []
+    if len(pzs_extended_idx) > 0:
+
+        @vmap
+        def integrand(z_prime):
+            chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
+            # Stack the dndz of all redshift bins
+            dndz = np.stack([pzs[i](z_prime) for i in pzs_extended_idx], axis=0)
+            return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
+
+        radial_kernels.append(simps(integrand, z, zmax, 256) * (1.0 + z) * chi)
+    # Process single plane redshifts if any
+    if len(pzs_delta_idx) > 0:
+
+        @vmap
+        def integrand_single(z_prime):
+            chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
+            return np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
+
+        radial_kernels.append(
+            integrand_single(np.array([pzs[i].params[0] for i in pzs_delta_idx]))
+            * (1.0 + z)
+            * chi
+        )
+    # Fusing the results together
+    radial_kernel = np.concatenate(radial_kernels, axis=0)
+    # And perfoming inverse permutation to put all the indices where they should be
+    radial_kernel = radial_kernel[inv]
+
     # Constant term
     constant_factor = 3.0 * const.H0 ** 2 * cosmo.Omega_m / 2.0 / const.c
     # Ell dependent factor
@@ -45,6 +81,10 @@ def density_kernel(cosmo, pzs, bias, z, ell):
     """
     Computes the number counts density kernel
     """
+    if any(isinstance(pz, rds.delta_nz) for pz in pzs):
+        raise NotImplementedError(
+            "Density kernel not properly implemented for delta redshift distributions"
+        )
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
     # Compute radial NLA kernel: same as clustering
@@ -66,6 +106,10 @@ def nla_kernel(cosmo, pzs, bias, z, ell):
     """
     Computes the NLA IA kernel
     """
+    if any(isinstance(pz, rds.delta_nz) for pz in pzs):
+        raise NotImplementedError(
+            "NLA kernel not properly implemented for delta redshift distributions"
+        )
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
     # Compute radial NLA kernel: same as clustering
