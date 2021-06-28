@@ -14,6 +14,8 @@ from jax_cosmo.scipy.integrate import simps
 from jax_cosmo.utils import a2z
 from jax_cosmo.utils import z2a
 
+#JEC
+from jax_cosmo.scipy.integrate import Quadrature
 
 def _get_cl_ordering(probes):
     """
@@ -50,8 +52,8 @@ def _get_cov_blocks_ordering(probes):
 
 
 def angular_cl(
-    cosmo, ell, probes, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=power.halofit
-):
+    cosmo, ell, probes, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=power.halofit):
+    
     """
     Computes angular Cls for the provided probes
 
@@ -68,6 +70,7 @@ def angular_cl(
     # We define a function that computes a single l, and vectorize it
     @partial(vmap, out_axes=1)
     def cl(ell):
+                
         def integrand(a):
             # Step 1: retrieve the associated comoving distance
             chi = bkgrd.radial_comoving_distance(cosmo, a)
@@ -95,9 +98,67 @@ def angular_cl(
             # We transpose the result just to make sure that na is first
             return result.T
 
-        return simps(integrand, z2a(zmax), 1.0, 512) / const.c ** 2
+        tmp = simps(integrand, z2a(zmax), 1.0, 512) / const.c ** 2
+#        print("JEC ang_cl): tmp: ",tmp)
+        return tmp
 
     return cl(ell)
+
+
+def jec_angular_cl(
+    cosmo, ell, probes, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=power.halofit, quadInt=None):
+    
+    """
+    Computes angular Cls for the provided probes
+
+    All using the Limber approximation
+
+    Returns
+    -------
+
+    cls: [ell, ncls]
+    """
+    # Retrieve the maximum redshift probed
+    zmax = max([p.zmax for p in probes])
+
+    # We define a function that computes a single l, and vectorize it
+    @partial(vmap, out_axes=1)
+    def cl(ell):
+                
+        def integrand(a):
+            # Step 1: retrieve the associated comoving distance
+            chi = bkgrd.radial_comoving_distance(cosmo, a)
+
+            # Step 2: get the power spectrum for this combination of chi and a
+            k = (ell + 0.5) / np.clip(chi, 1.0)
+
+            # pk should have shape [na]
+            pk = power.nonlinear_matter_power(cosmo, k, a, transfer_fn, nonlinear_fn)
+
+            # Compute the kernels for all probes
+            kernels = np.vstack([p.kernel(cosmo, a2z(a), ell) for p in probes])
+
+            # Define an ordering for the blocks of the signal vector
+            cl_index = np.array(_get_cl_ordering(probes))
+            # Compute all combinations of tracers
+            def combine_kernels(inds):
+                return kernels[inds[0]] * kernels[inds[1]]
+
+            # Now kernels has shape [ncls, na]
+            kernels = lax.map(combine_kernels, cl_index)
+
+            result = pk * kernels * bkgrd.dchioverda(cosmo, a) / np.clip(chi ** 2, 1.0)
+
+            # We transpose the result just to make sure that na is first
+            return result.T
+
+        if quadInt != None:
+            return quadInt.computeIntegral(integrand, [z2a(zmax), 1.0]) / const.c ** 2
+        else:
+            return simps(integrand, z2a(zmax), 1.0, 512) / const.c ** 2
+
+    return cl(ell)
+
 
 
 def noise_cl(ell, probes):
