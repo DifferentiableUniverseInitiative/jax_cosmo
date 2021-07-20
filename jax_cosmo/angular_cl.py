@@ -10,12 +10,13 @@ import jax_cosmo.background as bkgrd
 import jax_cosmo.constants as const
 import jax_cosmo.power as power
 import jax_cosmo.transfer as tklib
+from jax_cosmo.scipy.integrate import Quadrature
 from jax_cosmo.scipy.integrate import simps
 from jax_cosmo.utils import a2z
 from jax_cosmo.utils import z2a
 
-#JEC 30-June-2021
-from jax_cosmo.scipy.integrate import Quadrature
+# JEC 30-June-2021
+
 
 def _get_cl_ordering(probes):
     """
@@ -53,8 +54,14 @@ def _get_cov_blocks_ordering(probes):
 
 # New code by JEC 30-June-2021
 def angular_cl(
-    cosmo, ell, probes, quadInt=None, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=power.halofit):
-    
+    cosmo,
+    ell,
+    probes,
+    quadInt=None,
+    transfer_fn=tklib.Eisenstein_Hu,
+    nonlinear_fn=power.halofit,
+):
+
     """
     Computes angular Cls for the provided probes
 
@@ -71,7 +78,6 @@ def angular_cl(
     # We define a function that computes a single l, and vectorize it
     @partial(vmap, out_axes=1)
     def cl(ell):
-                
         def integrand(a):
             # Step 1: retrieve the associated comoving distance
             chi = bkgrd.radial_comoving_distance(cosmo, a)
@@ -105,7 +111,6 @@ def angular_cl(
             return simps(integrand, z2a(zmax), 1.0, 512) / const.c ** 2
 
     return cl(ell)
-
 
 
 def noise_cl(ell, probes):

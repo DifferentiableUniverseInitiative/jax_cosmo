@@ -24,7 +24,7 @@ __all__ = ["romb", "simps", "TrapezoidalQuad", "ClenshawCurtisQuad"]
 # introduce Quadrature base class with two inherited classes
 # o TrapezoidalQuad   :  Trapezoidal quadrature
 # o ClenshawCurtisQuad:  Clenshaw-Curtis quadrature
-# 
+#
 #
 
 
@@ -205,9 +205,9 @@ def simps(f, a, b, N=128):
     dx = (b - a) / N
     x = np.linspace(a, b, N + 1)
     y = f(x)
-    
-    #print("JEC:simps) y shape:",y.shape)
-    
+
+    # print("JEC:simps) y shape:",y.shape)
+
     S = dx / 3 * np.sum(y[0:-1:2] + 4 * y[1::2] + y[2::2], axis=0)
     return S
 
@@ -215,70 +215,77 @@ def simps(f, a, b, N=128):
 ##
 # JEC 30-June-2021
 ##
-class Quadrature():
+class Quadrature:
     """
-        Base class for quadratures providing node lcations, the weights and error weights
+    Base class for quadratures providing node lcations, the weights and error weights
     """
-    def __init__(self,order=5):
+
+    def __init__(self, order=5):
         self.order = int(order)
         self.absc, self.absw, self.errw = self.ComputeAbsWeights()
-        
+
     def rescaleAbsWeights(self, xInmin=-1.0, xInmax=1.0, xOutmin=0.0, xOutmax=1.0):
         """
-            Translate nodes,weights for [xInmin,xInmax] integral to [xOutmin,xOutmax] 
+        Translate nodes,weights for [xInmin,xInmax] integral to [xOutmin,xOutmax]
         """
-        deltaXIn = xInmax-xInmin
-        deltaXOut= xOutmax-xOutmin
-        scale = deltaXOut/deltaXIn
+        deltaXIn = xInmax - xInmin
+        deltaXOut = xOutmax - xOutmin
+        scale = deltaXOut / deltaXIn
         self.absw *= scale
-        tmp = np.array([((xi-xInmin)*xOutmax
-                         -(xi-xInmax)*xOutmin)/deltaXIn for xi in self.absc])
-        self.absc=tmp
+        tmp = np.array(
+            [
+                ((xi - xInmin) * xOutmax - (xi - xInmax) * xOutmin) / deltaXIn
+                for xi in self.absc
+            ]
+        )
+        self.absc = tmp
 
-    def computeIntegral(self, func,bounds, return_error=False):
+    def computeIntegral(self, func, bounds, return_error=False):
         """
-            One step integral computation of \int_a^b f(x) dx \approx  \sum_i w_i f(x_i)
-            a = bounds[0]
-            b = bounds[1]
-            f(x) = func
+        One step integral computation of \int_a^b f(x) dx \approx  \sum_i w_i f(x_i)
+        a = bounds[0]
+        b = bounds[1]
+        f(x) = func
         """
         a = bounds[0]
         b = bounds[1]
-        d = b-a
+        d = b - a
         xi = a + self.absc * d
         fi = func(xi)
-        integ = d*np.sum(np.dot(self.absw,fi))
+        integ = d * np.sum(np.dot(self.absw, fi))
         if return_error:
-            return {'val':integ,
-                    'err':d*np.abs(np.sum(np.dot(self.errw,fi))),
-                    'nodes':xi}
+            return {
+                "val": integ,
+                "err": d * np.abs(np.sum(np.dot(self.errw, fi))),
+                "nodes": xi,
+            }
         else:
-            integ = integ[...,np.newaxis]
+            integ = integ[..., np.newaxis]
             return integ
 
-    
+
 class TrapezoidalQuad(Quadrature):
     """
-        Simple Trapezoidale quadrature
-        nb. The order is transformed into a odd number just to get 
-        an error based on a sub-sampling of the quadrature
+    Simple Trapezoidale quadrature
+    nb. The order is transformed into a odd number just to get
+    an error based on a sub-sampling of the quadrature
     """
-    def __init__(self,order=5):
+
+    def __init__(self, order=5):
         # 2n-1 quad
-        Quadrature.__init__(self,int(2*order-1))
+        Quadrature.__init__(self, int(2 * order - 1))
 
     def ComputeAbsWeights(self):
-        x,wx = self.absweights(self.order)
-        nsub = (self.order+1)/2
+        x, wx = self.absweights(self.order)
+        nsub = (self.order + 1) / 2
         xSub, wSub = self.absweights(nsub)
         errw = wx
-        errw=errw.at[::2].add(-wSub)
-        return x,wx,errw
-    
-    
+        errw = errw.at[::2].add(-wSub)
+        return x, wx, errw
+
     def absweights(self, n):
-        h = 1./(n-1)
-        x = np.arange(n,dtype=np.float32)
+        h = 1.0 / (n - 1)
+        x = np.arange(n, dtype=np.float32)
         w = np.ones_like(x)
         x *= h
         w *= h
@@ -286,27 +293,28 @@ class TrapezoidalQuad(Quadrature):
         w = w.at[-1].mul(0.5)
         return x, w
 
+
 class ClenshawCurtisQuad(Quadrature):
     """
-        Clenshaw-Curtis quadrature nodes and weights computed by FFT. 
-        nb. The order is transformed into a odd number just to get 
-        an error based on a sub-sampling of the quadrature
+    Clenshaw-Curtis quadrature nodes and weights computed by FFT.
+    nb. The order is transformed into a odd number just to get
+    an error based on a sub-sampling of the quadrature
     """
-    def __init__(self,order=5):
+
+    def __init__(self, order=5):
         # 2n-1 quad
-        Quadrature.__init__(self,int(2*order-1))
+        Quadrature.__init__(self, int(2 * order - 1))
         self.rescaleAbsWeights()  # rescale [-1,1] to [0,1]
-    
+
     def ComputeAbsWeights(self):
-        x,wx = self.absweights(self.order)
-        nsub = (self.order+1)//2
+        x, wx = self.absweights(self.order)
+        nsub = (self.order + 1) // 2
         xSub, wSub = self.absweights(nsub)
         errw = wx
-        errw=errw.at[::2].add(-wSub)
-        return x,wx,errw
-  
-    
-    def absweights(self,n):
+        errw = errw.at[::2].add(-wSub)
+        return x, wx, errw
+
+    def absweights(self, n):
         degree = n
 
         points = -np.cos((np.pi * np.arange(n)) / (n - 1))
@@ -314,7 +322,7 @@ class ClenshawCurtisQuad(Quadrature):
         if n == 2:
             weights = np.array([1.0, 1.0])
             return points, weights
-            
+
         n -= 1
         N = np.arange(1, n, 2)
         length = len(N)
@@ -334,7 +342,6 @@ class ClenshawCurtisQuad(Quadrature):
             weights = np.concatenate([w, w[::-1]])
         else:
             weights = np.concatenate([w, w[len(w) - 2 :: -1]])
-            
-        #return
-        return points, weights
 
+        # return
+        return points, weights
