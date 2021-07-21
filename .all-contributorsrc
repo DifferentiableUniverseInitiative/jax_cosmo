@@ -69,6 +69,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "bhorowitz",
+      "name": "Ben Horowitz",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6059772?v=4",
+      "profile": "https://bhorowitz.github.io/",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
