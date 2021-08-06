@@ -252,15 +252,20 @@ class Quadrature:
         d = b - a
         xi = a + self.absc * d
         fi = func(xi)
-        integ = d * np.sum(np.dot(self.absw, fi))
+
+        tmp = np.dot(self.absw, fi)
+###        print("computeIntegral fi shape:",fi.shape,"tmp shape",tmp.shape)        
+###Bug        integ = d * np.sum(np.dot(self.absw, fi))
+        integ = d * np.dot(self.absw, fi)
         if return_error:
             return {
                 "val": integ,
-                "err": d * np.abs(np.sum(np.dot(self.errw, fi))),
+###Byg                "err": d * np.abs(np.sum(np.dot(self.errw, fi))),
+                "err": d * np.abs(np.dot(self.errw, fi)),
                 "nodes": xi,
             }
         else:
-            integ = integ[..., np.newaxis]
+###BUg            integ = integ[..., np.newaxis]
             return integ
 
 
