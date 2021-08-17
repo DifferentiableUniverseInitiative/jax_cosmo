@@ -206,8 +206,6 @@ def simps(f, a, b, N=128):
     x = np.linspace(a, b, N + 1)
     y = f(x)
 
-    # print("JEC:simps) y shape:",y.shape)
-
     S = dx / 3 * np.sum(y[0:-1:2] + 4 * y[1::2] + y[2::2], axis=0)
     return S
 
@@ -240,11 +238,30 @@ class Quadrature:
         )
         self.absc = tmp
 
+    def computeIntegral_arr1(self, func, bounds):
+        """
+        Integral computation of \int_a^b f(x) dx \approx  \sum_i w_i f(x_i)
+        a = bounds[0] (vector)
+        b = bounds[1] (scalar)
+        f(x) = func
+        """
+        a = np.atleast_1d(bounds[0])
+        b = bounds[1]
+        d = b - a
+        xi = (a[...,None] + self.absc * d[...,None]).T
+        fi = func(xi)
+
+        # nb: the first index is weight axis
+        integ = d*np.einsum('i,i...',self.absw, fi)
+        
+        return integ
+
+
     def computeIntegral(self, func, bounds, return_error=False):
         """
-        One step integral computation of \int_a^b f(x) dx \approx  \sum_i w_i f(x_i)
-        a = bounds[0]
-        b = bounds[1]
+        Integral computation of \int_a^b f(x) dx \approx  \sum_i w_i f(x_i)
+        a = bounds[0] (scalar)
+        b = bounds[1] (scalar)
         f(x) = func
         """
         a = bounds[0]
@@ -253,20 +270,18 @@ class Quadrature:
         xi = a + self.absc * d
         fi = func(xi)
 
-        tmp = np.dot(self.absw, fi)
-###        print("computeIntegral fi shape:",fi.shape,"tmp shape",tmp.shape)        
-###Bug        integ = d * np.sum(np.dot(self.absw, fi))
-        integ = d * np.dot(self.absw, fi)
+        #JEC 10/July/21 for multi-integrations broadcasting
+        # nb: the first index is weight axis
+        integ = d*np.einsum('i,i...',self.absw, fi)
+        
         if return_error:
             return {
                 "val": integ,
-###Byg                "err": d * np.abs(np.sum(np.dot(self.errw, fi))),
-                "err": d * np.abs(np.dot(self.errw, fi)),
+                "err": d * np.abs(np.einsum('i,i...',self.errw, fi)),
                 "nodes": xi,
             }
-        else:
-###BUg            integ = integ[..., np.newaxis]
-            return integ
+
+        return integ
 
 
 class TrapezoidalQuad(Quadrature):
