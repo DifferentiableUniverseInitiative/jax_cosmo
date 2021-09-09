@@ -39,7 +39,8 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwar
         Transfer function
 
     Returns
-    -------
+    --
+  -----
     pk: array_like
         Linear matter power spectrum at the specified scale
         and scale factor.
@@ -73,7 +74,7 @@ def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax=1000.0, ksteps=5, **kwargs
        W(kR) = \\frac{3j_1(kR)}{kR}
     """
     ##JEC 11/8/21 quadInt
-    quadInt=ClenshawCurtisQuad(30)
+    quadInt=ClenshawCurtisQuad(40)
 
     def int_sigma(logk):
         k = np.exp(logk)
@@ -82,7 +83,7 @@ def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax=1000.0, ksteps=5, **kwargs
         pk = transfer_fn(cosmo, k, **kwargs) ** 2 * primordial_matter_power(cosmo, k)
         return k * (k * w) ** 2 * pk
 
-###JEC 11/8/21    y_old = romb(int_sigma, np.log10(kmin), np.log10(kmax), divmax=7)
+    #y = romb(int_sigma, np.log10(kmin), np.log10(kmax), divmax=7)
     y = quadInt.computeIntegral(int_sigma, [np.log10(kmin), np.log10(kmax)])
 ###    print("(JEC) sigmasqr: y_old, y",y_old,y,y-y_old)
     
@@ -105,8 +106,7 @@ def _halofit_parameters(cosmo, a, transfer_fn):
 
 
     ##JEC 11/8/21 quadInt
-    quadInt20=ClenshawCurtisQuad(20)
-    quadInt30=ClenshawCurtisQuad(30)
+    quadInt=ClenshawCurtisQuad(100)
 
     @jax.vmap
     def R_nl(a):
@@ -122,9 +122,9 @@ def _halofit_parameters(cosmo, a, transfer_fn):
                 * g ** 2
             )
 
-###JEC        sigma_old = simps(int_sigma, np.log(1e-4), np.log(1e4), 256)
-        sigma = quadInt20.computeIntegral(int_sigma, [np.log(1e-4), np.log(1e4)])
-###JEC        print("(JEC) power: sigma_old, diff:",sigma_old,sigma_old-sigma)
+        ##sigma = simps(int_sigma, np.log(1e-4), np.log(1e4), 256)
+        sigma = quadInt.computeIntegral(int_sigma, [np.log(1e-4), np.log(1e4)])
+###JEC       print("(JEC) power: sigma_old, diff:",sigma_old,sigma_old-sigma)
         
         
         root = interp(np.atleast_1d(1.0), sigma, r)
@@ -153,7 +153,7 @@ def _halofit_parameters(cosmo, a, transfer_fn):
 
 
 ###    res_old = simps(integrand, np.log(1e-4), np.log(1e4), 256)
-    res = quadInt30.computeIntegral(integrand, [np.log(1e-4), np.log(1e4)])
+    res = quadInt.computeIntegral(integrand, [np.log(1e-4), np.log(1e4)])
 ###    print("(JEC) power: res_old,res-res_old",res_old,res-res_old)                       
 
     n_eff = res[0] - 3.0
