@@ -5,7 +5,8 @@ import jax.numpy as np
 from jax import jit
 from jax import vmap
 
-__all__ = ["romb", "simps"]
+__all__ = ["romb", "simps", "TrapezoidalQuad", "ClenshawCurtisQuad"]
+
 
 # Romberg quadratures for numeric integration.
 #
@@ -17,6 +18,14 @@ __all__ = ["romb", "simps"]
 #
 # Adapted to scipy by Travis Oliphant <oliphant.travis@ieee.org>
 # last revision: Dec 2001
+
+#
+# JEC 30-June-2021
+# introduce Quadrature base class with two inherited classes
+# o TrapezoidalQuad   :  Trapezoidal quadrature
+# o ClenshawCurtisQuad:  Clenshaw-Curtis quadrature
+#
+#
 
 
 def _difftrap1(function, interval):
@@ -196,5 +205,163 @@ def simps(f, a, b, N=128):
     dx = (b - a) / N
     x = np.linspace(a, b, N + 1)
     y = f(x)
+
     S = dx / 3 * np.sum(y[0:-1:2] + 4 * y[1::2] + y[2::2], axis=0)
     return S
+
+
+##
+# JEC 30-June-2021
+##
+class Quadrature:
+    """
+    Base class for quadratures providing node lcations, the weights and error weights
+    """
+
+    def __init__(self, order=5):
+        self.order = int(order)
+        self.absc, self.absw, self.errw = self.ComputeAbsWeights()
+
+    def rescaleAbsWeights(self, xInmin=-1.0, xInmax=1.0, xOutmin=0.0, xOutmax=1.0):
+        """
+        Translate nodes,weights for [xInmin,xInmax] integral to [xOutmin,xOutmax]
+        """
+        deltaXIn = xInmax - xInmin
+        deltaXOut = xOutmax - xOutmin
+        scale = deltaXOut / deltaXIn
+        self.absw *= scale
+        tmp = np.array(
+            [
+                ((xi - xInmin) * xOutmax - (xi - xInmax) * xOutmin) / deltaXIn
+                for xi in self.absc
+            ]
+        )
+        self.absc = tmp
+
+    def computeIntegral_arr1(self, func, bounds):
+        """
+        Integral computation of \int_a^b f(x) dx \approx  \sum_i w_i f(x_i)
+        a = bounds[0] (vector)
+        b = bounds[1] (scalar)
+        f(x) = func
+        """
+        a = np.atleast_1d(bounds[0])
+        b = bounds[1]
+        d = b - a
+        xi = (a[...,None] + self.absc * d[...,None]).T
+        fi = func(xi)
+
+        # nb: the first index is weight axis
+        integ = d*np.einsum('i,i...',self.absw, fi)
+        
+        return integ
+
+
+    def computeIntegral(self, func, bounds, return_error=False):
+        """
+        Integral computation of \int_a^b f(x) dx \approx  \sum_i w_i f(x_i)
+        a = bounds[0] (scalar)
+        b = bounds[1] (scalar)
+        f(x) = func
+        """
+        a = bounds[0]
+        b = bounds[1]
+        d = b - a
+        xi = a + self.absc * d
+        fi = func(xi)
+
+        #JEC 10/July/21 for multi-integrations broadcasting
+        # nb: the first index is weight axis
+        integ = d*np.einsum('i,i...',self.absw, fi)
+        
+        if return_error:
+            return {
+                "val": integ,
+                "err": d * np.abs(np.einsum('i,i...',self.errw, fi)),
+                "nodes": xi,
+            }
+
+        return integ
+
+
+class TrapezoidalQuad(Quadrature):
+    """
+    Simple Trapezoidale quadrature
+    nb. The order is transformed into a odd number just to get
+    an error based on a sub-sampling of the quadrature
+    """
+
+    def __init__(self, order=5):
+        # 2n-1 quad
+        Quadrature.__init__(self, int(2 * order - 1))
+
+    def ComputeAbsWeights(self):
+        x, wx = self.absweights(self.order)
+        nsub = (self.order + 1) / 2
+        xSub, wSub = self.absweights(nsub)
+        errw = wx
+        errw = errw.at[::2].add(-wSub)
+        return x, wx, errw
+
+    def absweights(self, n):
+        h = 1.0 / (n - 1)
+        x = np.arange(n, dtype=np.float32)
+        w = np.ones_like(x)
+        x *= h
+        w *= h
+        w = w.at[0].mul(0.5)
+        w = w.at[-1].mul(0.5)
+        return x, w
+
+
+class ClenshawCurtisQuad(Quadrature):
+    """
+    Clenshaw-Curtis quadrature nodes and weights computed by FFT.
+    nb. The order is transformed into a odd number just to get
+    an error based on a sub-sampling of the quadrature
+    """
+
+    def __init__(self, order=5):
+        # 2n-1 quad
+        Quadrature.__init__(self, int(2 * order - 1))
+        self.rescaleAbsWeights()  # rescale [-1,1] to [0,1]
+
+    def ComputeAbsWeights(self):
+        x, wx = self.absweights(self.order)
+        nsub = (self.order + 1) // 2
+        xSub, wSub = self.absweights(nsub)
+        errw = wx
+        errw = errw.at[::2].add(-wSub)
+        return x, wx, errw
+
+    def absweights(self, n):
+        degree = n
+
+        points = -np.cos((np.pi * np.arange(n)) / (n - 1))
+
+        if n == 2:
+            weights = np.array([1.0, 1.0])
+            return points, weights
+
+        n -= 1
+        N = np.arange(1, n, 2)
+        length = len(N)
+        m = n - length
+        v0 = np.concatenate([2.0 / N / (N - 2), np.array([1.0 / N[-1]]), np.zeros(m)])
+        v2 = -v0[:-1] - v0[:0:-1]
+        g0 = -np.ones(n)
+        g0 = g0.at[length].add(n)
+        g0 = g0.at[m].add(n)
+        g = g0 / (n ** 2 - 1 + (n % 2))
+
+        w = np.fft.ihfft(v2 + g)
+        ###assert max(w.imag) < 1.0e-15
+        w = w.real
+
+        if n % 2 == 1:
+            weights = np.concatenate([w, w[::-1]])
+        else:
+            weights = np.concatenate([w, w[len(w) - 2 :: -1]])
+
+        # return
+        return points, weights

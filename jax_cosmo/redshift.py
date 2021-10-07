@@ -7,6 +7,8 @@ from jax.tree_util import register_pytree_node_class
 
 from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
+#JEC
+from jax_cosmo.scipy.integrate import ClenshawCurtisQuad
 
 steradian_to_arcmin2 = 11818102.86004228
 
@@ -18,6 +20,8 @@ class redshift_distribution(container):
         """Initialize the parameters of the redshift distribution"""
         self._norm = None
         self._gals_per_arcmin2 = gals_per_arcmin2
+        #JEC
+        self.quadInt=ClenshawCurtisQuad(10)
         super(redshift_distribution, self).__init__(*args, zmax=zmax, **kwargs)
 
     @abstractmethod
@@ -28,7 +32,10 @@ class redshift_distribution(container):
     def __call__(self, z):
         """Computes the normalized n(z)"""
         if self._norm is None:
-            self._norm = simps(lambda t: self.pz_fn(t), 0.0, self.config["zmax"], 256)
+            ### _norm_old = simps(lambda t: self.pz_fn(t), 0.0, self.config["zmax"], 256)
+            self._norm = self.quadInt.computeIntegral(lambda t: self.pz_fn(t), [0.0, self.config["zmax"]])
+            ### print("(JEC) pz_fn: ",_norm_old, self._norm, self._norm-_norm_old)
+            
         return self.pz_fn(z) / self._norm
 
     @property

@@ -9,6 +9,9 @@ import jax_cosmo.constants as const
 import jax_cosmo.redshift as rds
 from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
+#JEC
+from jax_cosmo.scipy.integrate import ClenshawCurtisQuad
+
 from jax_cosmo.utils import a2z
 from jax_cosmo.utils import z2a
 
@@ -50,7 +53,13 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
             dndz = np.stack([pzs[i](z_prime) for i in pzs_extended_idx], axis=0)
             return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
 
-        radial_kernels.append(simps(integrand, z, zmax, 256) * (1.0 + z) * chi)
+        #JEC
+        ###tmp_old = simps(integrand, z, zmax, 256)
+        quadInt=ClenshawCurtisQuad(10)        
+        tmp = quadInt.computeIntegral_arr1(integrand, [z, zmax])
+        ##print("(JEC) weak_lensing_kernel: ",tmp_old,tmp,tmp-tmp_old)
+        
+        radial_kernels.append(tmp * (1.0 + z) * chi)
     # Process single plane redshifts if any
     if len(pzs_delta_idx) > 0:
 
