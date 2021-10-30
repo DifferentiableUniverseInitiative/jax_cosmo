@@ -132,5 +132,20 @@ def test_halofit_nl_scales():
         )
         / cosmo_jax.h ** 3
     )
-
     assert_allclose(pk_ccl, pk_jax, rtol=0.5e-2)
+
+    # Asserting that even if a is very small, we dont get NaNs
+    # Computing matter power spectrum
+    pk_ccl = ccl.nonlin_matter_power(cosmo_ccl, k, 0.01)
+    pk_jax = (
+        power.nonlinear_matter_power(
+            cosmo_jax,
+            k / cosmo_jax.h,
+            a=0.01,
+            transfer_fn=tklib.Eisenstein_Hu,
+            nonlinear_fn=power.halofit,
+        )
+        / cosmo_jax.h ** 3
+    )
+    # We relax the test here, because actually CCL is not accurate in this regime
+    assert_allclose(pk_ccl, pk_jax, rtol=2e-2)
