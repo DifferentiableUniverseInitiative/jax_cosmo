@@ -91,12 +91,14 @@ def _halofit_parameters(cosmo, a, transfer_fn):
     """
     # Step 1: Finding the non linear scale for which sigma(R)=1
     # That's our search range for the non linear scale
-    r = np.logspace(-3, 1, 256)
+    logr = np.linspace(np.log(1e-4), np.log(1e1), 256)
 
+    # TODO: implement a better root finding algorithm to compute the non linear scale
     @jax.vmap
     def R_nl(a):
         def int_sigma(logk):
             k = np.exp(logk)
+            r = np.exp(logr)
             y = np.outer(k, r)
             pk = linear_matter_power(cosmo, k, transfer_fn=transfer_fn)
             g = bkgrd.growth_factor(cosmo, np.atleast_1d(a))
@@ -108,8 +110,10 @@ def _halofit_parameters(cosmo, a, transfer_fn):
             )
 
         sigma = simps(int_sigma, np.log(1e-4), np.log(1e4), 256)
-        root = interp(np.atleast_1d(1.0), sigma, r)
-        return root
+        root = interp(np.atleast_1d(1.0), sigma, logr)
+        return np.exp(root).clip(
+            1e-6
+        )  # To ensure that the root is not too close to zero
 
     # Compute non linear scale
     k_nl = 1.0 / R_nl(np.atleast_1d(a)).squeeze()
