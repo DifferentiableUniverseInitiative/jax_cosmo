@@ -169,11 +169,11 @@ class Cosmology:
     @property
     def k(self):
         if self.Omega > 1.0:  # Closed universe
-            k = 1.0
+            k = 1
         elif self.Omega == 1.0:  # Flat universe
             k = 0
         elif self.Omega < 1.0:  # Open Universe
-            k = -1.0
+            k = -1
         return k
 
     @property
