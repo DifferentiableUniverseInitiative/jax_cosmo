@@ -109,7 +109,7 @@ def Esqr(cosmo, a):
     -----
 
     The Hubble parameter at scale factor `a` is given by
-    :math:`H^2(a) = E^2(a) H_o^2` where :math:`E^2` is obtained through
+    :math:`H^2(a) = E^2(a) H_0^2` where :math:`E^2` is obtained through
     Friedman's Equation (see :cite:`2005:Percival`) :
 
     .. math::
@@ -374,7 +374,7 @@ def growth_factor(cosmo, a):
 
     Parameters
     ----------
-    cosmo: `Cosmology`
+    cosmo: Cosmology
       Cosmology object
 
     a: array_like
@@ -392,7 +392,7 @@ def growth_factor(cosmo, a):
     assuming the $f = \Omega^\gamma$ growth rate, otherwise the usual ODE for
     growth will be solved.
     """
-    if cosmo._flags["gamma_growth"]:
+    if cosmo.gamma is not None:
         return _growth_factor_gamma(cosmo, a)
     else:
         return _growth_factor_ODE(cosmo, a)
@@ -403,7 +403,7 @@ def growth_rate(cosmo, a):
 
     Parameters
     ----------
-    cosmo: `Cosmology`
+    cosmo: Cosmology
       Cosmology object
 
     a: array_like
@@ -434,7 +434,7 @@ def growth_rate(cosmo, a):
 
     see :cite:`2019:Euclid Preparation VII, eqn.32`
     """
-    if cosmo._flags["gamma_growth"]:
+    if cosmo.gamma is not None:
         return _growth_rate_gamma(cosmo, a)
     else:
         return _growth_rate_ODE(cosmo, a)
@@ -494,7 +494,7 @@ def _growth_rate_ODE(cosmo, a):
 
     Parameters
     ----------
-    cosmo: `Cosmology`
+    cosmo: Cosmology
       Cosmology object
 
     a: array_like
@@ -553,7 +553,7 @@ def _growth_rate_gamma(cosmo, a):
 
     Parameters
     ----------
-    cosmo: `Cosmology`
+    cosmo: Cosmology
         Cosmology object
 
     a : array_like

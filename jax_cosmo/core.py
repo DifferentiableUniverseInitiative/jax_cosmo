@@ -54,11 +54,8 @@ class Cosmology:
         self._w0 = w0
         self._wa = wa
 
-        self._flags = {}
-
         # Secondary optional parameters
         self._gamma = gamma
-        self._flags["gamma_growth"] = gamma is not None
 
         # Create a workspace where functions can store some precomputed
         # results
@@ -97,7 +94,7 @@ class Cosmology:
 
     # Operations for flattening/unflattening representation
     def tree_flatten(self):
-        params = (
+        children = (
             self._Omega_c,
             self._Omega_b,
             self._h,
@@ -106,40 +103,15 @@ class Cosmology:
             self._Omega_k,
             self._w0,
             self._wa,
+            self._gamma,
         )
+        aux_data = None
 
-        if self._flags["gamma_growth"]:
-            params += (self._gamma,)
-
-        return (
-            params,
-            self._flags,
-        )
+        return children, aux_data
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
-        # Retrieve base parameters
-        Omega_c, Omega_b, h, n_s, sigma8, Omega_k, w0, wa = children[:8]
-        children = list(children[8:]).reverse()
-
-        # We extract the remaining parameters in reverse order from how they
-        # were inserted
-        if aux_data["gamma_growth"]:
-            gamma = children.pop()
-        else:
-            gamma = None
-
-        return cls(
-            Omega_c=Omega_c,
-            Omega_b=Omega_b,
-            h=h,
-            n_s=n_s,
-            sigma8=sigma8,
-            Omega_k=Omega_k,
-            w0=w0,
-            wa=wa,
-            gamma=gamma,
-        )
+        return cls(*children)
 
     # Cosmological parameters, base and derived
     @property
