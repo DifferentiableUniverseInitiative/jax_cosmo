@@ -6,8 +6,9 @@ from numpy.testing import assert_allclose
 import jax_cosmo.background as bkgrd
 from jax_cosmo import Cosmology
 
+
 def test_H():
-     # We first define equivalent CCL and jax_cosmo cosmologies
+    # We first define equivalent CCL and jax_cosmo cosmologies
     cosmo_ccl = ccl.Cosmology(
         Omega_c=0.3,
         Omega_b=0.05,
@@ -17,7 +18,7 @@ def test_H():
         Neff=0,
         transfer_function="eisenstein_hu",
         matter_power_spectrum="linear",
-        wa=2. # non-zero wa 
+        wa=2.0,  # non-zero wa
     )
 
     cosmo_jax = Cosmology(
@@ -28,15 +29,16 @@ def test_H():
         n_s=0.96,
         Omega_k=0.0,
         w0=-1.0,
-        wa=2.0, # non-zero wa 
+        wa=2.0,  # non-zero wa
     )
 
     # Test array of scale factors
     a = np.linspace(0.01, 1.0)
 
     H_ccl = ccl.h_over_h0(cosmo_ccl, a)
-    H_jax = bkgrd.H(cosmo_jax, a) / 100.
-    assert_allclose(H_ccl, H_jax, rtol=1.e-3)
+    H_jax = bkgrd.H(cosmo_jax, a) / 100.0
+    assert_allclose(H_ccl, H_jax, rtol=1.0e-3)
+
 
 def test_distances_flat():
     # We first define equivalent CCL and jax_cosmo cosmologies
