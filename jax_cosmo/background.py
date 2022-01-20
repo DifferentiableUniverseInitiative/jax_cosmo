@@ -48,7 +48,7 @@ def w(cosmo, a):
 
     .. math::
 
-        w(a) = w_0 + w (1 -a)
+        w(a) = w_0 + w_a (1 - a)
     """
     return cosmo.w0 + (1.0 - a) * cosmo.wa  # Equation (6) in Linder (2003)
 
@@ -75,22 +75,19 @@ def f_de(cosmo, a):
 
     .. math::
 
-        \rho_{de}(a) \propto a^{f(a)}
+        \rho_{de}(a) = \rho_{de}(a=1) e^{f(a)}
 
-    (see :cite:`2005:Percival`) where :math:`f(a)` is computed as
-    :math:`f(a) = \frac{-3}{\ln(a)} \int_0^{\ln(a)} [1 + w(a^\prime)]
-    d \ln(a^\prime)`. In the case of Linder's parametrisation for the
-    dark energy in Eq. :eq:`linderParam` :math:`f(a)` becomes:
+    (see :cite:`2005:Percival` and note the difference in the exponent base
+    in the parametrizations) where :math:`f(a)` is computed as
+    :math:`f(a) = -3 \int_0^{\ln(a)} [1 + w(a')] d \ln(a')`.
+    In the case of Linder's parametrisation for the dark energy
+    in Eq. :eq:`linderParam` :math:`f(a)` becomes:
 
     .. math::
 
-        f(a) = -3(1 + w_0) + 3 w \left[ \frac{a - 1}{ \ln(a) } - 1 \right]
+        f(a) = -3 (1 + w_0 + w_a) \ln(a) + 3 w_a (a - 1)
     """
-    # Just to make sure we are not diving by 0
-    epsilon = np.finfo(np.float32).eps
-    return -3.0 * (1.0 + cosmo.w0) + 3.0 * cosmo.wa * (
-        (a - 1.0) / np.log(a - epsilon) - 1.0
-    )
+    return -3.0 * (1.0 + cosmo.w0 + cosmo.wa) * np.log(a) + 3.0 * cosmo.wa * (a - 1.0)
 
 
 def Esqr(cosmo, a):
@@ -117,7 +114,7 @@ def Esqr(cosmo, a):
 
     .. math::
 
-        E^2(a) = \Omega_m a^{-3} + \Omega_k a^{-2} + \Omega_{de} a^{f(a)}
+        E^2(a) = \Omega_m a^{-3} + \Omega_k a^{-2} + \Omega_{de} e^{f(a)}
 
     where :math:`f(a)` is the Dark Energy evolution parameter computed
     by :py:meth:`.f_de`.
@@ -125,7 +122,7 @@ def Esqr(cosmo, a):
     return (
         cosmo.Omega_m * np.power(a, -3)
         + cosmo.Omega_k * np.power(a, -2)
-        + cosmo.Omega_de * np.power(a, f_de(cosmo, a))
+        + cosmo.Omega_de * np.exp(f_de(cosmo, a))
     )
 
 
@@ -191,12 +188,12 @@ def Omega_de_a(cosmo, a):
 
     .. math::
 
-        \Omega_{de}(a) = \frac{\Omega_{de} a^{f(a)}}{E^2(a)}
+        \Omega_{de}(a) = \frac{\Omega_{de} e^{f(a)}}{E^2(a)}
 
     where :math:`f(a)` is the Dark Energy evolution parameter computed by
     :py:meth:`.f_de` (see :cite:`2005:Percival` Eq. (6)).
     """
-    return cosmo.Omega_de * np.power(a, f_de(cosmo, a)) / Esqr(cosmo, a)
+    return cosmo.Omega_de * np.exp(f_de(cosmo, a)) / Esqr(cosmo, a)
 
 
 def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
