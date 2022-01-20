@@ -78,6 +78,16 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "eelregit",
+      "name": "Yin Li",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7311098?v=4",
+      "profile": "https://github.com/eelregit",
+      "contributions": [
+        "code",
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
