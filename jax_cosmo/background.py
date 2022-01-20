@@ -1,5 +1,6 @@
 # This module implements various functions for the background COSMOLOGY
 import jax.numpy as np
+from jax import lax
 
 import jax_cosmo.constants as const
 from jax_cosmo.scipy.interpolate import interp
@@ -328,13 +329,22 @@ def transverse_comoving_distance(cosmo, a):
         \end{matrix}
         \right.
     """
-    chi = radial_comoving_distance(cosmo, a)
-    if cosmo.k < 0:  # Open universe
+    index = cosmo.k + 1
+
+    def open_universe(chi):
         return const.rh / cosmo.sqrtk * np.sinh(cosmo.sqrtk * chi / const.rh)
-    elif cosmo.k > 0:  # Closed Universe
-        return const.rh / cosmo.sqrtk * np.sin(cosmo.sqrtk * chi / const.rh)
-    else:
+
+    def flat_universe(chi):
         return chi
+
+    def close_universe(chi):
+        return const.rh / cosmo.sqrtk * np.sin(cosmo.sqrtk * chi / const.rh)
+
+    branches = (open_universe, flat_universe, close_universe)
+
+    chi = radial_comoving_distance(cosmo, a)
+
+    return lax.switch(cosmo.k + 1, branches, chi)
 
 
 def angular_diameter_distance(cosmo, a):
