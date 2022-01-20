@@ -1,4 +1,4 @@
-# This module implements a few likelihoods useful
+# This module implements a few useful likelihoods
 import jax.numpy as np
 import jax.scipy as sp
 
@@ -51,7 +51,7 @@ def gaussian_log_likelihood(data, mu, C, include_logdet=True, inverse_method="in
             raise NotImplementedError
         rT_Cinv_r = r.dot(y)
 
-    if include_logdet:
+    if not include_logdet:
         return -0.5 * rT_Cinv_r
     else:
         if sparse.is_sparse(C):
