@@ -1,4 +1,5 @@
 from dataclasses import field
+from dataclasses import replace
 from functools import partial
 from pprint import pformat
 from typing import Any
@@ -19,23 +20,23 @@ class Cosmology:
     Parameters:
     -----------
     Omega_c : float
-      Cold dark matter density fraction.
+        Cold dark matter density fraction.
     Omega_b : float
-      Baryonic matter density fraction.
+        Baryonic matter density fraction.
     h : float
-      Hubble constant divided by 100 km/s/Mpc; unitless.
+        Hubble constant divided by 100 km/s/Mpc; unitless.
     n_s : float
-      Primordial scalar perturbation spectral index.
+        Primordial scalar perturbation spectral index.
     sigma8 : float
-      RMS of matter density perturbations in an 8 Mpc/h spherical tophat.
+        RMS of matter density perturbations in an 8 Mpc/h spherical tophat.
     Omega_k : float
-      Curvature density fraction.
+        Curvature density fraction.
     w0 : float
-      First order term of dark energy equation.
+        First order term of dark energy equation.
     wa : float
-      Second order term of dark energy equation of state.
+        Second order term of dark energy equation of state.
     gamma : float, optional
-      Exponent of growth rate fitting formula.
+        Exponent of growth rate fitting formula.
 
     Notes:
     ------
@@ -59,11 +60,28 @@ class Cosmology:
     # Secondary optional parameters
     gamma: Optional[float] = None
 
-    # cached intermediate computations
+    # cache for intermediate computations;
+    # users should not access it directly but use the class methods instead
     _cache: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
     def __str__(self):
         return pformat(self, indent=4, width=1)  # for python >= 3.10
+
+    def is_cached(self, key):
+        return key in self._cache
+
+    def cache_get(self, key):
+        return self._cache[key]
+
+    def cache_set(self, key, value):
+        cache = self._cache
+        cache[key] = value
+        return replace(self, _cache=cache)
+
+    def cache_clear(self):
+        cache = self._cache
+        cache.clear()
+        return replace(self, _cache=cache)
 
     # Derived parameters
     @property
