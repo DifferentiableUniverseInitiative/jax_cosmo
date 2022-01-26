@@ -220,7 +220,7 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
         \chi(a) =  R_H \int_a^1 \frac{da^\prime}{{a^\prime}^2 E(a^\prime)}
     """
     # Check if distances have already been computed
-    if not "background.radial_comoving_distance" in cosmo._workspace.keys():
+    if not "background.radial_comoving_distance" in cosmo._cache.keys():
         # Compute tabulated array
         atab = np.logspace(log10_amin, 0.0, steps)
 
@@ -233,9 +233,9 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
         chitab = chitab[-1] - chitab
 
         cache = {"a": atab, "chi": chitab}
-        cosmo._workspace["background.radial_comoving_distance"] = cache
+        cosmo._cache["background.radial_comoving_distance"] = cache
     else:
-        cache = cosmo._workspace["background.radial_comoving_distance"]
+        cache = cosmo._cache["background.radial_comoving_distance"]
 
     a = np.atleast_1d(a)
     # Return the results as an interpolation of the table
@@ -260,9 +260,9 @@ def a_of_chi(cosmo, chi):
       Scale factors corresponding to requested distances
     """
     # Check if distances have already been computed, force computation otherwise
-    if not "background.radial_comoving_distance" in cosmo._workspace.keys():
+    if not "background.radial_comoving_distance" in cosmo._cache.keys():
         radial_comoving_distance(cosmo, 1.0)
-    cache = cosmo._workspace["background.radial_comoving_distance"]
+    cache = cosmo._cache["background.radial_comoving_distance"]
     chi = np.atleast_1d(chi)
     return interp(chi, cache["chi"], cache["a"])
 
@@ -458,7 +458,7 @@ def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
         Growth factor computed at requested scale factor
     """
     # Check if growth has already been computed
-    if not "background.growth_factor" in cosmo._workspace.keys():
+    if not "background.growth_factor" in cosmo._cache.keys():
         # Compute tabulated array
         atab = np.logspace(log10_amin, 0.0, steps)
 
@@ -482,9 +482,9 @@ def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
         ftab = y[:, 1] / y1[-1] * atab / gtab
 
         cache = {"a": atab, "g": gtab, "f": ftab}
-        cosmo._workspace["background.growth_factor"] = cache
+        cosmo._cache["background.growth_factor"] = cache
     else:
-        cache = cosmo._workspace["background.growth_factor"]
+        cache = cosmo._cache["background.growth_factor"]
     return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
 
 
@@ -506,9 +506,9 @@ def _growth_rate_ODE(cosmo, a):
         Growth rate computed at requested scale factor
     """
     # Check if growth has already been computed, if not, compute it
-    if not "background.growth_factor" in cosmo._workspace.keys():
+    if not "background.growth_factor" in cosmo._cache.keys():
         _growth_factor_ODE(cosmo, np.atleast_1d(1.0))
-    cache = cosmo._workspace["background.growth_factor"]
+    cache = cosmo._cache["background.growth_factor"]
     return interp(a, cache["a"], cache["f"])
 
 
@@ -531,7 +531,7 @@ def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
 
     """
     # Check if growth has already been computed, if not, compute it
-    if not "background.growth_factor" in cosmo._workspace.keys():
+    if not "background.growth_factor" in cosmo._cache.keys():
         # Compute tabulated array
         atab = np.logspace(log10_amin, 0.0, steps)
 
@@ -542,9 +542,9 @@ def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
         gtab = np.exp(odeint(integrand, np.log(atab[0]), np.log(atab)))
         gtab = gtab / gtab[-1]  # Normalize to a=1.
         cache = {"a": atab, "g": gtab}
-        cosmo._workspace["background.growth_factor"] = cache
+        cosmo._cache["background.growth_factor"] = cache
     else:
-        cache = cosmo._workspace["background.growth_factor"]
+        cache = cosmo._cache["background.growth_factor"]
     return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
 
 
