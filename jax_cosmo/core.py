@@ -8,6 +8,7 @@ from dataclasses import replace
 from functools import partial
 from pprint import pformat
 from typing import Any
+from typing import Dict  # use dict instead for python >= 3.10
 from typing import Optional
 
 import jax.numpy as np
@@ -104,7 +105,7 @@ class Cosmology:
 
     # cache for intermediate computations;
     # users should not access it directly but use the class methods instead
-    _cache: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+    _cache: Dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
     # configuration parameters, immutable (frozen dataclass)
     config: Configuration = field(default_factory=Configuration)
