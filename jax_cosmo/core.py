@@ -21,12 +21,12 @@ __all__ = ["Cosmology", "Configuration"]
 class Configuration:
     """Configuration parameters, that are not to be traced by JAX.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     log10_a_min : float, optional
-        Minimum for scale factor logspace range
+        Minimum in scale factor logspace range
     log10_a_max : float, optional
-        Maximum for scale factor logspace range
+        Maximum in scale factor logspace range
     log10_a_num : int, optional
         Number of samples in scale factor logspace range
     growth_rtol : float, optional
@@ -35,9 +35,9 @@ class Configuration:
         Absolute error tolerance for solving growth ODEs
 
     log10_k_min : float, optional
-        Minimum for wavenumber logspace range
+        Minimum in wavenumber logspace range
     log10_k_max : float, optional
-        Maximum for wavenumber logspace range
+        Maximum in wavenumber logspace range
 
     """
 
@@ -57,8 +57,8 @@ class Cosmology:
     Cosmology parameter type, containing primary, secondary, derived parameters,
     cached computations, and configurations; immutable as a frozen dataclass.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     Omega_c : float
         Cold dark matter density fraction.
     Omega_b : float
@@ -80,8 +80,8 @@ class Cosmology:
     config : Configuration, optional
         Configuration parameters.
 
-    Notes:
-    ------
+    Notes
+    -----
 
     If `gamma` is specified, the growth rate fitting formula
     :math:`dlnD/dlna = \Omega_m(a)^\gamma` will be used to model the growth history.

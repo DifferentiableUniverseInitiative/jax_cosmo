@@ -62,8 +62,8 @@ class redshift_distribution(container):
 @register_pytree_node_class
 class smail_nz(redshift_distribution):
     """Defines a smail distribution with these arguments
-    Parameters:
-    -----------
+    Parameters
+    ----------
     a:
 
     b:
@@ -81,8 +81,8 @@ class smail_nz(redshift_distribution):
 @register_pytree_node_class
 class delta_nz(redshift_distribution):
     """Defines a single plane redshift distribution with these arguments
-    Parameters:
-    -----------
+    Parameters
+    ----------
     z0:
     """
 
@@ -102,13 +102,13 @@ class kde_nz(redshift_distribution):
     given catalog currently uses a Gaussian kernel.
     TODO: add more if necessary
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     zcat: redshift catalog
     weights: weight for each galaxy between 0 and 1
 
-    Configuration:
-    --------------
+    Configuration
+    -------------
     bw: Bandwidth for the KDE
 
     Example:

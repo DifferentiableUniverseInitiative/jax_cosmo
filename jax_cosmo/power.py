@@ -42,7 +42,7 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwar
     """
     k = np.atleast_1d(k)
     a = np.atleast_1d(a)
-    g = bkgrd.growth_factor(cosmo, a)
+    cosmo, g = bkgrd.growth_factor(cosmo, a)
     t = transfer_fn(cosmo, k, **kwargs)
 
     pknorm = cosmo.sigma8 ** 2 / sigmasqr(cosmo, 8.0, transfer_fn, **kwargs)
@@ -101,7 +101,7 @@ def _halofit_parameters(cosmo, a, transfer_fn):
             r = np.exp(logr)
             y = np.outer(k, r)
             pk = linear_matter_power(cosmo, k, transfer_fn=transfer_fn)
-            g = bkgrd.growth_factor(cosmo, np.atleast_1d(a))
+            _, g = bkgrd.growth_factor(cosmo, np.atleast_1d(a))
             return (
                 np.expand_dims(pk * k ** 3, axis=1)
                 * np.exp(-(y ** 2))
@@ -123,7 +123,8 @@ def _halofit_parameters(cosmo, a, transfer_fn):
         k = np.exp(logk)
         y = np.outer(k, 1.0 / k_nl)
         pk = linear_matter_power(cosmo, k, transfer_fn=transfer_fn)
-        g = np.expand_dims(bkgrd.growth_factor(cosmo, np.atleast_1d(a)), 0)
+        _, g = bkgrd.growth_factor(cosmo, np.atleast_1d(a))
+        g = np.expand_dims(g, 0)
         res = (
             np.expand_dims(pk * k ** 3, axis=1)
             * np.exp(-(y ** 2))

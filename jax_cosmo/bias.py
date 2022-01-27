@@ -13,8 +13,8 @@ class constant_linear_bias(container):
     """
     Class representing a linear bias
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     b: redshift independent bias value
     """
 
@@ -29,15 +29,16 @@ class inverse_growth_linear_bias(container):
     TODO: what's a better name for this?
     Class representing an inverse bias in 1/growth(a)
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     cosmo: cosmology
     b: redshift independent bias value at z=0
     """
 
     def __call__(self, cosmo, z):
         b = self.params[0]
-        return b / bkgrd.growth_factor(cosmo, z2a(z))
+        _, D = bkgrd.growth_factor(cosmo, z2a(z))
+        return b / D
 
 
 @register_pytree_node_class
@@ -45,8 +46,8 @@ class des_y1_ia_bias(container):
     """
     https://arxiv.org/pdf/1708.01538.pdf Sec. VII.B
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     cosmo: cosmology
     A: amplitude
     eta: redshift dependent slope

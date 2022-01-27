@@ -26,7 +26,7 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
     z = np.atleast_1d(z)
     zmax = max([pz.zmax for pz in pzs])
     # Retrieve comoving distance corresponding to z
-    chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
+    cosmo, chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
 
     # Extract the indices of pzs that can be treated as extended distributions,
     # and the ones that need to be treated as delta functions.
@@ -45,7 +45,7 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
 
         @vmap
         def integrand(z_prime):
-            chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
+            _, chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
             # Stack the dndz of all redshift bins
             dndz = np.stack([pzs[i](z_prime) for i in pzs_extended_idx], axis=0)
             return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
@@ -56,7 +56,7 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
 
         @vmap
         def integrand_single(z_prime):
-            chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
+            _, chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
             return np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
 
         radial_kernels.append(
@@ -73,7 +73,8 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
     constant_factor = 3.0 * const.H0 ** 2 * cosmo.Omega_m / 2.0 / const.c
     # Ell dependent factor
     ell_factor = np.sqrt((ell - 1) * (ell) * (ell + 1) * (ell + 2)) / (ell + 0.5) ** 2
-    return constant_factor * ell_factor * radial_kernel
+    kernel = constant_factor * ell_factor * radial_kernel
+    return kernel
 
 
 @jit
@@ -121,9 +122,8 @@ def nla_kernel(cosmo, pzs, bias, z, ell):
     radial_kernel = dndz * b * bkgrd.H(cosmo, z2a(z))
     # Apply common A_IA normalization to the kernel
     # Joachimi et al. (2011), arXiv: 1008.3491, Eq. 6.
-    radial_kernel *= (
-        -(5e-14 * const.rhocrit) * cosmo.Omega_m / bkgrd.growth_factor(cosmo, z2a(z))
-    )
+    _, D = bkgrd.growth_factor(cosmo, z2a(z))
+    radial_kernel *= -(5e-14 * const.rhocrit) * cosmo.Omega_m / D
     # Constant factor
     constant_factor = 1.0
     # Ell dependent factor
@@ -136,16 +136,16 @@ class WeakLensing(container):
     """
     Class representing a weak lensing probe, with a bunch of bins
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     redshift_bins: list of nzredshift distributions
     ia_bias: (optional) if provided, IA will be added with the NLA model,
     either a single bias object or a list of same size as nzs
     multiplicative_bias: (optional) adds an (1+m) multiplicative bias, either single
     value or list of same length as redshift bins
 
-    Configuration:
-    --------------
+    Configuration
+    -------------
     sigma_e: intrinsic galaxy ellipticity
     """
 
@@ -191,8 +191,8 @@ class WeakLensing(container):
         """
         Compute the radial kernel for all nz bins in this probe.
 
-        Returns:
-        --------
+        Returns
+        -------
         radial_kernel: shape (nbins, nz)
         """
         z = np.atleast_1d(z)
@@ -229,12 +229,12 @@ class WeakLensing(container):
 class NumberCounts(container):
     """Class representing a galaxy clustering probe, with a bunch of bins
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     redshift_bins: nzredshift distributions
 
-    Configuration:
-    --------------
+    Configuration
+    -------------
     has_rsd....
     """
 
@@ -262,8 +262,8 @@ class NumberCounts(container):
     def kernel(self, cosmo, z, ell):
         """Compute the radial kernel for all nz bins in this probe.
 
-        Returns:
-        --------
+        Returns
+        -------
         radial_kernel: shape (nbins, nz)
         """
         z = np.atleast_1d(z)

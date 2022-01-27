@@ -268,15 +268,15 @@ def a_of_chi(cosmo, chi):
     r"""Computes the scale factors at given radial comoving distances by
     reverse linear interpolation.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     cosmo : Cosmology
         Cosmological parameters.
     chi : array-like
         Radial comoving distances to query.
 
-    Returns:
-    --------
+    Returns
+    -------
     cosmo : Cosmology
         Cosmological parameters with cached computations.
     a : array-like
