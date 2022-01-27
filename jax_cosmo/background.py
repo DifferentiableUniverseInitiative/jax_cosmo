@@ -208,7 +208,7 @@ def Omega_de_a(cosmo, a):
     return cosmo.Omega_de * np.exp(f_de(cosmo, a)) / Esqr(cosmo, a)
 
 
-def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
+def radial_comoving_distance(cosmo, a):
     r"""Radial comoving distances in [Mpc/h] at given scale factors.
 
     Parameters
@@ -239,7 +239,11 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
     key = "background.radial_comoving_distance"
     if not cosmo.is_cached(key):
         # Compute tabulated array
-        atab = np.logspace(log10_amin, 0.0, steps)
+        atab = np.logspace(
+            cosmo.config.log10_a_min,
+            cosmo.config.log10_a_max,
+            cosmo.config.log10_a_steps,
+        )
 
         def dchioverdlna(y, x):
             xa = np.exp(x)
@@ -483,7 +487,7 @@ def growth_rate(cosmo, a):
     return cosmo, f
 
 
-def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
+def _growth_factor_ODE(cosmo, a):
     r"""Compute linear growth factors :math:`D(a)` at given scale factors,
     normalised such that :math:`D(a=1) = 1`.
 
@@ -493,8 +497,6 @@ def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
         Cosmological parameters.
     a : array_like
         Scale factors.
-    amin : float
-        Mininum scale factor, default 1e-3.
 
     Returns
     -------
@@ -508,7 +510,11 @@ def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
     key = "background.growth_factor"
     if not cosmo.is_cached(key):
         # Compute tabulated array
-        atab = np.logspace(log10_amin, 0.0, steps)
+        atab = np.logspace(
+            cosmo.config.log10_a_min,
+            cosmo.config.log10_a_max,
+            cosmo.config.log10_a_steps,
+        )
 
         def D_derivs(y, x):
             q = (
@@ -567,7 +573,7 @@ def _growth_rate_ODE(cosmo, a):
     return cosmo, f
 
 
-def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
+def _growth_factor_gamma(cosmo, a):
     r"""Growth factors by integrating the :math:`\gamma`-parametrized growth
     rates, normalized such that :math:`D(a=1) = 1`.
 
@@ -577,8 +583,6 @@ def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
         Cosmological parameters.
     a : array_like
         Scale factors.
-    amin : float
-        Mininum scale factor, default 1e-3
 
     Returns
     -------
@@ -592,7 +596,11 @@ def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
     key = "background.growth_factor"
     if not cosmo.is_cached(key):
         # Compute tabulated array
-        atab = np.logspace(log10_amin, 0.0, steps)
+        atab = np.logspace(
+            cosmo.config.log10_a_min,
+            cosmo.config.log10_a_max,
+            cosmo.config.log10_a_steps,
+        )
 
         def integrand(y, loga):
             xa = np.exp(loga)

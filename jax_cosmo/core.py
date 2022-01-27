@@ -1,3 +1,8 @@
+"""This module implements the Cosmology type containing cosmological parameters
+and cached computations, and the Configuration type containing configuration parameters.
+
+"""
+from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import replace
 from functools import partial
@@ -9,13 +14,48 @@ import jax.numpy as np
 
 from jax_cosmo.dataclasses import pytree_dataclass
 
-__all__ = ["Cosmology"]
+__all__ = ["Cosmology", "Configuration"]
 
 
-@partial(pytree_dataclass, frozen=True)
+@dataclass(frozen=True)
+class Configuration:
+    """Configuration parameters, that are not to be traced by JAX.
+
+    Parameters:
+    -----------
+    log10_a_min : float, optional
+        Minimum for scale factor logspace range
+    log10_a_max : float, optional
+        Maximum for scale factor logspace range
+    log10_a_num : int, optional
+        Number of samples in scale factor logspace range
+    growth_rtol : float, optional
+        Relative error tolerance for solving growth ODEs
+    growth_atol : float, optional
+        Absolute error tolerance for solving growth ODEs
+
+    log10_k_min : float, optional
+        Minimum for wavenumber logspace range
+    log10_k_max : float, optional
+        Maximum for wavenumber logspace range
+
+    """
+
+    log10_a_min: float = -3.0
+    log10_a_max: float = 0.0
+    log10_a_steps: int = 256  # TODO revisit after improving odeint and interpolation
+    growth_atol: float = 0.0
+    growth_rtol: float = 1e-4
+
+    log10_k_min: float = -4.0
+    log10_k_max: float = 3.0
+
+
+@partial(pytree_dataclass, aux_fields="config", frozen=True)
 class Cosmology:
     """
-    Cosmology parameter class, including primary, secondary, and derived parameters; immutable.
+    Cosmology parameter type, containing primary, secondary, derived parameters,
+    cached computations, and configurations; immutable as a frozen dataclass.
 
     Parameters:
     -----------
@@ -37,6 +77,8 @@ class Cosmology:
         Second order term of dark energy equation of state.
     gamma : float, optional
         Exponent of growth rate fitting formula.
+    config : Configuration, optional
+        Configuration parameters.
 
     Notes:
     ------
@@ -63,6 +105,9 @@ class Cosmology:
     # cache for intermediate computations;
     # users should not access it directly but use the class methods instead
     _cache: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+    # configuration parameters, immutable (frozen dataclass)
+    config: Configuration = field(default_factory=Configuration)
 
     def __str__(self):
         return pformat(self, indent=4, width=1)  # for python >= 3.10

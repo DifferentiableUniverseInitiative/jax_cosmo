@@ -54,18 +54,18 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwar
     return pk.squeeze()
 
 
-def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax=1000.0, ksteps=5, **kwargs):
-    """Computes the energy of the fluctuations within a sphere of R h^{-1} Mpc
+def sigmasqr(cosmo, R, transfer_fn, **kwargs):
+    r"""Computes the energy of the fluctuations within a sphere of R h^{-1} Mpc
 
     .. math::
 
-       \\sigma^2(R)= \\frac{1}{2 \\pi^2} \\int_0^\\infty \\frac{dk}{k} k^3 P(k,z) W^2(kR)
+       \sigma^2(R)= \frac{1}{2 \pi^2} \int_0^\infty \frac{dk}{k} k^3 P(k,z) W^2(kR)
 
     where
 
     .. math::
 
-       W(kR) = \\frac{3j_1(kR)}{kR}
+       W(kR) = \frac{3j_1(kR)}{kR}
     """
 
     def int_sigma(logk):
@@ -75,7 +75,7 @@ def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax=1000.0, ksteps=5, **kwargs
         pk = transfer_fn(cosmo, k, **kwargs) ** 2 * primordial_matter_power(cosmo, k)
         return k * (k * w) ** 2 * pk
 
-    y = romb(int_sigma, np.log10(kmin), np.log10(kmax), divmax=7)
+    y = romb(int_sigma, cosmo.config.log10_k_min, cosmo.config.log10_k_max, divmax=7)
     return 1.0 / (2.0 * np.pi ** 2.0) * y
 
 
