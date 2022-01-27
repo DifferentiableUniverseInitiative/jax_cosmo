@@ -74,14 +74,20 @@ class Cosmology:
         return self._cache[key]
 
     def cache_set(self, key, value):
-        cache = self._cache
+        """Add key-value pair to cache and return a new ``Cosmology`` instance."""
+        cache = self._cache.copy()
         cache[key] = value
         return replace(self, _cache=cache)
 
-    def cache_clear(self):
-        cache = self._cache
-        cache.clear()
+    def cache_del(self, key):
+        """Remove key from cache and return a new ``Cosmology`` instance."""
+        cache = self._cache.copy()
+        del cache[key]
         return replace(self, _cache=cache)
+
+    def cache_clear(self):
+        """Return a new ``Cosmology`` instance with empty cache."""
+        return replace(self, _cache={})
 
     # Derived parameters
     @property
