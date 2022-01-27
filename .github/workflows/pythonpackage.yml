@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: ['3.7', '3.8', '3.9', '3.10']
 
     steps:
     - uses: actions/checkout@v2
@@ -32,10 +32,10 @@ jobs:
       shell: bash -l {0}
       run: |
         conda config --set always_yes yes
-        conda install pytest pip 
+        conda install pytest pip
         conda install -c conda-forge pyccl
         pip install .
-  
+
     - name: Test with pytest
       shell: bash -l {0}
       run: |
