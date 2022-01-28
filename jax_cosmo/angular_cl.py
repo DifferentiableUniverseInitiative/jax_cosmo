@@ -70,7 +70,7 @@ def angular_cl(
     def cl(ell):
         def integrand(a):
             # Step 1: retrieve the associated comoving distance
-            chi = bkgrd.radial_comoving_distance(cosmo, a)
+            _, chi = bkgrd.radial_comoving_distance(cosmo, a)
 
             # Step 2: get the power spectrum for this combination of chi and a
             k = (ell + 0.5) / np.clip(chi, 1.0)

@@ -1,4 +1,7 @@
-# This module implements various functions for the background COSMOLOGY
+"""This module implements various functions for the cosmological background
+and linear perturbations.
+
+"""
 import jax.numpy as np
 from jax import lax
 
@@ -14,6 +17,7 @@ __all__ = [
     "Omega_m_a",
     "Omega_de_a",
     "radial_comoving_distance",
+    "a_of_chi",
     "dchioverda",
     "transverse_comoving_distance",
     "angular_diameter_distance",
@@ -23,55 +27,53 @@ __all__ = [
 
 
 def w(cosmo, a):
-    r"""Dark Energy equation of state parameter using the Linder
+    r"""Dark energy equation of state parameter using the Linder
     parametrisation.
 
     Parameters
     ----------
-    cosmo: Cosmology
-      Cosmological parameters structure
-
+    cosmo : Cosmology
+        Cosmological parameters.
     a : array_like
-        Scale factor
+        Scale factors.
 
     Returns
     -------
     w : ndarray, or float if input scalar
-        The Dark Energy equation of state parameter at the specified
-        scale factor
+        Dark energy equation of state parameters at specified scale factors.
 
     Notes
     -----
-
-    The Linder parametrization :cite:`2003:Linder` for the Dark Energy
+    The Linder parametrization :cite:`2003:Linder` for the dark energy
     equation of state :math:`p = w \rho` is given by:
 
     .. math::
 
         w(a) = w_0 + w_a (1 - a)
+
     """
     return cosmo.w0 + (1.0 - a) * cosmo.wa  # Equation (6) in Linder (2003)
 
 
 def f_de(cosmo, a):
-    r"""Evolution parameter for the Dark Energy density.
+    r"""Evolution parameter for the dark energy density.
 
     Parameters
     ----------
+    cosmo : Cosmology
+        Cosmological parameters.
     a : array_like
-        Scale factor
+        Scale factors.
 
     Returns
     -------
     f : ndarray, or float if input scalar
-        The evolution parameter of the Dark Energy density as a function
-        of scale factor
+        Dark energy density evolution parameters at specified scale factors.
 
     Notes
     -----
-
-    For a given parametrisation of the Dark Energy equation of state,
-    the scaling of the Dark Energy density with time can be written as:
+    For a given parametrisation of the dark energy equation of state,
+    the scaling of the dark energy density with time can be written as:
 
     .. math::
 
@@ -86,38 +88,39 @@ def f_de(cosmo, a):
     .. math::
 
         f(a) = -3 (1 + w_0 + w_a) \ln(a) + 3 w_a (a - 1)
+
     """
     return -3.0 * (1.0 + cosmo.w0 + cosmo.wa) * np.log(a) + 3.0 * cosmo.wa * (a - 1.0)
 
 
 def Esqr(cosmo, a):
-    r"""Square of the scale factor dependent factor E(a) in the Hubble
-    parameter.
+    r"""Squared time scaling factors E(a) of the Hubble expansion.
 
     Parameters
     ----------
+    cosmo : Cosmology
+        Cosmological parameters.
     a : array_like
-        Scale factor
+        Scale factors.
 
     Returns
     -------
     E^2 : ndarray, or float if input scalar
-        Square of the scaling of the Hubble constant as a function of
-        scale factor
+        Squared scaling of the Hubble expansion at specified scale factors.
 
     Notes
     -----
-
     The Hubble parameter at scale factor `a` is given by
-    :math:`H^2(a) = E^2(a) H_o^2` where :math:`E^2` is obtained through
+    :math:`H^2(a) = E^2(a) H_0^2` where :math:`E^2` is obtained through
     Friedman's Equation (see :cite:`2005:Percival`) :
 
     .. math::
 
         E^2(a) = \Omega_m a^{-3} + \Omega_k a^{-2} + \Omega_{de} e^{f(a)}
 
-    where :math:`f(a)` is the Dark Energy evolution parameter computed
+    where :math:`f(a)` is the dark energy evolution parameter computed
     by :py:meth:`.f_de`.
+
     """
     return (
         cosmo.Omega_m * np.power(a, -3)
@@ -127,33 +130,38 @@ def Esqr(cosmo, a):
 
 
 def H(cosmo, a):
-    r"""Hubble parameter [km/s/(Mpc/h)] at scale factor `a`
+    r"""Hubble expansion rate [km/s/(Mpc/h)] at given scale factors.
 
     Parameters
     ----------
+    cosmo : Cosmology
+        Cosmological parameters.
     a : array_like
-        Scale factor
+        Scale factors.
 
     Returns
     -------
     H : ndarray, or float if input scalar
-        Hubble parameter at the requested scale factor.
+        Hubble parameters at specified scale factors.
+
     """
     return const.H0 * np.sqrt(Esqr(cosmo, a))
 
 
 def Omega_m_a(cosmo, a):
-    r"""Matter density at scale factor `a`.
+    r"""Matter density at given scale factors.
 
     Parameters
     ----------
+    cosmo : Cosmology
+        Cosmological parameters.
     a : array_like
-        Scale factor
+        Scale factors.
 
     Returns
     -------
     Omega_m : ndarray, or float if input scalar
-        Non-relativistic matter density at the requested scale factor
+        Non-relativistic matter density at specified scale factors.
 
     Notes
     -----
@@ -164,65 +172,78 @@ def Omega_m_a(cosmo, a):
         \Omega_m(a) = \frac{\Omega_m a^{-3}}{E^2(a)}
 
     see :cite:`2005:Percival` Eq. (6)
+
     """
     return cosmo.Omega_m * np.power(a, -3) / Esqr(cosmo, a)
 
 
 def Omega_de_a(cosmo, a):
-    r"""Dark Energy density at scale factor `a`.
+    r"""Dark energy density at given scale factors.
 
     Parameters
     ----------
+    cosmo : Cosmology
+        Cosmological parameters.
     a : array_like
-        Scale factor
+        Scale factors.
 
     Returns
     -------
     Omega_de : ndarray, or float if input scalar
-        Dark Energy density at the requested scale factor
+        Dark energy density at specified scale factors.
 
     Notes
     -----
-    The evolution of Dark Energy density :math:`\Omega_{de}(a)` is given
+    The evolution of dark energy density :math:`\Omega_{de}(a)` is given
     by:
 
     .. math::
 
         \Omega_{de}(a) = \frac{\Omega_{de} e^{f(a)}}{E^2(a)}
 
-    where :math:`f(a)` is the Dark Energy evolution parameter computed by
+    where :math:`f(a)` is the dark energy evolution parameter computed by
     :py:meth:`.f_de` (see :cite:`2005:Percival` Eq. (6)).
+
     """
     return cosmo.Omega_de * np.exp(f_de(cosmo, a)) / Esqr(cosmo, a)
 
 
-def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
-    r"""Radial comoving distance in [Mpc/h] for a given scale factor.
+def radial_comoving_distance(cosmo, a):
+    r"""Radial comoving distances in [Mpc/h] at given scale factors.
 
     Parameters
     ----------
+    cosmo : Cosmology
+        Cosmological parameters.
     a : array_like
-        Scale factor
+        Scale factors.
 
     Returns
     -------
+    cosmo : Cosmology
+        Cosmological parameters with cached computations.
     chi : ndarray, or float if input scalar
-        Radial comoving distance corresponding to the specified scale
-        factor.
+        Radial comoving distances at specified scale factors.
 
     Notes
     -----
-    The radial comoving distance is computed by performing the following
+    The radial comoving distances is computed by performing the following
     integration:
 
     .. math::
 
         \chi(a) =  R_H \int_a^1 \frac{da^\prime}{{a^\prime}^2 E(a^\prime)}
+
     """
     # Check if distances have already been computed
-    if not "background.radial_comoving_distance" in cosmo._workspace.keys():
+    key = "background.radial_comoving_distance"
+    if not cosmo.is_cached(key):
         # Compute tabulated array
-        atab = np.logspace(log10_amin, 0.0, steps)
+        atab = np.logspace(
+            cosmo.config.log10_a_min,
+            cosmo.config.log10_a_max,
+            cosmo.config.log10_a_steps,
+        )
 
         def dchioverdlna(y, x):
             xa = np.exp(x)
@@ -232,81 +253,92 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
         # np.clip(- 3000*np.log(atab), 0, 10000)#odeint(dchioverdlna, 0., np.log(atab), cosmo)
         chitab = chitab[-1] - chitab
 
-        cache = {"a": atab, "chi": chitab}
-        cosmo._workspace["background.radial_comoving_distance"] = cache
+        value = {"a": atab, "chi": chitab}
+        cosmo = cosmo.cache_set(key, value)
     else:
-        cache = cosmo._workspace["background.radial_comoving_distance"]
+        value = cosmo.cache_get(key)
 
     a = np.atleast_1d(a)
     # Return the results as an interpolation of the table
-    return np.clip(interp(a, cache["a"], cache["chi"]), 0.0)
+    chi = np.clip(interp(a, value["a"], value["chi"]), 0.0)
+    return cosmo, chi
 
 
 def a_of_chi(cosmo, chi):
-    r"""Computes the scale factor for corresponding (array) of radial comoving
-    distance by reverse linear interpolation.
-
-    Parameters:
-    -----------
-    cosmo: Cosmology
-      Cosmological parameters
-
-    chi: array-like
-      radial comoving distance to query.
-
-    Returns:
-    --------
-    a : array-like
-      Scale factors corresponding to requested distances
-    """
-    # Check if distances have already been computed, force computation otherwise
-    if not "background.radial_comoving_distance" in cosmo._workspace.keys():
-        radial_comoving_distance(cosmo, 1.0)
-    cache = cosmo._workspace["background.radial_comoving_distance"]
-    chi = np.atleast_1d(chi)
-    return interp(chi, cache["chi"], cache["a"])
-
-
-def dchioverda(cosmo, a):
-    r"""Derivative of the radial comoving distance with respect to the
-    scale factor.
+    r"""Computes the scale factors at given radial comoving distances by
+    reverse linear interpolation.
 
     Parameters
     ----------
-    a : array_like
-        Scale factor
+    cosmo : Cosmology
+        Cosmological parameters.
+    chi : array-like
+        Radial comoving distances to query.
 
     Returns
     -------
-    dchi/da :  ndarray, or float if input scalar
-        Derivative of the radial comoving distance with respect to the
-        scale factor at the specified scale factor.
+    cosmo : Cosmology
+        Cosmological parameters with cached computations.
+    a : array-like
+        Scale factors at specified distances.
+
+    """
+    # Check if distances have already been computed, force computation otherwise
+    key = "background.radial_comoving_distance"
+    if not cosmo.is_cached(key):
+        cosmo, _ = radial_comoving_distance(cosmo, 1.0)
+    value = cosmo.cache_get(key)
+
+    chi = np.atleast_1d(chi)
+    a = interp(chi, value["chi"], value["a"])
+    return cosmo, a
+
+
+def dchioverda(cosmo, a):
+    r"""Derivative of the radial comoving distances with respect to the
+    scale factors.
+
+    Parameters
+    ----------
+    cosmo : Cosmology
+        Cosmological parameters.
+    a : array_like
+        Scale factors.
+
+    Returns
+    -------
+    dchi/da : ndarray, or float if input scalar
+        Derivative of the radial comoving distances with respect to the
+        scale factors at specified scale factors.
 
     Notes
     -----
-
     The expression for :math:`\frac{d \chi}{da}` is:
 
     .. math::
 
         \frac{d \chi}{da}(a) = \frac{R_H}{a^2 E(a)}
+
     """
     return const.rh / (a ** 2 * np.sqrt(Esqr(cosmo, a)))
 
 
 def transverse_comoving_distance(cosmo, a):
-    r"""Transverse comoving distance in [Mpc/h] for a given scale factor.
+    r"""Transverse comoving distances in [Mpc/h] for given scale factors.
 
     Parameters
     ----------
+    cosmo : Cosmology
+        Cosmological parameters.
     a : array_like
-        Scale factor
+        Scale factors.
 
     Returns
     -------
+    cosmo : Cosmology
+        Cosmological parameters with cached computations.
     f_k : ndarray, or float if input scalar
-        Transverse comoving distance corresponding to the specified
-        scale factor.
+        Transverse comoving distances at specified scale factors.
 
     Notes
     -----
@@ -325,8 +357,8 @@ def transverse_comoving_distance(cosmo, a):
             \mbox{for } \Omega_k < 0
         \end{matrix}
         \right.
+
     """
-    index = cosmo.k + 1
 
     def open_universe(chi):
         return const.rh / cosmo.sqrtk * np.sinh(cosmo.sqrtk * chi / const.rh)
@@ -339,22 +371,28 @@ def transverse_comoving_distance(cosmo, a):
 
     branches = (open_universe, flat_universe, close_universe)
 
-    chi = radial_comoving_distance(cosmo, a)
+    cosmo, chi = radial_comoving_distance(cosmo, a)
 
-    return lax.switch(cosmo.k + 1, branches, chi)
+    f_k = lax.switch(cosmo.k + 1, branches, chi)
+    return cosmo, f_k
 
 
 def angular_diameter_distance(cosmo, a):
-    r"""Angular diameter distance in [Mpc/h] for a given scale factor.
+    r"""Angular diameter distances in [Mpc/h] for given scale factors.
 
     Parameters
     ----------
+    cosmo : Cosmology
+        Cosmological parameters.
     a : array_like
-        Scale factor
+        Scale factors.
 
     Returns
     -------
+    cosmo : Cosmology
+        Cosmological parameters with cached computations.
     d_A : ndarray, or float if input scalar
+        Angular diameter distances at specified scale factors.
 
     Notes
     -----
@@ -364,62 +402,69 @@ def angular_diameter_distance(cosmo, a):
     .. math::
 
         d_A(a) = a f_k(a)
+
     """
-    return a * transverse_comoving_distance(cosmo, a)
+    cosmo, f_k = transverse_comoving_distance(cosmo, a)
+    d_A = a * f_k
+    return cosmo, d_A
 
 
 def growth_factor(cosmo, a):
-    """Compute linear growth factor D(a) at a given scale factor,
-    normalized such that D(a=1) = 1.
+    r"""Compute linear growth factors :math:`D(a)` at given scale factors,
+    normalized such that :math:`D(a=1) = 1`.
 
     Parameters
     ----------
-    cosmo: `Cosmology`
-      Cosmology object
-
-    a: array_like
-      Scale factor
+    cosmo : Cosmology
+        Cosmology parameters.
+    a : array_like
+        Scale factors.
 
     Returns
     -------
-    D:  ndarray, or float if input scalar
-        Growth factor computed at requested scale factor
+    cosmo : Cosmology
+        Cosmological parameters with cached computations.
+    D : ndarray, or float if input scalar
+        Growth factors at specified scale factors.
 
     Notes
     -----
-    The growth computation will depend on the cosmology parametrization, for
-    instance if the $\gamma$ parameter is defined, the growth will be computed
-    assuming the $f = \Omega^\gamma$ growth rate, otherwise the usual ODE for
-    growth will be solved.
+    The growth computation depends on the cosmology parametrization:
+    if the :math:`\gamma` parameter is defined, the growth history is computed
+    assuming the growth rate :math:`f = \Omega_m(a)^\gamma`, otherwise the
+    usual ODE for growth will be solved.
+
     """
-    if cosmo._flags["gamma_growth"]:
-        return _growth_factor_gamma(cosmo, a)
+    if cosmo.gamma is not None:
+        cosmo, D = _growth_factor_gamma(cosmo, a)
     else:
-        return _growth_factor_ODE(cosmo, a)
+        cosmo, D = _growth_factor_ODE(cosmo, a)
+    return cosmo, D
 
 
 def growth_rate(cosmo, a):
-    """Compute growth rate dD/dlna at a given scale factor.
+    r"""Compute growth rates :math:`dD/d\ln\ a` at given scale factors.
 
     Parameters
     ----------
-    cosmo: `Cosmology`
-      Cosmology object
-
-    a: array_like
-      Scale factor
+    cosmo : Cosmology
+        Cosmology parameters.
+    a : array_like
+        Scale factors.
 
     Returns
     -------
-    f:  ndarray, or float if input scalar
-        Growth rate computed at requested scale factor
+    cosmo : Cosmology
+        Cosmological parameters with cached computations.
+    f : ndarray, or float if input scalar
+        Growth rate at specified scale factors.
 
     Notes
     -----
-    The growth computation will depend on the cosmology parametrization, for
-    instance if the $\gamma$ parameter is defined, the growth will be computed
-    assuming the $f = \Omega^\gamma$ growth rate, otherwise the usual ODE for
-    growth will be solved.
+    The growth computation depends on the cosmology parametrization:
+    if the :math:`\gamma` parameter is defined, the growth history is computed
+    assuming the growth rate :math:`f = \Omega_m(a)^\gamma`, otherwise the
+    usual ODE for growth will be solved.
 
     The LCDM approximation to the growth rate :math:`f_{\gamma}(a)` is given by:
 
@@ -427,40 +472,49 @@ def growth_rate(cosmo, a):
 
         f_{\gamma}(a) = \Omega_m^{\gamma} (a)
 
-     with :math: `\gamma` in LCDM, given approximately by:
+     with :math:`\gamma` in LCDM, given approximately by:
      .. math::
 
         \gamma = 0.55
 
     see :cite:`2019:Euclid Preparation VII, eqn.32`
+
     """
-    if cosmo._flags["gamma_growth"]:
-        return _growth_rate_gamma(cosmo, a)
+    if cosmo.gamma is not None:
+        f = _growth_rate_gamma(cosmo, a)
     else:
-        return _growth_rate_ODE(cosmo, a)
+        cosmo, f = _growth_rate_ODE(cosmo, a)
+    return cosmo, f
 
 
-def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
-    """Compute linear growth factor D(a) at a given scale factor,
-    normalised such that D(a=1) = 1.
+def _growth_factor_ODE(cosmo, a):
+    r"""Compute linear growth factors :math:`D(a)` at given scale factors,
+    normalised such that :math:`D(a=1) = 1`.
 
     Parameters
     ----------
-    a: array_like
-      Scale factor
-
-    amin: float
-      Mininum scale factor, default 1e-3
+    cosmo : Cosmology
+        Cosmological parameters.
+    a : array_like
+        Scale factors.
 
     Returns
     -------
-    D:  ndarray, or float if input scalar
-        Growth factor computed at requested scale factor
+    cosmo : Cosmology
+        Cosmological parameters with cached computations.
+    D : ndarray, or float if input scalar
+        Growth factors at specified scale factors.
+
     """
     # Check if growth has already been computed
-    if not "background.growth_factor" in cosmo._workspace.keys():
+    key = "background.growth_factor"
+    if not cosmo.is_cached(key):
         # Compute tabulated array
-        atab = np.logspace(log10_amin, 0.0, steps)
+        atab = np.logspace(
+            cosmo.config.log10_a_min,
+            cosmo.config.log10_a_max,
+            cosmo.config.log10_a_steps,
+        )
 
         def D_derivs(y, x):
             q = (
@@ -481,59 +535,72 @@ def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
         # To transform from dD/da to dlnD/dlna: dlnD/dlna = a / D dD/da
         ftab = y[:, 1] / y1[-1] * atab / gtab
 
-        cache = {"a": atab, "g": gtab, "f": ftab}
-        cosmo._workspace["background.growth_factor"] = cache
+        value = {"a": atab, "g": gtab, "f": ftab}
+        cosmo = cosmo.cache_set(key, value)
     else:
-        cache = cosmo._workspace["background.growth_factor"]
-    return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
+        value = cosmo.cache_get(key)
+
+    D = np.clip(interp(a, value["a"], value["g"]), 0.0, 1.0)
+    return cosmo, D
 
 
 def _growth_rate_ODE(cosmo, a):
-    """Compute growth rate dD/dlna at a given scale factor by solving the linear
-    growth ODE.
+    r"""Compute growth rates :math:`dD/d\ln\ a` at given scale factors by
+    solving the linear growth ODE.
 
     Parameters
     ----------
-    cosmo: `Cosmology`
-      Cosmology object
-
-    a: array_like
-      Scale factor
+    cosmo : Cosmology
+        Cosmology parameters.
+    a : array_like
+        Scale factors.
 
     Returns
     -------
-    f:  ndarray, or float if input scalar
-        Growth rate computed at requested scale factor
+    cosmo : Cosmology
+        Cosmological parameters with cached computations.
+    f : ndarray, or float if input scalar
+        Growth rates at specified scale factors.
+
     """
     # Check if growth has already been computed, if not, compute it
-    if not "background.growth_factor" in cosmo._workspace.keys():
-        _growth_factor_ODE(cosmo, np.atleast_1d(1.0))
-    cache = cosmo._workspace["background.growth_factor"]
-    return interp(a, cache["a"], cache["f"])
+    key = "background.growth_factor"
+    if not cosmo.is_cached(key):
+        cosmo, _ = _growth_factor_ODE(cosmo, np.atleast_1d(1.0))
+    value = cosmo.cache_get(key)
+
+    f = interp(a, value["a"], value["f"])
+    return cosmo, f
 
 
-def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
-    r"""Computes growth factor by integrating the growth rate provided by the
-    \gamma parametrization. Normalized such that D( a=1) =1
+def _growth_factor_gamma(cosmo, a):
+    r"""Growth factors by integrating the :math:`\gamma`-parametrized growth
+    rates, normalized such that :math:`D(a=1) = 1`.
 
     Parameters
     ----------
-    a: array_like
-      Scale factor
-
-    amin: float
-      Mininum scale factor, default 1e-3
+    cosmo : Cosmology
+        Cosmological parameters.
+    a : array_like
+        Scale factors.
 
     Returns
     -------
-    D:  ndarray, or float if input scalar
-        Growth factor computed at requested scale factor
+    cosmo : Cosmology
+        Cosmological parameters with cached computations.
+    D : ndarray, or float if input scalar
+        Growth factors at specified scale factors.
 
     """
     # Check if growth has already been computed, if not, compute it
-    if not "background.growth_factor" in cosmo._workspace.keys():
+    key = "background.growth_factor"
+    if not cosmo.is_cached(key):
         # Compute tabulated array
-        atab = np.logspace(log10_amin, 0.0, steps)
+        atab = np.logspace(
+            cosmo.config.log10_a_min,
+            cosmo.config.log10_a_max,
+            cosmo.config.log10_a_steps,
+        )
 
         def integrand(y, loga):
             xa = np.exp(loga)
@@ -541,28 +608,29 @@ def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
 
         gtab = np.exp(odeint(integrand, np.log(atab[0]), np.log(atab)))
         gtab = gtab / gtab[-1]  # Normalize to a=1.
-        cache = {"a": atab, "g": gtab}
-        cosmo._workspace["background.growth_factor"] = cache
+        value = {"a": atab, "g": gtab}
+        cosmo = cosmo.cache_set(key, value)
     else:
-        cache = cosmo._workspace["background.growth_factor"]
-    return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
+        value = cosmo.cache_get(key)
+
+    D = np.clip(interp(a, value["a"], value["g"]), 0.0, 1.0)
+    return cosmo, D
 
 
 def _growth_rate_gamma(cosmo, a):
-    r"""Growth rate approximation at scale factor `a`.
+    r"""Growth rate approximation at given scale factors.
 
     Parameters
     ----------
-    cosmo: `Cosmology`
-        Cosmology object
-
+    cosmo : Cosmology
+        Cosmology parameters.
     a : array_like
-        Scale factor
+        Scale factors.
 
     Returns
     -------
     f_gamma : ndarray, or float if input scalar
-        Growth rate approximation at the requested scale factor
+        Growth rate approximation at specified scale factors.
 
     Notes
     -----
@@ -572,11 +640,12 @@ def _growth_rate_gamma(cosmo, a):
 
         f_{\gamma}(a) = \Omega_m^{\gamma} (a)
 
-     with :math: `\gamma` in LCDM, given approximately by:
+     with :math:`\gamma` in LCDM, given approximately by:
      .. math::
 
         \gamma = 0.55
 
     see :cite:`2019:Euclid Preparation VII, eqn.32`
+
     """
     return Omega_m_a(cosmo, a) ** cosmo.gamma
