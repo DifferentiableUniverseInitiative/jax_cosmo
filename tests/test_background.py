@@ -271,6 +271,6 @@ def test_distance_modulus():
     # Test array of scale factors
     a = np.linspace(0.01, 0.99)
 
-    dl_ccl = ccl.distance_modulus(cosmo_ccl, a)
-    dl_jax = bkgrd.distance_modulus(cosmo_jax, a) - 5*np.log10(cosmo_jax.h)
-    assert_allclose(dl_ccl, dl_jax, rtol=0.5e-2)
+    mu_ccl = ccl.distance_modulus(cosmo_ccl, a)
+    mu_jax = bkgrd.distance_modulus(cosmo_jax, a) - 5*np.log10(cosmo_jax.h)
+    assert_allclose(mu_ccl, mu_jax, rtol=0.5e-2)
