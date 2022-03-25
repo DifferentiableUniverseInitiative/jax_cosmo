@@ -1,7 +1,5 @@
-import jax.numpy as jnp
 import numpy as np
 import pyccl as ccl
-import pyccl.background
 from numpy.testing import assert_allclose
 
 import jax_cosmo.background as bkgrd
@@ -242,7 +240,7 @@ def test_luminosity_distance():
     # Test array of scale factors
     a = np.linspace(0.01, 1.0)
 
-    dl_ccl = ccl.background.luminosity_distance(cosmo_ccl, a)
+    dl_ccl = ccl.luminosity_distance(cosmo_ccl, a)
     dl_jax = bkgrd.luminosity_distance(cosmo_jax, a) / cosmo_jax.h
     assert_allclose(dl_ccl, dl_jax, rtol=0.5e-2)
 
@@ -273,6 +271,6 @@ def test_distance_modulus():
     # Test array of scale factors
     a = np.linspace(0.01, 0.99)
 
-    dl_ccl = ccl.background.distance_modulus(cosmo_ccl, a)
+    dl_ccl = ccl.distance_modulus(cosmo_ccl, a)
     dl_jax = bkgrd.distance_modulus(cosmo_jax, a) - 5*np.log10(cosmo_jax.h)
     assert_allclose(dl_ccl, dl_jax, rtol=0.5e-2)
