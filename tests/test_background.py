@@ -246,6 +246,7 @@ def test_luminosity_distance():
     dl_jax = bkgrd.luminosity_distance(cosmo_jax, a) / cosmo_jax.h
     assert_allclose(dl_ccl, dl_jax, rtol=0.5e-2)
 
+
 def test_distance_modulus():
     cosmo_ccl = ccl.Cosmology(
         Omega_c=0.3,
