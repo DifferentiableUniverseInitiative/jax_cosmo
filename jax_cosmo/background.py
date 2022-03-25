@@ -19,7 +19,8 @@ __all__ = [
     "angular_diameter_distance",
     "growth_factor",
     "growth_rate",
-    "luminosity_distance"
+    "luminosity_distance",
+    "distance_modulus",
 ]
 
 
@@ -601,3 +602,23 @@ def luminosity_distance(cosmo, a):
     """
 
     return transverse_comoving_distance(cosmo, a) / a
+
+
+def distance_modulus(cosmo, a):
+    """
+    Compute the distance modulus for a given scale factor a
+
+    Parameters
+    ----------
+    cosmo : `Cosmology'
+        Cosmology object
+
+    a : array_like
+        Scale factor
+
+    Returns
+    -------
+    mu : Distance modulus corresponding to scale factor a
+    """
+
+    return 5 * np.log10(luminosity_distance(cosmo, a) * 1e5)

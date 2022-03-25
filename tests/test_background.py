@@ -245,3 +245,33 @@ def test_luminosity_distance():
     dl_ccl = ccl.background.luminosity_distance(cosmo_ccl, a)
     dl_jax = bkgrd.luminosity_distance(cosmo_jax, a) / cosmo_jax.h
     assert_allclose(dl_ccl, dl_jax, rtol=0.5e-2)
+
+def test_distance_modulus():
+    cosmo_ccl = ccl.Cosmology(
+        Omega_c=0.3,
+        Omega_b=0.05,
+        h=0.7,
+        sigma8=0.8,
+        n_s=0.96,
+        Neff=0,
+        transfer_function="eisenstein_hu",
+        matter_power_spectrum="linear",
+    )
+
+    cosmo_jax = Cosmology(
+        Omega_c=0.3,
+        Omega_b=0.05,
+        h=0.7,
+        sigma8=0.8,
+        n_s=0.96,
+        Omega_k=0.0,
+        w0=-1.0,
+        wa=0.0,
+    )
+
+    # Test array of scale factors
+    a = np.linspace(0.01, 0.99)
+
+    dl_ccl = ccl.background.distance_modulus(cosmo_ccl, a)
+    dl_jax = bkgrd.distance_modulus(cosmo_jax, a) - 5*np.log10(cosmo_jax.h)
+    assert_allclose(dl_ccl, dl_jax, rtol=0.5e-2)
