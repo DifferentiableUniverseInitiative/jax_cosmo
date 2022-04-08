@@ -7,7 +7,7 @@ RUN apt-get update -y && apt-get upgrade -y
 RUN apt-get update && apt-get install -y wget pkg-config curl \
         git cmake make swig && apt-get clean all
 RUN apt-get update && apt-get install -y libcfitsio-dev libfftw3-dev \
-        libgsl-dev libbz2-dev  && apt-get clean all
+        libgsl-dev libbz2-dev && apt-get clean all
 
 # Install CCL manually
 RUN cd /opt \
