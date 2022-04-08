@@ -31,5 +31,6 @@ RUN pip install --no-cache-dir jaxlib==0.1.62+cuda110 \
                                              -f https://storage.googleapis.com/jax-releases/jax_releases.html
 
 WORKDIR /opt/jax_cosmo
+COPY . .
 
 CMD ["/bin/bash", "-l"]
