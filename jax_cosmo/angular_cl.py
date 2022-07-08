@@ -183,7 +183,6 @@ def gaussian_cl_covariance_and_mean(
     return_cls: (returns signal + noise cl, covariance)
     """
     ell = np.atleast_1d(ell)
-    n_ell = len(ell)
 
     # Compute signal vectors
     cl_signal = angular_cl(
@@ -191,7 +190,9 @@ def gaussian_cl_covariance_and_mean(
     )
     cl_noise = noise_cl(ell, probes)
 
+    return_cls = cl_signal + cl_noise
+
     # retrieve the covariance
     cov_mat = gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky, sparse)
 
-    return cl_signal.flatten(), cov_mat
+    return return_cls.flatten(), cov_mat
