@@ -70,7 +70,7 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
     radial_kernel = radial_kernel[inv]
 
     # Constant term
-    constant_factor = 3.0 * const.H0 ** 2 * cosmo.Omega_m / 2.0 / const.c
+    constant_factor = 3.0 * const.H0**2 * cosmo.Omega_m / 2.0 / const.c
     # Ell dependent factor
     ell_factor = np.sqrt((ell - 1) * (ell) * (ell + 1) * (ell + 2)) / (ell + 0.5) ** 2
     return constant_factor * ell_factor * radial_kernel
@@ -222,7 +222,7 @@ class WeakLensing(container):
             sigma_e = np.array([s for s in self.config["sigma_e"]])
         else:
             sigma_e = self.config["sigma_e"]
-        return sigma_e ** 2 / ngals
+        return sigma_e**2 / ngals
 
 
 @register_pytree_node_class

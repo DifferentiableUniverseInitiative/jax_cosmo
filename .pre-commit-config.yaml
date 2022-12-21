@@ -1,12 +1,12 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: stable
+    rev: 22.12.0
     hooks:
     - id: black
-      language_version: python3.9
+      language_version: python3.10
 
   - repo: https://github.com/asottile/reorder_python_imports
-    rev: v2.3.0
+    rev: v3.9.0
     hooks:
     - id: reorder-python-imports
 

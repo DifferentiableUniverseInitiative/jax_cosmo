@@ -45,7 +45,7 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
     #            - sh_d   : sound horizon at drag epoch
     #            - k_silk : Silk damping scale
     T_2_7_sqr = (const.tcmb / 2.7) ** 2
-    h2 = cosmo.h ** 2
+    h2 = cosmo.h**2
     w_m = cosmo.Omega_m * h2
     w_b = cosmo.Omega_b * h2
     fb = cosmo.Omega_b / cosmo.Omega_m
@@ -111,7 +111,7 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
         # EH98 (11, 12)
         a1 = np.power(46.9 * w_m, 0.670) * (1.0 + np.power(32.1 * w_m, -0.532))
         a2 = np.power(12.0 * w_m, 0.424) * (1.0 + np.power(45.0 * w_m, -0.582))
-        alpha_c = np.power(a1, -fb) * np.power(a2, -(fb ** 3))
+        alpha_c = np.power(a1, -fb) * np.power(a2, -(fb**3))
         b1 = 0.944 / (1.0 + np.power(458.0 * w_m, -0.708))
         b2 = np.power(0.395 * w_m, -0.0266)
         beta_c = 1.0 + b1 * (np.power(fc, b2) - 1.0)
