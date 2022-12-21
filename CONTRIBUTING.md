@@ -57,7 +57,7 @@ Before submitting your PR, have a look at the procedure documented below.
   git remote add upstream http://www.github.com/DifferentiableUniverseInitiative/jax_cosmo
   # This will update your local branch
   git fetch upstream
-  git rebase upstream/main
+  git rebase upstream/master
   ```
 
 - Make sure the unit tests still work:
