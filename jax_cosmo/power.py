@@ -16,7 +16,7 @@ def primordial_matter_power(cosmo, k):
     """Primordial power spectrum
     Pk = k^n
     """
-    return k ** cosmo.n_s
+    return k**cosmo.n_s
 
 
 def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwargs):
@@ -45,9 +45,9 @@ def linear_matter_power(cosmo, k, a=1.0, transfer_fn=tklib.Eisenstein_Hu, **kwar
     g = bkgrd.growth_factor(cosmo, a)
     t = transfer_fn(cosmo, k, **kwargs)
 
-    pknorm = cosmo.sigma8 ** 2 / sigmasqr(cosmo, 8.0, transfer_fn, **kwargs)
+    pknorm = cosmo.sigma8**2 / sigmasqr(cosmo, 8.0, transfer_fn, **kwargs)
 
-    pk = primordial_matter_power(cosmo, k) * t ** 2 * g ** 2
+    pk = primordial_matter_power(cosmo, k) * t**2 * g**2
 
     # Apply normalisation
     pk = pk * pknorm
@@ -76,7 +76,7 @@ def sigmasqr(cosmo, R, transfer_fn, kmin=0.0001, kmax=1000.0, ksteps=5, **kwargs
         return k * (k * w) ** 2 * pk
 
     y = romb(int_sigma, np.log10(kmin), np.log10(kmax), divmax=7)
-    return 1.0 / (2.0 * np.pi ** 2.0) * y
+    return 1.0 / (2.0 * np.pi**2.0) * y
 
 
 def linear(cosmo, k, a, transfer_fn):
@@ -103,10 +103,10 @@ def _halofit_parameters(cosmo, a, transfer_fn):
             pk = linear_matter_power(cosmo, k, transfer_fn=transfer_fn)
             g = bkgrd.growth_factor(cosmo, np.atleast_1d(a))
             return (
-                np.expand_dims(pk * k ** 3, axis=1)
-                * np.exp(-(y ** 2))
-                / (2.0 * np.pi ** 2)
-                * g ** 2
+                np.expand_dims(pk * k**3, axis=1)
+                * np.exp(-(y**2))
+                / (2.0 * np.pi**2)
+                * g**2
             )
 
         sigma = simps(int_sigma, np.log(1e-4), np.log(1e4), 256)
@@ -125,13 +125,13 @@ def _halofit_parameters(cosmo, a, transfer_fn):
         pk = linear_matter_power(cosmo, k, transfer_fn=transfer_fn)
         g = np.expand_dims(bkgrd.growth_factor(cosmo, np.atleast_1d(a)), 0)
         res = (
-            np.expand_dims(pk * k ** 3, axis=1)
-            * np.exp(-(y ** 2))
-            * g ** 2
-            / (2.0 * np.pi ** 2)
+            np.expand_dims(pk * k**3, axis=1)
+            * np.exp(-(y**2))
+            * g**2
+            / (2.0 * np.pi**2)
         )
-        dneff_dlogk = 2 * res * y ** 2
-        dC_dlogk = 4 * res * (y ** 2 - y ** 4)
+        dneff_dlogk = 2 * res * y**2
+        dC_dlogk = 4 * res * (y**2 - y**4)
         return np.stack([dneff_dlogk, dC_dlogk], axis=1)
 
     res = simps(integrand, np.log(1e-4), np.log(1e4), 256)
@@ -185,44 +185,44 @@ def halofit(cosmo, k, a, transfer_fn, prescription="takahashi2012"):
         a_n = 10 ** (
             1.4861
             + 1.8369 * n
-            + 1.6762 * n ** 2
-            + 0.7940 * n ** 3
-            + 0.1670 * n ** 4
+            + 1.6762 * n**2
+            + 0.7940 * n**3
+            + 0.1670 * n**4
             - 0.6206 * C
         )
-        b_n = 10 ** (0.9463 + 0.9466 * n + 0.3084 * n ** 2 - 0.9400 * C)
-        c_n = 10 ** (-0.2807 + 0.6669 * n + 0.3214 * n ** 2 - 0.0793 * C)
+        b_n = 10 ** (0.9463 + 0.9466 * n + 0.3084 * n**2 - 0.9400 * C)
+        c_n = 10 ** (-0.2807 + 0.6669 * n + 0.3214 * n**2 - 0.0793 * C)
         gamma_n = 0.8649 + 0.2989 * n + 0.1631 * C
-        alpha_n = 1.3884 + 0.3700 * n - 0.1452 * n ** 2
-        beta_n = 0.8291 + 0.9854 * n + 0.3401 * n ** 2
+        alpha_n = 1.3884 + 0.3700 * n - 0.1452 * n**2
+        beta_n = 0.8291 + 0.9854 * n + 0.3401 * n**2
         mu_n = 10 ** (-3.5442 + 0.1908 * n)
         nu_n = 10 ** (0.9585 + 1.2857 * n)
     elif prescription == "takahashi2012":
         a_n = 10 ** (
             1.5222
             + 2.8553 * n
-            + 2.3706 * n ** 2
-            + 0.9903 * n ** 3
-            + 0.2250 * n ** 4
+            + 2.3706 * n**2
+            + 0.9903 * n**3
+            + 0.2250 * n**4
             - 0.6038 * C
             + 0.1749 * om_de * (1 + w)
         )
         b_n = 10 ** (
             -0.5642
             + 0.5864 * n
-            + 0.5716 * n ** 2
+            + 0.5716 * n**2
             - 1.5474 * C
             + 0.2279 * om_de * (1 + w)
         )
-        c_n = 10 ** (0.3698 + 2.0404 * n + 0.8161 * n ** 2 + 0.5869 * C)
+        c_n = 10 ** (0.3698 + 2.0404 * n + 0.8161 * n**2 + 0.5869 * C)
         gamma_n = 0.1971 - 0.0843 * n + 0.8460 * C
-        alpha_n = np.abs(6.0835 + 1.3373 * n - 0.1959 * n ** 2 - 5.5274 * C)
+        alpha_n = np.abs(6.0835 + 1.3373 * n - 0.1959 * n**2 - 5.5274 * C)
         beta_n = (
             2.0379
             - 0.7354 * n
-            + 0.3157 * n ** 2
-            + 1.2490 * n ** 3
-            + 0.3980 * n ** 4
+            + 0.3157 * n**2
+            + 1.2490 * n**3
+            + 0.3980 * n**4
             - 0.1682 * C
         )
         mu_n = 0.0
@@ -232,7 +232,7 @@ def halofit(cosmo, k, a, transfer_fn, prescription="takahashi2012"):
 
     f1a = om_m ** (-0.0732)
     f2a = om_m ** (-0.1423)
-    f3a = om_m ** 0.0725
+    f3a = om_m**0.0725
     f1b = om_m ** (-0.0307)
     f2b = om_m ** (-0.0585)
     f3b = om_m ** (0.0743)
@@ -248,21 +248,21 @@ def halofit(cosmo, k, a, transfer_fn, prescription="takahashi2012"):
     else:
         raise NotImplementedError
 
-    f = lambda x: x / 4.0 + x ** 2 / 8.0
+    f = lambda x: x / 4.0 + x**2 / 8.0
 
-    d2l = k ** 3 * pklin / (2.0 * np.pi ** 2)
+    d2l = k**3 * pklin / (2.0 * np.pi**2)
 
     y = k / k_nl
 
     # Eq C2
     d2q = d2l * ((1.0 + d2l) ** beta_n / (1 + alpha_n * d2l)) * np.exp(-f(y))
     d2hprime = (
-        a_n * y ** (3 * f1) / (1.0 + b_n * y ** f2 + (c_n * f3 * y) ** (3.0 - gamma_n))
+        a_n * y ** (3 * f1) / (1.0 + b_n * y**f2 + (c_n * f3 * y) ** (3.0 - gamma_n))
     )
-    d2h = d2hprime / (1.0 + mu_n / y + nu_n / y ** 2)
+    d2h = d2hprime / (1.0 + mu_n / y + nu_n / y**2)
     # Eq. C1
     d2nl = d2q + d2h
-    pk_nl = 2.0 * np.pi ** 2 / k ** 3 * d2nl
+    pk_nl = 2.0 * np.pi**2 / k**3 * d2nl
 
     return pk_nl.squeeze()
 

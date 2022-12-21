@@ -258,11 +258,11 @@ class InterpolatedUnivariateSpline(object):
 
         if self.k == 2:
             t, a, b, c = self._compute_coeffs(x)
-            result = a + b * t + c * t ** 2
+            result = a + b * t + c * t**2
 
         if self.k == 3:
             t, a, b, c, d = self._compute_coeffs(x)
-            result = a + b * t + c * t ** 2 + d * t ** 3
+            result = a + b * t + c * t**2 + d * t**3
 
         return result
 
@@ -300,7 +300,7 @@ class InterpolatedUnivariateSpline(object):
             dt = (x - knots[:-1])[ind]
             b = coefficients[ind]
             b1 = coefficients[ind + 1]
-            a = y[ind] - b * dt - (b1 - b) * dt ** 2 / (2 * h)
+            a = y[ind] - b * dt - (b1 - b) * dt**2 / (2 * h)
             c = (b1 - b) / (2 * h)
             result = (t, a, b, c)
 
@@ -343,7 +343,7 @@ class InterpolatedUnivariateSpline(object):
             if self.k == 3:
                 t, a, b, c, d = self._compute_coeffs(x)
                 if n == 1:
-                    result = b + 2 * c * t + 3 * d * t ** 2
+                    result = b + 2 * c * t + 3 * d * t**2
                 if n == 2:
                     result = 2 * c + 6 * d * t
                 if n == 3:
@@ -382,20 +382,20 @@ class InterpolatedUnivariateSpline(object):
             a = y[:-1]
             b = coefficients
             h = np.diff(knots)
-            cst = np.concatenate([np.zeros(1), np.cumsum(a * h + b * h ** 2 / 2)])
-            return cst[ind] + a[ind] * t + b[ind] * t ** 2 / 2
+            cst = np.concatenate([np.zeros(1), np.cumsum(a * h + b * h**2 / 2)])
+            return cst[ind] + a[ind] * t + b[ind] * t**2 / 2
 
         if self.k == 2:
             h = np.diff(knots)
             dt = x - knots[:-1]
             b = coefficients[:-1]
             b1 = coefficients[1:]
-            a = y - b * dt - (b1 - b) * dt ** 2 / (2 * h)
+            a = y - b * dt - (b1 - b) * dt**2 / (2 * h)
             c = (b1 - b) / (2 * h)
             cst = np.concatenate(
-                [np.zeros(1), np.cumsum(a * h + b * h ** 2 / 2 + c * h ** 3 / 3)]
+                [np.zeros(1), np.cumsum(a * h + b * h**2 / 2 + c * h**3 / 3)]
             )
-            return cst[ind] + a[ind] * t + b[ind] * t ** 2 / 2 + c[ind] * t ** 3 / 3
+            return cst[ind] + a[ind] * t + b[ind] * t**2 / 2 + c[ind] * t**3 / 3
 
         if self.k == 3:
             h = np.diff(knots)
@@ -408,15 +408,15 @@ class InterpolatedUnivariateSpline(object):
             cst = np.concatenate(
                 [
                     np.zeros(1),
-                    np.cumsum(a * h + b * h ** 2 / 2 + c * h ** 3 / 3 + d * h ** 4 / 4),
+                    np.cumsum(a * h + b * h**2 / 2 + c * h**3 / 3 + d * h**4 / 4),
                 ]
             )
             return (
                 cst[ind]
                 + a[ind] * t
-                + b[ind] * t ** 2 / 2
-                + c[ind] * t ** 3 / 3
-                + d[ind] * t ** 4 / 4
+                + b[ind] * t**2 / 2
+                + c[ind] * t**3 / 3
+                + d[ind] * t**4 / 4
             )
 
     def integral(self, a, b):

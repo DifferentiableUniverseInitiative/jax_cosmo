@@ -90,12 +90,12 @@ def angular_cl(
             # Now kernels has shape [ncls, na]
             kernels = lax.map(combine_kernels, cl_index)
 
-            result = pk * kernels * bkgrd.dchioverda(cosmo, a) / np.clip(chi ** 2, 1.0)
+            result = pk * kernels * bkgrd.dchioverda(cosmo, a) / np.clip(chi**2, 1.0)
 
             # We transpose the result just to make sure that na is first
             return result.T
 
-        return simps(integrand, z2a(zmax), 1.0, 512) / const.c ** 2
+        return simps(integrand, z2a(zmax), 1.0, 512) / const.c**2
 
     return cl(ell)
 

@@ -291,7 +291,7 @@ def dchioverda(cosmo, a):
 
         \frac{d \chi}{da}(a) = \frac{R_H}{a^2 E(a)}
     """
-    return const.rh / (a ** 2 * np.sqrt(Esqr(cosmo, a)))
+    return const.rh / (a**2 * np.sqrt(Esqr(cosmo, a)))
 
 
 def transverse_comoving_distance(cosmo, a):
