@@ -1,8 +1,4 @@
 # This module contains implementations of galaxy bias
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import jax.numpy as np
 from jax.tree_util import register_pytree_node_class
 
@@ -26,7 +22,6 @@ class constant_linear_bias(container):
         b = self.params[0]
         return b * np.ones_like(z)
 
-    
 
 @register_pytree_node_class
 class test_mag_bias(container):
@@ -40,7 +35,7 @@ class test_mag_bias(container):
 
     def __call__(self, cosmo, z):
         b = self.params[0]
-        return 2.0/5.0 + b * np.sqrt(1.0+z)
+        return 2.0 / 5.0 + b * np.sqrt(1.0 + z)
 
 
 @register_pytree_node_class

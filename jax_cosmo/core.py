@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import jax.numpy as np
 from jax.experimental.ode import odeint
 from jax.tree_util import register_pytree_node_class
@@ -172,21 +168,11 @@ class Cosmology:
 
     @property
     def k(self):
-        if self.Omega > 1.0:  # Closed universe
-            k = 1.0
-        elif self.Omega == 1.0:  # Flat universe
-            k = 0
-        elif self.Omega < 1.0:  # Open Universe
-            k = -1.0
-        return k
+        return -np.sign(self._Omega_k).astype(np.int8)
 
     @property
     def sqrtk(self):
         return np.sqrt(np.abs(self._Omega_k))
-
-    @property
-    def sqrtk(self):
-        return self._sqrtk
 
     @property
     def h(self):

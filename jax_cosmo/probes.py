@@ -1,8 +1,4 @@
 # This module defines kernel functions for various tracers
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import jax.numpy as np
 from jax import jit
 from jax import vmap
@@ -10,6 +6,7 @@ from jax.tree_util import register_pytree_node_class
 
 import jax_cosmo.background as bkgrd
 import jax_cosmo.constants as const
+import jax_cosmo.redshift as rds
 from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
 from jax_cosmo.utils import a2z
@@ -22,57 +19,93 @@ __all__ = ["WeakLensing", "NumberCounts"]
 def weak_lensing_kernel(cosmo, pzs, z, ell):
     """
     Returns a weak lensing kernel
+
+    Note: this function handles differently nzs that correspond to extended redshift
+    distribution, and delta functions.
     """
     z = np.atleast_1d(z)
     zmax = max([pz.zmax for pz in pzs])
     # Retrieve comoving distance corresponding to z
     chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
 
-    @vmap
-    def integrand(z_prime):
-        chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
-        # Stack the dndz of all redshift bins
-        dndz = np.stack([pz(z_prime) for pz in pzs], axis=0)
-        return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
+    # Extract the indices of pzs that can be treated as extended distributions,
+    # and the ones that need to be treated as delta functions.
+    pzs_extended_idx = [
+        i for i, pz in enumerate(pzs) if not isinstance(pz, rds.delta_nz)
+    ]
+    pzs_delta_idx = [i for i, pz in enumerate(pzs) if isinstance(pz, rds.delta_nz)]
+    # Here we define a permutation that would put all extended pzs at the begining of the list
+    perm = pzs_extended_idx + pzs_delta_idx
+    # Compute inverse permutation
+    inv = np.argsort(np.array(perm, dtype=np.int32))
 
-    # Computes the radial weak lensing kernel
-    radial_kernel = np.squeeze(simps(integrand, z, zmax, 256) * (1.0 + z) * chi)
+    # Process extended distributions, if any
+    radial_kernels = []
+    if len(pzs_extended_idx) > 0:
+
+        @vmap
+        def integrand(z_prime):
+            chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
+            # Stack the dndz of all redshift bins
+            dndz = np.stack([pzs[i](z_prime) for i in pzs_extended_idx], axis=0)
+            return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
+
+        radial_kernels.append(simps(integrand, z, zmax, 256) * (1.0 + z) * chi)
+    # Process single plane redshifts if any
+    if len(pzs_delta_idx) > 0:
+
+        @vmap
+        def integrand_single(z_prime):
+            chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
+            return np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)
+
+        radial_kernels.append(
+            integrand_single(np.array([pzs[i].params[0] for i in pzs_delta_idx]))
+            * (1.0 + z)
+            * chi
+        )
+    # Fusing the results together
+    radial_kernel = np.concatenate(radial_kernels, axis=0)
+    # And perfoming inverse permutation to put all the indices where they should be
+    radial_kernel = radial_kernel[inv]
+
     # Constant term
-    constant_factor = 3.0 * const.H0 ** 2 * cosmo.Omega_m / 2.0 / const.c
+    constant_factor = 3.0 * const.H0**2 * cosmo.Omega_m / 2.0 / const.c
     # Ell dependent factor
     ell_factor = np.sqrt((ell - 1) * (ell) * (ell + 1) * (ell + 2)) / (ell + 0.5) ** 2
     return constant_factor * ell_factor * radial_kernel
+
 
 @jit
 def mag_kernel(cosmo, pzs, z, ell, s):
     """
     Returns a magnification kernel
-    
-    Needs magnification bias function 
+
+    Needs magnification bias function
     s = "logarithmic derivative of the number of sources with magnitude limit", a function valid for all z in z_prime
-    
+
     """
     z = np.atleast_1d(z)
     zmax = max([pz.zmax for pz in pzs])
     # Retrieve comoving distance corresponding to z
     chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
-    
+
     @vmap
     def integrand(z_prime):
         chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
         # Stack the dndz of all redshift bins
         dndz = np.stack([pz(z_prime) for pz in pzs], axis=0)
-        
-        mag_lim = (2.0-5.0*s(cosmo, z_prime))/2.0
-        
-        return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0)*mag_lim
+
+        mag_lim = (2.0 - 5.0 * s(cosmo, z_prime)) / 2.0
+
+        return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0) * mag_lim
 
     # Computes the radial weak lensing kernel
     radial_kernel = np.squeeze(simps(integrand, z, zmax, 256) * (1.0 + z) * chi)
     # Constant term (maybe one too many 2.0?)
-    constant_factor = 3.0 * const.H0 ** 2 * cosmo.Omega_m / 2.0 / const.c / 2.0
+    constant_factor = 3.0 * const.H0**2 * cosmo.Omega_m / 2.0 / const.c / 2.0
     # Ell dependent factor
-    ell_factor = ell*(ell+1)
+    ell_factor = ell * (ell + 1)
     return constant_factor * ell_factor * radial_kernel
 
 
@@ -81,6 +114,10 @@ def density_kernel(cosmo, pzs, bias, z, ell):
     """
     Computes the number counts density kernel
     """
+    if any(isinstance(pz, rds.delta_nz) for pz in pzs):
+        raise NotImplementedError(
+            "Density kernel not properly implemented for delta redshift distributions"
+        )
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
     # Compute radial NLA kernel: same as clustering
@@ -96,11 +133,16 @@ def density_kernel(cosmo, pzs, bias, z, ell):
     ell_factor = 1.0
     return constant_factor * ell_factor * radial_kernel
 
+
 @jit
 def nla_kernel(cosmo, pzs, bias, z, ell):
     """
     Computes the NLA IA kernel
     """
+    if any(isinstance(pz, rds.delta_nz) for pz in pzs):
+        raise NotImplementedError(
+            "NLA kernel not properly implemented for delta redshift distributions"
+        )
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
     # Compute radial NLA kernel: same as clustering
@@ -127,25 +169,37 @@ def rsd_kernel(cosmo, pzs, z, ell, z1):
     """
     Computes the RSD kernel
     """
-    print(z,z1)
+    print(z, z1)
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
-    
+
     # Normalization,
     constant_factor = 1.0
     # Ell dependent factor
-    ell_factor1 = (1+8*ell)/((2*ell+1)**2.0)
+    ell_factor1 = (1 + 8 * ell) / ((2 * ell + 1) ** 2.0)
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z) for pz in pzs], axis=0)
-    radial_kernel1 = dndz * bkgrd.growth_rate(cosmo, z2a(z))/bkgrd.growth_factor(cosmo, z2a(z)) * bkgrd.H(cosmo, z2a(z))
-    
+    radial_kernel1 = (
+        dndz
+        * bkgrd.growth_rate(cosmo, z2a(z))
+        / bkgrd.growth_factor(cosmo, z2a(z))
+        * bkgrd.H(cosmo, z2a(z))
+    )
+
     # Ell dependent factor
-    ell_factor2 = (4)/(2*ell+3) *np.sqrt((2*ell+1)/(2*ell+3))
+    ell_factor2 = (4) / (2 * ell + 3) * np.sqrt((2 * ell + 1) / (2 * ell + 3))
     # stack the dndz of all redshift bins
     dndz = np.stack([pz(z1) for pz in pzs], axis=0)
-    radial_kernel2 = dndz * bkgrd.growth_rate(cosmo, z2a(z1))/bkgrd.growth_factor(cosmo, z2a(z1)) * bkgrd.H(cosmo, z2a(z1))
+    radial_kernel2 = (
+        dndz
+        * bkgrd.growth_rate(cosmo, z2a(z1))
+        / bkgrd.growth_factor(cosmo, z2a(z1))
+        * bkgrd.H(cosmo, z2a(z1))
+    )
 
-    return constant_factor*(ell_factor1 * radial_kernel1 - ell_factor2*radial_kernel2)
+    return constant_factor * (
+        ell_factor1 * radial_kernel1 - ell_factor2 * radial_kernel2
+    )
 
 
 @register_pytree_node_class
@@ -239,11 +293,11 @@ class WeakLensing(container):
             sigma_e = np.array([s for s in self.config["sigma_e"]])
         else:
             sigma_e = self.config["sigma_e"]
-        return sigma_e ** 2 / ngals
+        return sigma_e**2 / ngals
 
 
 class NumberCounts(container):
-    """ Class representing a galaxy clustering probe, with a bunch of bins
+    """Class representing a galaxy clustering probe, with a bunch of bins
     Parameters:
     -----------
     redshift_bins: nzredshift distributions
@@ -253,11 +307,11 @@ class NumberCounts(container):
     mag_bias....
     """
 
-    def __init__(self, redshift_bins, bias, has_rsd=False,mag_bias=False, **kwargs):
+    def __init__(self, redshift_bins, bias, has_rsd=False, mag_bias=False, **kwargs):
         super(NumberCounts, self).__init__(
-            redshift_bins, bias, has_rsd=has_rsd,mag_bias=mag_bias, **kwargs
+            redshift_bins, bias, has_rsd=has_rsd, mag_bias=mag_bias, **kwargs
         )
-        self.mag_bias =mag_bias
+        self.mag_bias = mag_bias
         self.has_rsd = has_rsd
 
     @property
@@ -271,14 +325,13 @@ class NumberCounts(container):
 
     @property
     def n_tracers(self):
-        """ Returns the number of tracers for this probe, i.e. redshift bins
-        """
+        """Returns the number of tracers for this probe, i.e. redshift bins"""
         # Extract parameters
         pzs = self.params[0]
         return len(pzs)
 
     def kernel(self, cosmo, z, ell, z1):
-        """ Compute the radial kernel for all nz bins in this probe.
+        """Compute the radial kernel for all nz bins in this probe.
 
         Returns:
         --------
@@ -289,17 +342,17 @@ class NumberCounts(container):
         pzs, bias = self.params
         # Retrieve density kernel
         kernel = density_kernel(cosmo, pzs, bias, z, ell)
-        
+
         if self.mag_bias:
             kernel += mag_kernel(cosmo, pzs, z, ell, self.mag_bias)
-        
+
         if self.has_rsd:
             kernel += rsd_kernel(cosmo, pzs, z, ell, z1)
-        
+
         return kernel
 
     def noise(self):
-        """ Returns the noise power for all redshifts
+        """Returns the noise power for all redshifts
         return: shape [nbins]
         """
         # Extract parameters

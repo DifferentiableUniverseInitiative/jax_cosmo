@@ -1,8 +1,4 @@
 # This module contains functions to compute angular cls for various tracers
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from functools import partial
 
 import jax.numpy as np
@@ -14,7 +10,6 @@ import jax_cosmo.background as bkgrd
 import jax_cosmo.constants as const
 import jax_cosmo.power as power
 import jax_cosmo.transfer as tklib
-
 from jax_cosmo.scipy.integrate import simps
 from jax_cosmo.scipy.interpolate import interp
 from jax_cosmo.utils import a2z
@@ -70,7 +65,7 @@ def angular_cl(
     """
     # Retrieve the maximum redshift probed
     zmax = max([p.zmax for p in probes])
-    
+
     # We define a function that computes a single l, and vectorize it
     @partial(vmap, out_axes=1)
     def cl(ell):
@@ -84,14 +79,15 @@ def angular_cl(
             # pk should have shape [na]
             pk = power.nonlinear_matter_power(cosmo, k, a, transfer_fn, nonlinear_fn)
 
-            
-            #RSD inversion
-            
-            a_1 = np.clip(bkgrd.a_of_chi(cosmo, (ell+1.5)/k),0.00001)
-            
+            # RSD inversion
+
+            a_1 = np.clip(bkgrd.a_of_chi(cosmo, (ell + 1.5) / k), 0.00001)
+
             # Compute the kernels for all probes
-            kernels = np.vstack([p.kernel(cosmo, a2z(a), ell, a2z(a_1)) for p in probes])
-            
+            kernels = np.vstack(
+                [p.kernel(cosmo, a2z(a), ell, a2z(a_1)) for p in probes]
+            )
+
             # Define an ordering for the blocks of the signal vector
             cl_index = np.array(_get_cl_ordering(probes))
             # Compute all combinations of tracers
@@ -101,12 +97,12 @@ def angular_cl(
             # Now kernels has shape [ncls, na]
             kernels = lax.map(combine_kernels, cl_index)
 
-            result = pk * kernels * bkgrd.dchioverda(cosmo, a) / np.clip(chi ** 2, 1.0)
+            result = pk * kernels * bkgrd.dchioverda(cosmo, a) / np.clip(chi**2, 1.0)
 
             # We transpose the result just to make sure that na is first
             return result.T
 
-        return simps(integrand, z2a(zmax), 1.0, 512) / const.c ** 2
+        return simps(integrand, z2a(zmax), 1.0, 512) / const.c**2
 
     return cl(ell)
 
@@ -129,14 +125,19 @@ def noise_cl(ell, probes):
     return lax.map(get_noise_cl, cl_index)
 
 
-def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25):
+def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25, sparse=True):
     """
     Computes a Gaussian covariance for the angular cls of the provided probes
+
+    Set sparse True to return a sparse matrix representation that uses a factor
+    of n_ell less memory and is compatible with the linear algebra operations
+    in :mod:`jax_cosmo.sparse`.
 
     return_cls: (returns covariance)
     """
     ell = np.atleast_1d(ell)
     n_ell = len(ell)
+    one = 1.0 if sparse else np.eye(n_ell)
 
     # Adding noise to auto-spectra
     cl_obs = cl_signal + cl_noise
@@ -151,15 +152,22 @@ def gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky=0.25):
     def get_cov_block(inds):
         a, b, c, d = inds
         cov = (cl_obs[a] * cl_obs[b] + cl_obs[c] * cl_obs[d]) / norm
-        return cov * np.eye(n_ell)
+        return cov * one
 
+    # Return a sparse representation of the matrix containing only the diagonals
+    # for each of the n_cls x n_cls blocks of size n_ell x n_ell.
+    # We could compress this further using the symmetry of the blocks, but
+    # it is easier to invert this matrix with this redundancy included.
     cov_mat = lax.map(get_cov_block, cov_blocks)
 
     # Reshape covariance matrix into proper matrix
-    cov_mat = cov_mat.reshape((n_cls, n_cls, n_ell, n_ell))
-    cov_mat = cov_mat.transpose(axes=(0, 2, 1, 3)).reshape(
-        (n_ell * n_cls, n_ell * n_cls)
-    )
+    if sparse:
+        cov_mat = cov_mat.reshape((n_cls, n_cls, n_ell))
+    else:
+        cov_mat = cov_mat.reshape((n_cls, n_cls, n_ell, n_ell))
+        cov_mat = cov_mat.transpose((0, 2, 1, 3)).reshape(
+            (n_ell * n_cls, n_ell * n_cls)
+        )
     return cov_mat
 
 
@@ -170,9 +178,14 @@ def gaussian_cl_covariance_and_mean(
     transfer_fn=tklib.Eisenstein_Hu,
     nonlinear_fn=power.halofit,
     f_sky=0.25,
+    sparse=False,
 ):
     """
     Computes a Gaussian covariance for the angular cls of the provided probes
+
+    Set sparse True to return a sparse matrix representation that uses a factor
+    of n_ell less memory and is compatible with the linear algebra operations
+    in :mod:`jax_cosmo.sparse`.
 
     return_cls: (returns signal + noise cl, covariance)
     """
@@ -186,6 +199,6 @@ def gaussian_cl_covariance_and_mean(
     cl_noise = noise_cl(ell, probes)
 
     # retrieve the covariance
-    cov_mat = gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky)
+    cov_mat = gaussian_cl_covariance(ell, probes, cl_signal, cl_noise, f_sky, sparse)
 
     return cl_signal.flatten(), cov_mat

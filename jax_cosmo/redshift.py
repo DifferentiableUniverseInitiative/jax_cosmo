@@ -1,8 +1,4 @@
 # Module to define redshift distributions we can differentiate through
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from abc import ABC
 from abc import abstractmethod
 
@@ -14,26 +10,23 @@ from jax_cosmo.scipy.integrate import simps
 
 steradian_to_arcmin2 = 11818102.86004228
 
-__all__ = ["smail_nz", "kde_nz"]
+__all__ = ["smail_nz", "kde_nz", "delta_nz"]
 
 
 class redshift_distribution(container):
     def __init__(self, *args, gals_per_arcmin2=1.0, zmax=10.0, **kwargs):
-        """ Initialize the parameters of the redshift distribution
-        """
+        """Initialize the parameters of the redshift distribution"""
         self._norm = None
         self._gals_per_arcmin2 = gals_per_arcmin2
         super(redshift_distribution, self).__init__(*args, zmax=zmax, **kwargs)
 
     @abstractmethod
     def pz_fn(self, z):
-        """ Un-normalized n(z) function provided by sub classes
-        """
+        """Un-normalized n(z) function provided by sub classes"""
         pass
 
     def __call__(self, z):
-        """ Computes the normalized n(z)
-        """
+        """Computes the normalized n(z)"""
         if self._norm is None:
             self._norm = simps(lambda t: self.pz_fn(t), 0.0, self.config["zmax"], 256)
         return self.pz_fn(z) / self._norm
@@ -44,15 +37,14 @@ class redshift_distribution(container):
 
     @property
     def gals_per_arcmin2(self):
-        """ Returns the number density of galaxies in gals/sq arcmin
+        """Returns the number density of galaxies in gals/sq arcmin
         TODO: find a better name
         """
         return self._gals_per_arcmin2
 
     @property
     def gals_per_steradian(self):
-        """ Returns the number density of galaxies in steradian
-        """
+        """Returns the number density of galaxies in steradian"""
         return self._gals_per_arcmin2 * steradian_to_arcmin2
 
     # Operations for flattening/unflattening representation
@@ -69,7 +61,7 @@ class redshift_distribution(container):
 
 @register_pytree_node_class
 class smail_nz(redshift_distribution):
-    """ Defines a smail distribution with these arguments
+    """Defines a smail distribution with these arguments
     Parameters:
     -----------
     a:
@@ -83,12 +75,30 @@ class smail_nz(redshift_distribution):
 
     def pz_fn(self, z):
         a, b, z0 = self.params
-        return z ** a * np.exp(-((z / z0) ** b))
+        return z**a * np.exp(-((z / z0) ** b))
+
+
+@register_pytree_node_class
+class delta_nz(redshift_distribution):
+    """Defines a single plane redshift distribution with these arguments
+    Parameters:
+    -----------
+    z0:
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the parameters of the redshift distribution"""
+        super(delta_nz, self).__init__(*args, **kwargs)
+        self._norm = 1.0
+
+    def pz_fn(self, z):
+        z0 = self.params
+        return np.where(z == z0, 1.0, 0)
 
 
 @register_pytree_node_class
 class kde_nz(redshift_distribution):
-    """ A redshift distribution based on a KDE estimate of the nz of a
+    """A redshift distribution based on a KDE estimate of the nz of a
     given catalog currently uses a Gaussian kernel.
     TODO: add more if necessary
 
@@ -106,10 +116,9 @@ class kde_nz(redshift_distribution):
     """
 
     def _kernel(self, bw, X, x):
-        """ Gaussian kernel for KDE
-        """
+        """Gaussian kernel for KDE"""
         return (1.0 / np.sqrt(2 * np.pi) / bw) * np.exp(
-            -((X - x) ** 2) / (bw ** 2 * 2.0)
+            -((X - x) ** 2) / (bw**2 * 2.0)
         )
 
     def pz_fn(self, z):
@@ -124,7 +133,7 @@ class kde_nz(redshift_distribution):
 
 @register_pytree_node_class
 class systematic_shift(redshift_distribution):
-    """ Implements a systematic shift in a redshift distribution
+    """Implements a systematic shift in a redshift distribution
     TODO: Find a better name for this
 
     Arguments:

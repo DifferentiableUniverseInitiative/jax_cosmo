@@ -23,6 +23,71 @@
         "bug",
         "code"
       ]
+    },
+    {
+      "login": "austinpeel",
+      "name": "Austin Peel",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/17024310?v=4",
+      "profile": "https://github.com/austinpeel",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "minaskar",
+      "name": "Minas Karamanis",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/23280751?v=4",
+      "profile": "https://minaskaramanis.com",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "dkirkby",
+      "name": "David Kirkby",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/185007?v=4",
+      "profile": "https://faculty.sites.uci.edu/dkirkby/",
+      "contributions": [
+        "code",
+        "bug"
+      ]
+    },
+    {
+      "login": "aboucaud",
+      "name": "Alexandre Boucaud",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/3065310?v=4",
+      "profile": "https://aboucaud.github.io",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "dlanzieri",
+      "name": "Denise Lanzieri",
+      "avatar_url": "https://avatars.githubusercontent.com/u/72620117?v=4",
+      "profile": "https://www.cosmostat.org/people/denise-lanzieri",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "jecampagne",
+      "name": "jecampagne",
+      "avatar_url": "https://avatars.githubusercontent.com/u/20539759?v=4",
+      "profile": "https://github.com/jecampagne",
+      "contributions": [
+        "bug"
+      ]
+    },
+    {
+      "login": "eelregit",
+      "name": "Yin Li",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7311098?v=4",
+      "profile": "https://github.com/eelregit",
+      "contributions": [
+        "code",
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

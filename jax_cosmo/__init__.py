@@ -1,8 +1,4 @@
 # Cosmology in JAX
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from pkg_resources import DistributionNotFound
 from pkg_resources import get_distribution
 
@@ -22,3 +18,4 @@ import jax_cosmo.redshift as redshift
 import jax_cosmo.transfer as transfer
 from jax_cosmo.core import *
 from jax_cosmo.parameters import *
+import jax_cosmo.sparse as sparse

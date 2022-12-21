@@ -1,9 +1,6 @@
 # This module implements various functions for the background COSMOLOGY
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import jax.numpy as np
+from jax import lax
 
 import jax_cosmo.constants as const
 from jax_cosmo.scipy.interpolate import interp
@@ -51,7 +48,7 @@ def w(cosmo, a):
 
     .. math::
 
-        w(a) = w_0 + w (1 -a)
+        w(a) = w_0 + w_a (1 - a)
     """
     return cosmo.w0 + (1.0 - a) * cosmo.wa  # Equation (6) in Linder (2003)
 
@@ -78,22 +75,19 @@ def f_de(cosmo, a):
 
     .. math::
 
-        \rho_{de}(a) \propto a^{f(a)}
+        \rho_{de}(a) = \rho_{de}(a=1) e^{f(a)}
 
-    (see :cite:`2005:Percival`) where :math:`f(a)` is computed as
-    :math:`f(a) = \frac{-3}{\ln(a)} \int_0^{\ln(a)} [1 + w(a^\prime)]
-    d \ln(a^\prime)`. In the case of Linder's parametrisation for the
-    dark energy in Eq. :eq:`linderParam` :math:`f(a)` becomes:
+    (see :cite:`2005:Percival` and note the difference in the exponent base
+    in the parametrizations) where :math:`f(a)` is computed as
+    :math:`f(a) = -3 \int_0^{\ln(a)} [1 + w(a')] d \ln(a')`.
+    In the case of Linder's parametrisation for the dark energy
+    in Eq. :eq:`linderParam` :math:`f(a)` becomes:
 
     .. math::
 
-        f(a) = -3(1 + w_0) + 3 w \left[ \frac{a - 1}{ \ln(a) } - 1 \right]
+        f(a) = -3 (1 + w_0 + w_a) \ln(a) + 3 w_a (a - 1)
     """
-    # Just to make sure we are not diving by 0
-    epsilon = np.finfo(np.float32).eps
-    return -3.0 * (1.0 + cosmo.w0) + 3.0 * cosmo.wa * (
-        (a - 1.0) / np.log(a - epsilon) - 1.0
-    )
+    return -3.0 * (1.0 + cosmo.w0 + cosmo.wa) * np.log(a) + 3.0 * cosmo.wa * (a - 1.0)
 
 
 def Esqr(cosmo, a):
@@ -120,7 +114,7 @@ def Esqr(cosmo, a):
 
     .. math::
 
-        E^2(a) = \Omega_m a^{-3} + \Omega_k a^{-2} + \Omega_{de} a^{f(a)}
+        E^2(a) = \Omega_m a^{-3} + \Omega_k a^{-2} + \Omega_{de} e^{f(a)}
 
     where :math:`f(a)` is the Dark Energy evolution parameter computed
     by :py:meth:`.f_de`.
@@ -128,7 +122,7 @@ def Esqr(cosmo, a):
     return (
         cosmo.Omega_m * np.power(a, -3)
         + cosmo.Omega_k * np.power(a, -2)
-        + cosmo.Omega_de * np.power(a, f_de(cosmo, a))
+        + cosmo.Omega_de * np.exp(f_de(cosmo, a))
     )
 
 
@@ -194,12 +188,12 @@ def Omega_de_a(cosmo, a):
 
     .. math::
 
-        \Omega_{de}(a) = \frac{\Omega_{de} a^{f(a)}}{E^2(a)}
+        \Omega_{de}(a) = \frac{\Omega_{de} e^{f(a)}}{E^2(a)}
 
     where :math:`f(a)` is the Dark Energy evolution parameter computed by
     :py:meth:`.f_de` (see :cite:`2005:Percival` Eq. (6)).
     """
-    return cosmo.Omega_de * np.power(a, f_de(cosmo, a)) / Esqr(cosmo, a)
+    return cosmo.Omega_de * np.exp(f_de(cosmo, a)) / Esqr(cosmo, a)
 
 
 def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
@@ -249,7 +243,7 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
 
 
 def a_of_chi(cosmo, chi):
-    r""" Computes the scale factor for corresponding (array) of radial comoving
+    r"""Computes the scale factor for corresponding (array) of radial comoving
     distance by reverse linear interpolation.
 
     Parameters:
@@ -297,7 +291,7 @@ def dchioverda(cosmo, a):
 
         \frac{d \chi}{da}(a) = \frac{R_H}{a^2 E(a)}
     """
-    return const.rh / (a ** 2 * np.sqrt(Esqr(cosmo, a)))
+    return const.rh / (a**2 * np.sqrt(Esqr(cosmo, a)))
 
 
 def transverse_comoving_distance(cosmo, a):
@@ -332,13 +326,22 @@ def transverse_comoving_distance(cosmo, a):
         \end{matrix}
         \right.
     """
-    chi = radial_comoving_distance(cosmo, a)
-    if cosmo.k < 0:  # Open universe
+    index = cosmo.k + 1
+
+    def open_universe(chi):
         return const.rh / cosmo.sqrtk * np.sinh(cosmo.sqrtk * chi / const.rh)
-    elif cosmo.k > 0:  # Closed Universe
-        return const.rh / cosmo.sqrtk * np.sin(cosmo.sqrtk * chi / const.rh)
-    else:
+
+    def flat_universe(chi):
         return chi
+
+    def close_universe(chi):
+        return const.rh / cosmo.sqrtk * np.sin(cosmo.sqrtk * chi / const.rh)
+
+    branches = (open_universe, flat_universe, close_universe)
+
+    chi = radial_comoving_distance(cosmo, a)
+
+    return lax.switch(cosmo.k + 1, branches, chi)
 
 
 def angular_diameter_distance(cosmo, a):
@@ -366,7 +369,7 @@ def angular_diameter_distance(cosmo, a):
 
 
 def growth_factor(cosmo, a):
-    """ Compute linear growth factor D(a) at a given scale factor,
+    """Compute linear growth factor D(a) at a given scale factor,
     normalized such that D(a=1) = 1.
 
     Parameters
@@ -396,7 +399,7 @@ def growth_factor(cosmo, a):
 
 
 def growth_rate(cosmo, a):
-    """ Compute growth rate dD/dlna at a given scale factor.
+    """Compute growth rate dD/dlna at a given scale factor.
 
     Parameters
     ----------
@@ -438,7 +441,7 @@ def growth_rate(cosmo, a):
 
 
 def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
-    """ Compute linear growth factor D(a) at a given scale factor,
+    """Compute linear growth factor D(a) at a given scale factor,
     normalised such that D(a=1) = 1.
 
     Parameters
@@ -486,7 +489,7 @@ def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
 
 
 def _growth_rate_ODE(cosmo, a):
-    """ Compute growth rate dD/dlna at a given scale factor by solving the linear
+    """Compute growth rate dD/dlna at a given scale factor by solving the linear
     growth ODE.
 
     Parameters
@@ -510,7 +513,7 @@ def _growth_rate_ODE(cosmo, a):
 
 
 def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
-    r""" Computes growth factor by integrating the growth rate provided by the
+    r"""Computes growth factor by integrating the growth rate provided by the
     \gamma parametrization. Normalized such that D( a=1) =1
 
     Parameters
