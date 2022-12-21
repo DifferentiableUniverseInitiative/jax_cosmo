@@ -2,6 +2,8 @@
 
 Everyone is welcome to contribute to this project, and contributions can take many different forms, from helping to answer questions in the [issues](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues), to contributing to the code-base by making a Pull Request.
 
+In order to foster an open, inclusive, and welcoming community, all contributors agree to adhere to the [jax-cosmo code of conduct](CODE_OF_CONDUCT.md).
+
 ## Contributing code using Pull Requests
 
 Code contributions are most welcome. You can in particular look for GitHub issues marked as `contributions welcome` or `good first issue`. But you can also propose adding a new functionality, in which case you may find it beneficial to first open a GitHub issue to discuss the feature you want to implement ahead of opening a Pull Request.
@@ -55,7 +57,7 @@ Before submitting your PR, have a look at the procedure documented below.
   git remote add upstream http://www.github.com/DifferentiableUniverseInitiative/jax_cosmo
   # This will update your local branch
   git fetch upstream
-  git rebase upstream/master
+  git rebase upstream/main
   ```
 
 - Make sure the unit tests still work:
