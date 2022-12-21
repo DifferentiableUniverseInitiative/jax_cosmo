@@ -78,6 +78,8 @@ can come in several forms
 
 You can chime-in on any aspects of the design by proposing a PR to the [design document](design.md). The issue page is a good place to start, but don't hesitate to come chat in the Gitter room.
 
+Please take a look at the [Contributing Document](CONTRIBUTING.md) for more information.
+
 This project follows the [All Contributors](https://allcontributors.org/) guidelines aiming at recognizing and valorizing
 contributions at any levels.  
 
