@@ -55,7 +55,7 @@ Before submitting your PR, have a look at the procedure documented below.
   git remote add upstream http://www.github.com/DifferentiableUniverseInitiative/jax_cosmo
   # This will update your local branch
   git fetch upstream
-  git rebase upstream/main
+  git rebase upstream/master
   ```
 
 - Make sure the unit tests still work:
@@ -138,18 +138,3 @@ See this blogpost for more info: https://www.mattlayman.com/blog/2018/python-cod
 ### Documentation style
 
 JAX-GalSim follows the NumPy/SciPy format: https://numpydoc.readthedocs.io/en/latest/format.html
-
-However, most JAX-GalSim function will directly inherit the documentation from the reference GalSim project. We recommend avoid copy/pasting documentation, and instead using the `_wraps` utility to automatically reuse GalSim documentation:
-
-```python
-import galsim as _galsim
-from jax._src.numpy.util import _wraps
-from jax.tree_util import register_pytree_node_class
-
-@_wraps(_galsim.Add,
-        lax_description="Does not support `ChromaticObject` at this point.")
-def Add(*args, **kwargs):
-    return Sum(*args, **kwargs)
-```
-
-Note that this tool has the option of providing a `lax_description` which will be added to the reference documentation, and which can be use to document any differences with GalSim, typically a restricted set of features being available.
