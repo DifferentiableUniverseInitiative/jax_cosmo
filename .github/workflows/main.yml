@@ -24,4 +24,8 @@ jobs:
 
     # Runs a single command using the runners shell
     - name: python-format-action
-      uses: tdeboissiere/python-format-action@1.1.2
+      shell: bash -l {0}
+      run: |
+        pip install black reorder-python-imports
+        find . -name "*.py" | xargs reorder-python-imports
+        black --check .
