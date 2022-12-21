@@ -137,4 +137,4 @@ See this blogpost for more info: https://www.mattlayman.com/blog/2018/python-cod
 
 ### Documentation style
 
-JAX-GalSim follows the NumPy/SciPy format: https://numpydoc.readthedocs.io/en/latest/format.html
+jax-cosmo follows the NumPy/SciPy format: https://numpydoc.readthedocs.io/en/latest/format.html
