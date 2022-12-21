@@ -438,3 +438,32 @@ class InterpolatedUnivariateSpline(object):
             sign = -1
         xs = np.array([a, b])
         return sign * np.diff(self.antiderivative(xs))
+
+
+def splint(func, a, b, k=3, N=128):
+    """Function that computes an integration with a spline function
+    slightly different from the original splint from scipy
+    """
+    x = np.linspace(a, b, N)
+    return InterpolatedUnivariateSpline(x, func(x), k=k).integral(a, b)
+
+
+# def splint_fwd(func, a, b, **kwargs):
+#     result = splint(func, a, b, **kwargs)
+#     aux = (a, b, kwargs)
+#     return result, aux
+
+# def splint_bwd(func, aux, grad):
+#     a, b, kwargs = aux
+
+#     grad_a = -grad * func(a)
+#     grad_b = grad * func(b)
+
+#     grad_args = []
+#     for i in range(len(args)):
+#         def _vjp_func(_t, *_args):
+#             return jax.grad(func, i)(_t, *_args)
+#         grad_args.append(grad * quad(_vjp_func, a, b, args))
+#     grad_args = tuple(grad_args)
+
+#     return grad_a, grad_b, grad_args
