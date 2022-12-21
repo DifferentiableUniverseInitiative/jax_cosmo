@@ -75,7 +75,7 @@ class smail_nz(redshift_distribution):
 
     def pz_fn(self, z):
         a, b, z0 = self.params
-        return z ** a * np.exp(-((z / z0) ** b))
+        return z**a * np.exp(-((z / z0) ** b))
 
 
 @register_pytree_node_class
@@ -118,7 +118,7 @@ class kde_nz(redshift_distribution):
     def _kernel(self, bw, X, x):
         """Gaussian kernel for KDE"""
         return (1.0 / np.sqrt(2 * np.pi) / bw) * np.exp(
-            -((X - x) ** 2) / (bw ** 2 * 2.0)
+            -((X - x) ** 2) / (bw**2 * 2.0)
         )
 
     def pz_fn(self, z):
