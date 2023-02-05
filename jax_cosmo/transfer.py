@@ -97,7 +97,6 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
     )
 
     if type == "eisenhu":
-
         q = k * np.power(const.tcmb / 2.7, 2) / gamma_eff
 
         # EH98 (29) #

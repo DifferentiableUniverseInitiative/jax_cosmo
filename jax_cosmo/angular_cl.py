@@ -41,8 +41,8 @@ def _get_cov_blocks_ordering(probes):
             return cl_index.index((b, a))
 
     cov_blocks = []
-    for (i, j) in cl_index:
-        for (m, n) in cl_index:
+    for i, j in cl_index:
+        for m, n in cl_index:
             cov_blocks.append(
                 (find_index(i, m), find_index(j, n), find_index(i, n), find_index(j, m))
             )
@@ -83,6 +83,7 @@ def angular_cl(
 
             # Define an ordering for the blocks of the signal vector
             cl_index = np.array(_get_cl_ordering(probes))
+
             # Compute all combinations of tracers
             def combine_kernels(inds):
                 return kernels[inds[0]] * kernels[inds[1]]
@@ -109,6 +110,7 @@ def noise_cl(ell, probes):
     noise = np.concatenate([p.noise() for p in probes])
     # Define an ordering for the blocks of the signal vector
     cl_index = np.array(_get_cl_ordering(probes))
+
     # Only include a noise contribution for the auto-spectra
     def get_noise_cl(inds):
         i, j = inds
