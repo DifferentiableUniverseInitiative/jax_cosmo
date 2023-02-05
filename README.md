@@ -1,13 +1,12 @@
 # jax-cosmo
 
-[![Join the chat at https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo](https://badges.gitter.im/DifferentiableUniverseInitiative/jax_cosmo.svg)](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Documentation Status](https://readthedocs.org/projects/jax-cosmo/badge/?version=latest)](https://jax-cosmo.readthedocs.io/en/latest/?badge=latest) [![CI Test](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/workflows/Python%20package/badge.svg)]() [![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![PyPI](https://img.shields.io/pypi/v/jax-cosmo)](https://pypi.org/project/jax-cosmo/) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md) [![PyPI - License](https://img.shields.io/pypi/l/jax-cosmo)](https://github.com/google/jax-cosmo/blob/master/LICENSE)  <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![Join the chat at https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo](https://badges.gitter.im/DifferentiableUniverseInitiative/jax_cosmo.svg)](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Documentation Status](https://readthedocs.org/projects/jax-cosmo/badge/?version=latest)](https://jax-cosmo.readthedocs.io/en/latest/?badge=latest) [![CI Test](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/workflows/Python%20package/badge.svg)]() [![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![PyPI](https://img.shields.io/pypi/v/jax-cosmo)](https://pypi.org/project/jax-cosmo/) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md) [![PyPI - License](https://img.shields.io/pypi/l/jax-cosmo)](https://github.com/google/jax-cosmo/blob/master/LICENSE) <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 [![All Contributors](https://img.shields.io/badge/all_contributors-9-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <h3 align="center">Finally a differentiable cosmology library, and it's in JAX!</h3>
 
-
-**Note**: This package is still in the development phase, expect changes to the API. **We hope to make this project an open and collaborative community effort**, contributions of all kind are most welcome! A paper is being prepared [here](https://github.com/DifferentiableUniverseInitiative/jax-cosmo-paper), at this point, contributions to this project automatically grants you authorship to the paper :-)  
 Have a look at the [GitHub issues](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues) to see what is needed or if you have any thoughts on the design, and don't hesitate to join the [Gitter room](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo) for discussions.
 
 ## TL;DR
@@ -28,6 +27,7 @@ g = jax.grad(likelihood)(cosmo)
 # Compute Fisher matrix of cosmological parameters
 F = - jax.hessian(likelihood)(cosmo)
 ```
+
 This is how you can compute **gradients and hessians of any functions in `jax-cosmo`**,
 all of this without any finite differences.
 
@@ -42,9 +42,10 @@ Have a look at the [design document](design.md) to learn more about the structur
 JAX is a framework for automatic differentiation (like TensorFlow or PyTorch) but following the NumPy API, and using the GPU/TPU enable XLA backend.
 
 What does that mean?
-  - You write plain Python/NumPy code, no need to learn a different language
-  - It runs on GPU, you don't need to do anything particular
-  - You can take derivatives of any quantity with respect to any parameters by
+
+- You write plain Python/NumPy code, no need to learn a different language
+- It runs on GPU, you don't need to do anything particular
+- You can take derivatives of any quantity with respect to any parameters by
   automatic differentiation.
 
 Checkout the [JAX](https://github.com/google/jax) project page to learn more!
@@ -52,6 +53,7 @@ Checkout the [JAX](https://github.com/google/jax) project page to learn more!
 ## Install
 
 `jax-cosmo` is pure Python, so installing is a breeze:
+
 ```bash
 $ pip install jax-cosmo
 ```
@@ -59,29 +61,31 @@ $ pip install jax-cosmo
 ## Philosophy
 
 Here are some of the design guidelines:
-  - Implementation of equations should be human readable, and documentation should always live next to the implementation.
-  - Should always be trivially installable: external dependencies should be kept
+
+- Implementation of equations should be human readable, and documentation should always live next to the implementation.
+- Should always be trivially installable: external dependencies should be kept
   to a minimum, especially the ones that require compilation or with restrictive licenses.
-  - Keep API and implementation simple and intuitive, minimize user and developer
+- Keep API and implementation simple and intuitive, minimize user and developer
   surprise.
-  - “Debugging is twice as hard as writing the code in the first place. Therefore, if you write the code as cleverly as possible, you are, by definition, not smart enough to debug it.” -Brian Kernighan, quote stolen from
+- “Debugging is twice as hard as writing the code in the first place. Therefore, if you write the code as cleverly as possible, you are, by definition, not smart enough to debug it.” -Brian Kernighan, quote stolen from
   [here](https://flax.readthedocs.io/en/latest/philosophy.html).
 
 ## Contributing
 
 `jax-cosmo` aims to be a community effort, contributions are most welcome and
 can come in several forms
-  - Bug reports
-  - API design suggestions
-  - (Pull) requests for more features
-  - Examples and notebooks of cool things that can be done with the code
+
+- Bug reports
+- API design suggestions
+- (Pull) requests for more features
+- Examples and notebooks of cool things that can be done with the code
 
 You can chime-in on any aspects of the design by proposing a PR to the [design document](design.md). The issue page is a good place to start, but don't hesitate to come chat in the Gitter room.
 
 Please take a look at the [Contributing Document](CONTRIBUTING.md) for more information.
 
 This project follows the [All Contributors](https://allcontributors.org/) guidelines aiming at recognizing and valorizing
-contributions at any levels.  
+contributions at any levels.
 
 ## Contributors ✨
 
