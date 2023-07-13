@@ -9,7 +9,7 @@ from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
 
 from jax.scipy.special import expit
-from jax.scipy.signal import convolve
+# from jax.scipy.signal import convolve
 
 steradian_to_arcmin2 = 11818102.86004228
 
@@ -62,6 +62,13 @@ class redshift_distribution(container):
     def tree_unflatten(cls, aux_data, children):
         args, gals_per_arcmin2 = children
         return cls(*args, gals_per_arcmin2=gals_per_arcmin2, **aux_data)
+
+
+    def _gauss_kernel(self, bw, X, x):
+        """Gaussian kernel for KDE"""
+        return (1.0 / np.sqrt(2 * np.pi) / bw) * np.exp(
+            -((X - x) ** 2) / (bw**2 * 2.0)
+        )
 
 
 @register_pytree_node_class
@@ -120,19 +127,13 @@ class kde_nz(redshift_distribution):
     nz = kde_nz(redshift_catalog, w, bw=0.1)
     """
 
-    def _kernel(self, bw, X, x):
-        """Gaussian kernel for KDE"""
-        return (1.0 / np.sqrt(2 * np.pi) / bw) * np.exp(
-            -((X - x) ** 2) / (bw**2 * 2.0)
-        )
-
     def pz_fn(self, z):
         # Extract parameters
         zcat, weight = self.params[:2]
         w = np.atleast_1d(weight)
         q = np.sum(w)
         X = np.expand_dims(zcat, axis=-1)
-        k = self._kernel(self.config["bw"], X, z)
+        k = self._gauss_kernel(self.config["bw"], X, z)
         return np.dot(k.T, w) / (q)
 
 
@@ -159,22 +160,18 @@ class gaussian_sigmoid_nz(redshift_distribution):
     redshift_distribution
     zbin_width: width of the tomographic redshift bins
     zbin_transition: transition scale where the sigmoid goes from 1 to 0
-    gauss_mu: mean of the Gaussian smoothing kernel
-    gauss_sigma: std. devation of the Gaussian smoothing kernel
+    bw: Bandwidth for the Gaussian kernel
     """
-    def _sigmoid_kernel(self, x, bin_width, bin_transition):
-        half_width = 0.5*bin_width
-        transition_width = half_width*bin_transition
-        x0 = half_width - transition_width
-        return expit((x+x0)/transition_width) \
-                - expit((x-x0)/transition_width)
-
-    def _gauss_kernel(self, a, mu, sigma):
-        return (((2*np.pi)*sigma**2)**(-.5)) * np.exp((-.5)*((a-mu)/sigma)**2)
+    def _sigmoid_kernel(self, x, kernel_center, kernel_width, kernel_transition):
+        kernel_transition_width = 0.5*kernel_width*kernel_transition
+        return expit((x - (kernel_center+0.5*kernel_width)) / kernel_transition_width) \
+                - expit((x - (kernel_center-0.5*kernel_width)) / kernel_transition_width)
 
     def pz_fn(self, z):
-        parent_pz, zbin_width, zbin_transition, gauss_mu, gauss_sigma = self.params[:5]
-        x = np.linspace(0.0,self.config["zmax"],self._norm_integral_Npoints+1)
-        sigmoid_k = self._sigmoid_kernel(parent_pz.pz_fn(z), zbin_width, zbin_transition)
-        gauss_k = self._gauss_kernel(x, gauss_mu, gauss_sigma)
-        return convolve(sigmoid_k,gauss_k,mode='same')
+        parent_pz, zbin_center, zbin_width, zbin_transition = self.params[:4]
+        x = np.linspace(0.,self.config["zmax"],self._norm_integral_Npoints+1)
+        X = np.expand_dims(x, axis=-1)
+        sigmoid_k = parent_pz.pz_fn(z)*self._sigmoid_kernel(x, zbin_center, zbin_width, zbin_transition)
+        gauss_k = self._gauss_kernel(self.config['bw'],X,z)
+        a = np.matmul(sigmoid_k,gauss_k)
+        return a
