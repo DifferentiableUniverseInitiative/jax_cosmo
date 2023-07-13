@@ -169,9 +169,9 @@ class gaussian_sigmoid_nz(redshift_distribution):
 
     def pz_fn(self, z):
         parent_pz, zbin_center, zbin_width, zbin_transition = self.params[:4]
-        x = np.linspace(0.,self.config["zmax"],self._norm_integral_Npoints+1)
+        x = np.linspace(zbin_center-0.5*zbin_width,zbin_center+0.5*zbin_width,self._norm_integral_Npoints+1)
         X = np.expand_dims(x, axis=-1)
         sigmoid_k = parent_pz.pz_fn(z)*self._sigmoid_kernel(x, zbin_center, zbin_width, zbin_transition)
-        gauss_k = self._gauss_kernel(self.config['bw'],X,z)
+        gauss_k = self._gauss_kernel(self.config['bw'],X-z,z)
         a = np.matmul(sigmoid_k,gauss_k)
         return a
