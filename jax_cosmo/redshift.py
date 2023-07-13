@@ -20,7 +20,8 @@ class redshift_distribution(container):
     def __init__(self, *args, gals_per_arcmin2=1.0, zmax=10.0, **kwargs):
         """Initialize the parameters of the redshift distribution"""
         self._norm = None
-        self._norm_integral_Npoints = 256
+        # in angular_cl() the number of points in the simps() integral is 512, here we should match that
+        self._norm_integral_Npoints = 512
         self._gals_per_arcmin2 = gals_per_arcmin2
         super(redshift_distribution, self).__init__(*args, zmax=zmax, **kwargs)
 
@@ -168,10 +169,9 @@ class gaussian_sigmoid_nz(redshift_distribution):
                 - expit((x - (kernel_center-0.5*kernel_width)) / kernel_transition_width)
 
     def pz_fn(self, z):
-        parent_pz, zbin_center, zbin_width, zbin_transition = self.params[:4]
-        x = np.linspace(zbin_center-0.5*zbin_width,zbin_center+0.5*zbin_width,self._norm_integral_Npoints+1)
+        parent_pz,zbin_center, zbin_width, zbin_transition = self.params[:4]
+        x = np.linspace(zbin_center-zbin_width,zbin_center+zbin_width,self._norm_integral_Npoints+1)
         X = np.expand_dims(x, axis=-1)
-        sigmoid_k = parent_pz.pz_fn(z)*self._sigmoid_kernel(x, zbin_center, zbin_width, zbin_transition)
-        gauss_k = self._gauss_kernel(self.config['bw'],X-z,z)
-        a = np.matmul(sigmoid_k,gauss_k)
-        return a
+        sigmoid_k = self._sigmoid_kernel(x, zbin_center, zbin_width, zbin_transition)
+        gauss_k = parent_pz.pz_fn(z)*self._gauss_kernel(self.config['bw'],X-z,z)
+        return (np.matmul(sigmoid_k,gauss_k)).squeeze()
