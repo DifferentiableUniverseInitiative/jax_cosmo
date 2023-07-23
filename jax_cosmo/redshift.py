@@ -159,7 +159,8 @@ class gaussian_sigmoid_nz(redshift_distribution):
     
     Arguments:
     redshift_distribution
-    zbin_width: width of the tomographic redshift bins
+    zbin_lower: lower edge of the tomographic redshift bins
+    zbin_upper: upper edge of the tomographic redshift bins
     zbin_transition: transition scale where the sigmoid goes from 1 to 0
     bw: Bandwidth for the Gaussian kernel
     """
