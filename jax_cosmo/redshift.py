@@ -9,7 +9,7 @@ from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
 
 from jax.scipy.special import expit
-# from jax.scipy.signal import convolve
+from jax.scipy.signal import fftconvolve
 
 steradian_to_arcmin2 = 11818102.86004228
 
@@ -163,15 +163,14 @@ class gaussian_sigmoid_nz(redshift_distribution):
     zbin_transition: transition scale where the sigmoid goes from 1 to 0
     bw: Bandwidth for the Gaussian kernel
     """
-    def _sigmoid_kernel(self, x, kernel_center, kernel_width, kernel_transition):
-        kernel_transition_width = 0.5*kernel_width*kernel_transition
-        return expit((x - (kernel_center+0.5*kernel_width)) / kernel_transition_width) \
-                - expit((x - (kernel_center-0.5*kernel_width)) / kernel_transition_width)
+    def _sigmoid_kernel(self, x, kernel_lower, kernel_upper, kernel_transition):
+        kernel_transition_width = kernel_transition
+        return expit((x - kernel_upper) / kernel_transition_width) \
+                - expit((x - kernel_lower) / kernel_transition_width)
 
     def pz_fn(self, z):
-        parent_pz,zbin_center, zbin_width, zbin_transition = self.params[:4]
-        x = np.linspace(zbin_center-zbin_width,zbin_center+zbin_width,self._norm_integral_Npoints+1)
-        X = np.expand_dims(x, axis=-1)
-        sigmoid_k = self._sigmoid_kernel(x, zbin_center, zbin_width, zbin_transition)
-        gauss_k = parent_pz.pz_fn(z)*self._gauss_kernel(self.config['bw'],X-z,z)
-        return (np.matmul(sigmoid_k,gauss_k)).squeeze()
+        parent_pz, zbin_lower, zbin_upper, zbin_transition = self.params[:5]
+        gauss_k = self._gauss_kernel(self.config['bw']*(1.0+z), 0.0, z)
+        sigmoid_k = self._sigmoid_kernel(z, zbin_lower, zbin_upper, zbin_transition)
+        convolved_pz = fftconvolve(parent_pz.pz_fn(z)*sigmoid_k, gauss_k, mode='full').squeeze()
+        return convolved_pz[:parent_pz.pz_fn(z).shape[0]]
