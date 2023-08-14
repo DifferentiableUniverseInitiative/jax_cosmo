@@ -212,7 +212,7 @@ class WeakLensing(container):
         # Extract parameters
         return self.params[1]
 
-    def kernel(self, cosmo, z, ell, lmax=None):
+    def kernel(self, cosmo, z, ell):
         """
         Compute the radial kernel for all nz bins in this probe.
 
@@ -274,8 +274,9 @@ class NumberCounts(container):
             bias,
             lmax=None,
             has_rsd=False, **kwargs):
+        args = (redshift_bins, bias, lmax)
         super(NumberCounts, self).__init__(
-            redshift_bins, bias, lmax=lmax, has_rsd=has_rsd, **kwargs
+            *args, has_rsd=has_rsd, **kwargs
         )
 
     @property
@@ -293,7 +294,7 @@ class NumberCounts(container):
         Returns the maximum multipole probed by this probe
         """
         # Extract parameters
-        return self.params[1]
+        return self.params[2]
 
     @property
     def n_tracers(self):
@@ -302,7 +303,7 @@ class NumberCounts(container):
         pzs = self.params[0]
         return len(pzs)
 
-    def kernel(self, cosmo, z, ell, lmax=None):
+    def kernel(self, cosmo, z, ell):
         """Compute the radial kernel for all nz bins in this probe.
 
         Returns:
@@ -311,7 +312,7 @@ class NumberCounts(container):
         """
         z = np.atleast_1d(z)
         # Extract parameters
-        pzs, lmax, bias = self.params
+        pzs, bias, lmax = self.params[:3]
         # Retrieve density kernel
         kernel = density_kernel(cosmo, pzs, bias, z, ell)
         if (lmax is not None):
