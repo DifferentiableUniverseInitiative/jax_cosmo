@@ -4,7 +4,7 @@ import jax.numpy as np
 import jax_cosmo.background as bkgrd
 import jax_cosmo.constants as const
 
-__all__ = ["Eisenstein_Hu"]
+__all__ = ["Eisenstein_Hu", "Genetic_Algorithm"]
 
 
 def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
@@ -30,12 +30,13 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
     Notes
     -----
     The Eisenstein & Hu transfer functions are computed using the fitting
-    formulae of :cite:`1998:EisensteinHu`
+    formulae of :cite:`1998:EisensteinHu`.
+    [OPTIONAL] Improving the redshift and sound horizon at drag epoch using fits from :cite:`Aizpuru:2021vhd`
 
     """
     #############################################
     # Quantities computed from 1998:EisensteinHu
-    # With the options to improve the redshift and sound horizon at drag epoch using fits from arXiv:2106.00428
+    # With the options to improve the redshift and sound horizon at drag epoch using fits from Aizpuru:2021vhd
     # Provides : - k_eq   : scale of the particle horizon at equality epoch
     #            - z_eq   : redshift of equality epoch
     #            - R_eq   : ratio of the baryon to photon momentum density
@@ -67,21 +68,18 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
             * (1.0 + b1 * np.power(w_b, b2))
         )
     else:
-        # Fit for redshift of drag epoch in arXiv:2106.00428
-        z_d = (1291 * np.power(w_m,0.251)) / (1.0 + 0.659*np.power(w_m,0.828)) * (1.0 + b1*np.power(w_b,b2)) # Eq (A1), arXiv:2106.00428
+        # Fit for redshift of drag epoch in Aizpuru:2021vhd
+        z_d = (1.0 + 428.169*np.power(w_b,0.256459)*np.power(w_m,0.616388) + 925.56*np.power(w_m,0.751615) ) / np.power(w_m,0.714129) # Eq (A2), Aizpuru:2021vhd
     if type == 'einsenhu_sd':
-        aa1 = 0.0034917
-        aa2 = −19.972694
-        aa3 = 0.000336186
-        aa4 = 0.0000305
-        aa5 = 0.22752
-        aa6 = 0.00003142567
-        aa7 = 0.5453798
-        aa8 = 374.14994
-        aa9 = 4.022356899
-        # Fit for sound horizon at drag epoch in h^-1 Mpc, Eq (10), arXiv:2106.00428
-        sh_d = aa1 * np.exp(aa2 * np.power((aa3 + w_n),2)) / \
-        (aa4 * np.power(w_b,aa5) + aa6*np.power(w_m,aa7) + aa8 * np.power((w_b*w_m),aa9))
+        aa1 = 0.00785436
+        aa2 = 0.17708400
+        aa3 = 0.00912388
+        aa4 = 0.61871100
+        aa5 = 11.9611000
+        aa6 = 2.81343000
+        aa7 = 0.78471900
+        # Fit for sound horizon at drag epoch in h^-1 Mpc, h*Eq (7), Aizpuru:2021vhd
+        sh_d = cosmo.h / (aa1*np.power(w_b,aa2) + aa3*np.power(w_m,aa4) + aa5*np.power(w_b,aa6)*np.power(w_m,aa7))
     else:
     # Ratio of the baryon to photon momentum density at z_d  Eq. (5), 1998:EisensteinHu
     R_d = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_d)
@@ -173,3 +171,35 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
     else:
         raise NotImplementedError
     return res
+
+def Genetic_Algorithm(cosmo, k, type="massive_nu"):
+    """Computes the matter transfer function from Genetic Algorithm fits in arXiv:2106.00428.
+
+    Parameters
+    ----------
+    cosmo: Background
+      Background cosmology
+
+    k: array_like
+      Wave number in h Mpc^{-1}
+
+    type: str, optional
+      Type of transfer function. Either 'massless_nu' or 'massive_nu'
+      (def: 'massive_nu')
+
+    Returns
+    -------
+    T: array_like
+      Value of the transfer function at the requested wave number
+
+    Notes
+    -----
+    The GA transfer functions are computed using the GA-based fitting
+    formulae in :cite:`Orjuela-Quintana:2022nnq`
+
+    """
+    #############################################
+    # Quantities computed from Orjuela-Quintana:2022nnq and Aizpuru:2021vhd
+    # Provides :
+    #            - z_d    : redshift of drag epoch
+    #            - sh_d   : sound horizon at drag epoch
