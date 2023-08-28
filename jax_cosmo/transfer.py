@@ -59,6 +59,10 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
     # z drag from Eq. (4)
     b1 = 0.313 * np.power(w_m, -0.419) * (1.0 + 0.607 * np.power(w_m, 0.674))
     b2 = 0.238 * np.power(w_m, 0.223)
+    # Ratio of the baryon to photon momentum density at z_d  Eq. (5), 1998:EisensteinHu
+    R_d = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_d)
+    # Ratio of the baryon to photon momentum density at z_eq Eq. (5), 1998:EisensteinHu
+    R_eq = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_eq)
     if type in ('eisenhu', 'eisenhu_osc'):
         # Fit for redshift of drag epoch in 1998:EisensteinHu
         z_d = (
@@ -81,17 +85,13 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
         # Fit for sound horizon at drag epoch in h^-1 Mpc, h*Eq (7), Aizpuru:2021vhd
         sh_d = cosmo.h / (aa1*np.power(w_b,aa2) + aa3*np.power(w_m,aa4) + aa5*np.power(w_b,aa6)*np.power(w_m,aa7))
     else:
-    # Ratio of the baryon to photon momentum density at z_d  Eq. (5), 1998:EisensteinHu
-    R_d = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_d)
-    # Ratio of the baryon to photon momentum density at z_eq Eq. (5), 1998:EisensteinHu
-    R_eq = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_eq)
-    # Sound horizon at drag epoch in h^-1 Mpc, Eq. (6), 1998:EisensteinHu
-    sh_d = (
-        2.0
-        / (3.0 * k_eq)
-        * np.sqrt(6.0 / R_eq)
-        * np.log((np.sqrt(1.0 + R_d) + np.sqrt(R_eq + R_d)) / (1.0 + np.sqrt(R_eq)))
-    )
+        # Sound horizon at drag epoch in h^-1 Mpc, Eq. (6), 1998:EisensteinHu
+        sh_d = (
+            2.0
+            / (3.0 * k_eq)
+            * np.sqrt(6.0 / R_eq)
+            * np.log((np.sqrt(1.0 + R_d) + np.sqrt(R_eq + R_d)) / (1.0 + np.sqrt(R_eq)))
+        )
     # Eq. (7) but in [hMpc^{-1}]
     k_silk = (
         1.6
