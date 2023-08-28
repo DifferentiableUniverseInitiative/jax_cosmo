@@ -4,7 +4,7 @@ import jax.numpy as np
 import jax_cosmo.background as bkgrd
 import jax_cosmo.constants as const
 
-__all__ = ["Eisenstein_Hu", "Genetic_Algorithm"]
+__all__ = ["Eisenstein_Hu"]
 
 
 def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
@@ -36,7 +36,7 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
     """
     #############################################
     # Quantities computed from 1998:EisensteinHu
-    # With the options to improve the redshift and sound horizon at drag epoch using fits from Aizpuru:2021vhd
+    # With the options to improve the redshift and sound horizon at drag epoch using fits from Aizpuru:2021vhd (arXiv:2106.00428)
     # Provides : - k_eq   : scale of the particle horizon at equality epoch
     #            - z_eq   : redshift of equality epoch
     #            - R_eq   : ratio of the baryon to photon momentum density
@@ -171,35 +171,3 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
     else:
         raise NotImplementedError
     return res
-
-def Genetic_Algorithm(cosmo, k, type="massive_nu"):
-    """Computes the matter transfer function from Genetic Algorithm fits in arXiv:2106.00428.
-
-    Parameters
-    ----------
-    cosmo: Background
-      Background cosmology
-
-    k: array_like
-      Wave number in h Mpc^{-1}
-
-    type: str, optional
-      Type of transfer function. Either 'massless_nu' or 'massive_nu'
-      (def: 'massive_nu')
-
-    Returns
-    -------
-    T: array_like
-      Value of the transfer function at the requested wave number
-
-    Notes
-    -----
-    The GA transfer functions are computed using the GA-based fitting
-    formulae in :cite:`Orjuela-Quintana:2022nnq`
-
-    """
-    #############################################
-    # Quantities computed from Orjuela-Quintana:2022nnq and Aizpuru:2021vhd
-    # Provides :
-    #            - z_d    : redshift of drag epoch
-    #            - sh_d   : sound horizon at drag epoch
