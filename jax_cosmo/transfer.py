@@ -7,7 +7,7 @@ import jax_cosmo.constants as const
 __all__ = ["Eisenstein_Hu"]
 
 
-def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
+def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
     """Computes the Eisenstein & Hu matter transfer function.
 
     Parameters
@@ -19,8 +19,8 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
       Wave number in h Mpc^{-1}
 
     type: str, optional
-      Type of transfer function. Either 'eisenhu' or 'eisenhu_osc'
-      (def: 'eisenhu_osc')
+      Type of transfer function. Either 'eisenhu', 'eisenhu_osc', 'eisenhu_zd', or 'eisenhu_sd'
+      (def: 'eisenhu_sd')
 
     Returns
     -------
@@ -35,6 +35,7 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
     """
     #############################################
     # Quantities computed from 1998:EisensteinHu
+    # With the options to improve the redshift and sound horizon at drag epoch using fits from arXiv:2106.00428
     # Provides : - k_eq   : scale of the particle horizon at equality epoch
     #            - z_eq   : redshift of equality epoch
     #            - R_eq   : ratio of the baryon to photon momentum density
@@ -57,18 +58,36 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
     # z drag from Eq. (4)
     b1 = 0.313 * np.power(w_m, -0.419) * (1.0 + 0.607 * np.power(w_m, 0.674))
     b2 = 0.238 * np.power(w_m, 0.223)
-    z_d = (
-        1291.0
-        * np.power(w_m, 0.251)
-        / (1.0 + 0.659 * np.power(w_m, 0.828))
-        * (1.0 + b1 * np.power(w_b, b2))
-    )
-
-    # Ratio of the baryon to photon momentum density at z_d  Eq. (5)
+    if type in ('eisenhu', 'eisenhu_osc'):
+        # Fit for redshift of drag epoch in 1998:EisensteinHu
+        z_d = (
+            1291.0
+            * np.power(w_m, 0.251)
+            / (1.0 + 0.659 * np.power(w_m, 0.828))
+            * (1.0 + b1 * np.power(w_b, b2))
+        )
+    else:
+        # Fit for redshift of drag epoch in arXiv:2106.00428
+        z_d = (1291 * np.power(w_m,0.251)) / (1.0 + 0.659*np.power(w_m,0.828)) * (1.0 + b1*np.power(w_b,b2)) # Eq (A1), arXiv:2106.00428
+    if type == 'einsenhu_sd':
+        aa1 = 0.0034917
+        aa2 = −19.972694
+        aa3 = 0.000336186
+        aa4 = 0.0000305
+        aa5 = 0.22752
+        aa6 = 0.00003142567
+        aa7 = 0.5453798
+        aa8 = 374.14994
+        aa9 = 4.022356899
+        # Fit for sound horizon at drag epoch in h^-1 Mpc, Eq (10), arXiv:2106.00428
+        sh_d = aa1 * np.exp(aa2 * np.power((aa3 + w_n),2)) / \
+        (aa4 * np.power(w_b,aa5) + aa6*np.power(w_m,aa7) + aa8 * np.power((w_b*w_m),aa9))
+    else:
+    # Ratio of the baryon to photon momentum density at z_d  Eq. (5), 1998:EisensteinHu
     R_d = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_d)
-    # Ratio of the baryon to photon momentum density at z_eq Eq. (5)
+    # Ratio of the baryon to photon momentum density at z_eq Eq. (5), 1998:EisensteinHu
     R_eq = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_eq)
-    # Sound horizon at drag epoch in h^-1 Mpc Eq. (6)
+    # Sound horizon at drag epoch in h^-1 Mpc, Eq. (6), 1998:EisensteinHu
     sh_d = (
         2.0
         / (3.0 * k_eq)
@@ -104,7 +123,7 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
         C = 14.2 + 731.0 / (1.0 + 62.5 * q)
         res = L / (L + C * q * q)
 
-    elif type == "eisenhu_osc":
+    elif type in ("eisenhu_osc", "eisenhu_zd", "eisenhu_sd"):
         # Cold dark matter transfer function
 
         # EH98 (11, 12)
