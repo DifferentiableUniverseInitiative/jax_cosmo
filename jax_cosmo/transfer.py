@@ -59,10 +59,6 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
     # z drag from Eq. (4)
     b1 = 0.313 * np.power(w_m, -0.419) * (1.0 + 0.607 * np.power(w_m, 0.674))
     b2 = 0.238 * np.power(w_m, 0.223)
-    # Ratio of the baryon to photon momentum density at z_d  Eq. (5), 1998:EisensteinHu
-    R_d = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_d)
-    # Ratio of the baryon to photon momentum density at z_eq Eq. (5), 1998:EisensteinHu
-    R_eq = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_eq)
     if type in ('eisenhu', 'eisenhu_osc'):
         # Fit for redshift of drag epoch in 1998:EisensteinHu
         z_d = (
@@ -74,6 +70,10 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
     else:
         # Fit for redshift of drag epoch in Aizpuru:2021vhd
         z_d = (1.0 + 428.169*np.power(w_b,0.256459)*np.power(w_m,0.616388) + 925.56*np.power(w_m,0.751615) ) / np.power(w_m,0.714129) # Eq (A2), Aizpuru:2021vhd
+    # Ratio of the baryon to photon momentum density at z_d  Eq. (5), 1998:EisensteinHu
+    R_d = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_d)
+    # Ratio of the baryon to photon momentum density at z_eq Eq. (5), 1998:EisensteinHu
+    R_eq = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_eq)
     if type == 'einsenhu_sd':
         aa1 = 0.00785436
         aa2 = 0.17708400
