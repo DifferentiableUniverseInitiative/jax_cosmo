@@ -7,7 +7,7 @@ import jax_cosmo.constants as const
 __all__ = ["Eisenstein_Hu"]
 
 
-def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
+def Eisenstein_Hu(cosmo, k, type="eisenhu_sd"):
     """Computes the Eisenstein & Hu matter transfer function.
 
     Parameters
@@ -19,8 +19,8 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
       Wave number in h Mpc^{-1}
 
     type: str, optional
-      Type of transfer function. Either 'eisenhu' or 'eisenhu_osc'
-      (def: 'eisenhu_osc')
+      Type of transfer function. Either 'eisenhu', 'eisenhu_osc', 'eisenhu_zd', or 'eisenhu_sd'
+      (def: 'eisenhu_sd')
 
     Returns
     -------
@@ -30,11 +30,13 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
     Notes
     -----
     The Eisenstein & Hu transfer functions are computed using the fitting
-    formulae of :cite:`1998:EisensteinHu`
+    formulae of :cite:`1998:EisensteinHu`.
+    [OPTIONAL] Improving the redshift and sound horizon at drag epoch using fits from :cite:`Aizpuru:2021vhd`
 
     """
     #############################################
     # Quantities computed from 1998:EisensteinHu
+    # With the options to improve the redshift and sound horizon at drag epoch using fits from Aizpuru:2021vhd (arXiv:2106.00428)
     # Provides : - k_eq   : scale of the particle horizon at equality epoch
     #            - z_eq   : redshift of equality epoch
     #            - R_eq   : ratio of the baryon to photon momentum density
@@ -57,24 +59,39 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
     # z drag from Eq. (4)
     b1 = 0.313 * np.power(w_m, -0.419) * (1.0 + 0.607 * np.power(w_m, 0.674))
     b2 = 0.238 * np.power(w_m, 0.223)
-    z_d = (
-        1291.0
-        * np.power(w_m, 0.251)
-        / (1.0 + 0.659 * np.power(w_m, 0.828))
-        * (1.0 + b1 * np.power(w_b, b2))
-    )
-
-    # Ratio of the baryon to photon momentum density at z_d  Eq. (5)
+    if type in ('eisenhu', 'eisenhu_osc'):
+        # Fit for redshift of drag epoch in 1998:EisensteinHu
+        z_d = (
+            1291.0
+            * np.power(w_m, 0.251)
+            / (1.0 + 0.659 * np.power(w_m, 0.828))
+            * (1.0 + b1 * np.power(w_b, b2))
+        )
+    else:
+        # Fit for redshift of drag epoch in Aizpuru:2021vhd
+        z_d = (1.0 + 428.169*np.power(w_b,0.256459)*np.power(w_m,0.616388) + 925.56*np.power(w_m,0.751615) ) / np.power(w_m,0.714129) # Eq (A2), Aizpuru:2021vhd
+    # Ratio of the baryon to photon momentum density at z_d  Eq. (5), 1998:EisensteinHu
     R_d = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_d)
-    # Ratio of the baryon to photon momentum density at z_eq Eq. (5)
+    # Ratio of the baryon to photon momentum density at z_eq Eq. (5), 1998:EisensteinHu
     R_eq = 31.5 * w_b / (T_2_7_sqr) ** 2 * (1.0e3 / z_eq)
-    # Sound horizon at drag epoch in h^-1 Mpc Eq. (6)
-    sh_d = (
-        2.0
-        / (3.0 * k_eq)
-        * np.sqrt(6.0 / R_eq)
-        * np.log((np.sqrt(1.0 + R_d) + np.sqrt(R_eq + R_d)) / (1.0 + np.sqrt(R_eq)))
-    )
+    if type == 'einsenhu_sd':
+        aa1 = 0.00785436
+        aa2 = 0.17708400
+        aa3 = 0.00912388
+        aa4 = 0.61871100
+        aa5 = 11.9611000
+        aa6 = 2.81343000
+        aa7 = 0.78471900
+        # Fit for sound horizon at drag epoch in h^-1 Mpc, h*Eq (7), Aizpuru:2021vhd
+        sh_d = cosmo.h / (aa1*np.power(w_b,aa2) + aa3*np.power(w_m,aa4) + aa5*np.power(w_b,aa6)*np.power(w_m,aa7))
+    else:
+        # Sound horizon at drag epoch in h^-1 Mpc, Eq. (6), 1998:EisensteinHu
+        sh_d = (
+            2.0
+            / (3.0 * k_eq)
+            * np.sqrt(6.0 / R_eq)
+            * np.log((np.sqrt(1.0 + R_d) + np.sqrt(R_eq + R_d)) / (1.0 + np.sqrt(R_eq)))
+        )
     # Eq. (7) but in [hMpc^{-1}]
     k_silk = (
         1.6
@@ -104,7 +121,7 @@ def Eisenstein_Hu(cosmo, k, type="eisenhu_osc"):
         C = 14.2 + 731.0 / (1.0 + 62.5 * q)
         res = L / (L + C * q * q)
 
-    elif type == "eisenhu_osc":
+    elif type in ("eisenhu_osc", "eisenhu_zd", "eisenhu_sd"):
         # Cold dark matter transfer function
 
         # EH98 (11, 12)
