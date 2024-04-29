@@ -91,7 +91,9 @@ def test_lensing_cl_delta():
     nz_smail1 = smail_nz(1.0, 2.0, 1.0)
     nz_smail2 = smail_nz(1.4, 2.0, 1.0)
     tracer_ccl = ccl.WeakLensingTracer(cosmo_ccl, dndz=(z, nzs_s(z)), use_A_ia=False)
-    tracer_cclb = ccl.WeakLensingTracer(cosmo_ccl, dndz=(z, nz_smail2(z)), use_A_ia=False)
+    tracer_cclb = ccl.WeakLensingTracer(
+        cosmo_ccl, dndz=(z, nz_smail2(z)), use_A_ia=False
+    )
     tracer_jax = probes.WeakLensing([nz])
     tracer_jaxb = probes.WeakLensing([nz, nz_smail1, nz_smail2])
 
