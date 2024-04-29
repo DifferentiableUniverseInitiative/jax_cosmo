@@ -44,7 +44,7 @@ def test_lensing_cl():
     # Define a redshift distribution
     nz = smail_nz(1.0, 2.0, 1.0)
     z = np.linspace(0, 5.0, 1024)
-    tracer_ccl = ccl.WeakLensingTracer(cosmo_ccl, (z, nz(z)), use_A_ia=False)
+    tracer_ccl = ccl.WeakLensingTracer(cosmo_ccl, dndz=(z, nz(z)), use_A_ia=False)
     tracer_jax = probes.WeakLensing([nz])
 
     # Get an ell range for the cls
@@ -90,8 +90,8 @@ def test_lensing_cl_delta():
     nz = delta_nz(z0)
     nz_smail1 = smail_nz(1.0, 2.0, 1.0)
     nz_smail2 = smail_nz(1.4, 2.0, 1.0)
-    tracer_ccl = ccl.WeakLensingTracer(cosmo_ccl, (z, nzs_s(z)), use_A_ia=False)
-    tracer_cclb = ccl.WeakLensingTracer(cosmo_ccl, (z, nz_smail2(z)), use_A_ia=False)
+    tracer_ccl = ccl.WeakLensingTracer(cosmo_ccl, dndz=(z, nzs_s(z)), use_A_ia=False)
+    tracer_cclb = ccl.WeakLensingTracer(cosmo_ccl, dndz=(z, nz_smail2(z)), use_A_ia=False)
     tracer_jax = probes.WeakLensing([nz])
     tracer_jaxb = probes.WeakLensing([nz, nz_smail1, nz_smail2])
 
@@ -142,7 +142,7 @@ def test_lensing_cl_IA():
     bias = inverse_growth_linear_bias(10.0)
 
     tracer_ccl = ccl.WeakLensingTracer(
-        cosmo_ccl, (z, nz(z)), ia_bias=(z, bias(cosmo_jax, z))
+        cosmo_ccl, dndz=(z, nz(z)), ia_bias=(z, bias(cosmo_jax, z))
     )
     tracer_jax = probes.WeakLensing([nz], bias)
 
