@@ -9,11 +9,11 @@ from jax.numpy import ones
 from jax.numpy import zeros
 from jax.tree_util import register_pytree_node_class
 
-__all__ = ["interp"]
+__all__ = ["interp", "interp_legacy"]
 
 
 @functools.partial(vmap, in_axes=(0, None, None))
-def interp(x, xp, fp):
+def interp_legacy(x, xp, fp):
     """
     Simple equivalent of np.interp that compute a linear interpolation.
 
@@ -38,6 +38,15 @@ def interp(x, xp, fp):
     )
     b = fp[ind] - a * xp[ind]
     return a * x + b
+
+
+def interp(x, xp, fp, left=None, right=None, period=None):
+    """
+    Calling the jax implementation of interp
+
+    x, xp, fp need to be 1d arrays
+    """
+    return np.interp(x, xp, fp, left=left, right=right, period=period)
 
 
 @register_pytree_node_class
