@@ -11,7 +11,7 @@ from jax.tree_util import register_pytree_node_class
 
 __all__ = ["interp"]
 
-interp = np.intern
+interp = np.interp
 
 @register_pytree_node_class
 class InterpolatedUnivariateSpline(object):
