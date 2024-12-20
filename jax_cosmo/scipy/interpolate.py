@@ -229,6 +229,7 @@ class InterpolatedUnivariateSpline(object):
         self._x = x
         self._y = y
         self._coefficients = coefficients
+        self._endpoints = endpoints
 
     # Operations for flattening/unflattening representation
     def tree_flatten(self):
