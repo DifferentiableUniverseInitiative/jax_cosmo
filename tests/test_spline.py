@@ -1,8 +1,8 @@
 # This module tests the InterpolatedUnivariateSpline implementation against
 # SciPy
-from jax.config import config
+import jax
 
-config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 import jax.numpy as np
 from numpy.testing import assert_allclose
 

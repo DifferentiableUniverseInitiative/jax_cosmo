@@ -326,7 +326,7 @@ def _block_det(sparse, k, N, P):
     v = sparse[k + 1 : N, k : k + 1, 0:P]
     Sinv_v = sparse_dot_sparse(inv(S), v)
     M = sparse[k, k] - sparse_dot_sparse(u, Sinv_v)
-    sign = np.product(np.sign(M))
+    sign = np.prod(np.sign(M))
     logdet = np.sum(np.log(np.abs(M)))
     return sign, logdet
 
@@ -354,7 +354,7 @@ def slogdet(sparse):
     """
     sparse = check_sparse(sparse, square=True)
     N, _, P = sparse.shape
-    sign = np.product(np.sign(sparse[-1, -1]))
+    sign = np.prod(np.sign(sparse[-1, -1]))
     logdet = np.sum(np.log(np.abs(sparse[-1, -1])))
     # The individual blocks can be calculated in any order so there
     # should be a better way to express this using lax.map but I
