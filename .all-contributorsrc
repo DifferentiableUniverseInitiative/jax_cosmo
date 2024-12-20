@@ -88,6 +88,15 @@
         "code",
         "bug"
       ]
+    },
+    {
+      "login": "mihir-r-kondapalli",
+      "name": "mihir-r-kondapalli",
+      "avatar_url": "https://avatars.githubusercontent.com/u/90729208?v=4",
+      "profile": "https://github.com/mihir-r-kondapalli",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
@@ -95,5 +104,7 @@
   "projectOwner": "DifferentiableUniverseInitiative",
   "repoType": "github",
   "repoHost": "https://github.com",
-  "skipCi": true
+  "skipCi": true,
+  "commitType": "docs",
+  "commitConvention": "angular"
 }
