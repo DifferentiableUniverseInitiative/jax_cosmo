@@ -19,6 +19,8 @@ __all__ = [
     "angular_diameter_distance",
     "growth_factor",
     "growth_rate",
+    "luminosity_distance",
+    "distance_modulus",
 ]
 
 
@@ -580,3 +582,43 @@ def _growth_rate_gamma(cosmo, a):
     see :cite:`2019:Euclid Preparation VII, eqn.32`
     """
     return Omega_m_a(cosmo, a) ** cosmo.gamma
+
+
+def luminosity_distance(cosmo, a):
+    """
+    Compute the luminosity distance in [Mpc] for a given scale factor a
+    Parameters
+    ----------
+    cosmo : `Cosmology'
+        Cosmology object
+
+    a : array_like
+        Scale factor
+
+    Returns
+    -------
+    d_L :  ndarray, or float if input scalar
+        Luminosity distance corresponding to the requested scale factor
+    """
+
+    return transverse_comoving_distance(cosmo, a) / a
+
+
+def distance_modulus(cosmo, a):
+    """
+    Compute the distance modulus for a given scale factor a
+
+    Parameters
+    ----------
+    cosmo : `Cosmology'
+        Cosmology object
+
+    a : array_like
+        Scale factor
+
+    Returns
+    -------
+    mu : Distance modulus corresponding to scale factor a
+    """
+
+    return 5 * np.log10(luminosity_distance(cosmo, a) * 1e5)
