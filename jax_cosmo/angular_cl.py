@@ -11,6 +11,7 @@ import jax_cosmo.constants as const
 import jax_cosmo.power as power
 import jax_cosmo.transfer as tklib
 from jax_cosmo.scipy.integrate import simps
+from jax_cosmo.scipy.interpolate import interp
 from jax_cosmo.utils import a2z
 from jax_cosmo.utils import z2a
 
@@ -78,8 +79,14 @@ def angular_cl(
             # pk should have shape [na]
             pk = power.nonlinear_matter_power(cosmo, k, a, transfer_fn, nonlinear_fn)
 
+            # RSD inversion
+
+            a_1 = np.clip(bkgrd.a_of_chi(cosmo, (ell + 1.5) / k), 0.00001)
+
             # Compute the kernels for all probes
-            kernels = np.vstack([p.kernel(cosmo, a2z(a), ell) for p in probes])
+            kernels = np.vstack(
+                [p.kernel(cosmo, a2z(a), ell, a2z(a_1)) for p in probes]
+            )
 
             # Define an ordering for the blocks of the signal vector
             cl_index = np.array(_get_cl_ordering(probes))

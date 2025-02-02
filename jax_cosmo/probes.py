@@ -77,6 +77,39 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
 
 
 @jit
+def mag_kernel(cosmo, pzs, z, ell, s):
+    """
+    Returns a magnification kernel
+
+    Needs magnification bias function
+    s = "logarithmic derivative of the number of sources with magnitude limit", a function valid for all z in z_prime
+
+    """
+    z = np.atleast_1d(z)
+    zmax = max([pz.zmax for pz in pzs])
+    # Retrieve comoving distance corresponding to z
+    chi = bkgrd.radial_comoving_distance(cosmo, z2a(z))
+
+    @vmap
+    def integrand(z_prime):
+        chi_prime = bkgrd.radial_comoving_distance(cosmo, z2a(z_prime))
+        # Stack the dndz of all redshift bins
+        dndz = np.stack([pz(z_prime) for pz in pzs], axis=0)
+
+        mag_lim = (2.0 - 5.0 * s(cosmo, z_prime)) / 2.0
+
+        return dndz * np.clip(chi_prime - chi, 0) / np.clip(chi_prime, 1.0) * mag_lim
+
+    # Computes the radial weak lensing kernel
+    radial_kernel = np.squeeze(simps(integrand, z, zmax, 256) * (1.0 + z) * chi)
+    # Constant term (maybe one too many 2.0?)
+    constant_factor = 3.0 * const.H0**2 * cosmo.Omega_m / 2.0 / const.c / 2.0
+    # Ell dependent factor
+    ell_factor = ell * (ell + 1)
+    return constant_factor * ell_factor * radial_kernel
+
+
+@jit
 def density_kernel(cosmo, pzs, bias, z, ell):
     """
     Computes the number counts density kernel
@@ -129,6 +162,44 @@ def nla_kernel(cosmo, pzs, bias, z, ell):
     # Ell dependent factor
     ell_factor = np.sqrt((ell - 1) * (ell) * (ell + 1) * (ell + 2)) / (ell + 0.5) ** 2
     return constant_factor * ell_factor * radial_kernel
+
+
+@jit
+def rsd_kernel(cosmo, pzs, z, ell, z1):
+    """
+    Computes the RSD kernel
+    """
+    print(z, z1)
+    # stack the dndz of all redshift bins
+    dndz = np.stack([pz(z) for pz in pzs], axis=0)
+
+    # Normalization,
+    constant_factor = 1.0
+    # Ell dependent factor
+    ell_factor1 = (1 + 8 * ell) / ((2 * ell + 1) ** 2.0)
+    # stack the dndz of all redshift bins
+    dndz = np.stack([pz(z) for pz in pzs], axis=0)
+    radial_kernel1 = (
+        dndz
+        * bkgrd.growth_rate(cosmo, z2a(z))
+        / bkgrd.growth_factor(cosmo, z2a(z))
+        * bkgrd.H(cosmo, z2a(z))
+    )
+
+    # Ell dependent factor
+    ell_factor2 = (4) / (2 * ell + 3) * np.sqrt((2 * ell + 1) / (2 * ell + 3))
+    # stack the dndz of all redshift bins
+    dndz = np.stack([pz(z1) for pz in pzs], axis=0)
+    radial_kernel2 = (
+        dndz
+        * bkgrd.growth_rate(cosmo, z2a(z1))
+        / bkgrd.growth_factor(cosmo, z2a(z1))
+        * bkgrd.H(cosmo, z2a(z1))
+    )
+
+    return constant_factor * (
+        ell_factor1 * radial_kernel1 - ell_factor2 * radial_kernel2
+    )
 
 
 @register_pytree_node_class
@@ -187,7 +258,7 @@ class WeakLensing(container):
         pzs = self.params[0]
         return max([pz.zmax for pz in pzs])
 
-    def kernel(self, cosmo, z, ell):
+    def kernel(self, cosmo, z, ell, z1):
         """
         Compute the radial kernel for all nz bins in this probe.
 
@@ -225,23 +296,23 @@ class WeakLensing(container):
         return sigma_e**2 / ngals
 
 
-@register_pytree_node_class
 class NumberCounts(container):
     """Class representing a galaxy clustering probe, with a bunch of bins
-
     Parameters:
     -----------
     redshift_bins: nzredshift distributions
-
     Configuration:
     --------------
     has_rsd....
+    mag_bias....
     """
 
-    def __init__(self, redshift_bins, bias, has_rsd=False, **kwargs):
+    def __init__(self, redshift_bins, bias, has_rsd=False, mag_bias=False, **kwargs):
         super(NumberCounts, self).__init__(
-            redshift_bins, bias, has_rsd=has_rsd, **kwargs
+            redshift_bins, bias, has_rsd=has_rsd, mag_bias=mag_bias, **kwargs
         )
+        self.mag_bias = mag_bias
+        self.has_rsd = has_rsd
 
     @property
     def zmax(self):
@@ -259,7 +330,7 @@ class NumberCounts(container):
         pzs = self.params[0]
         return len(pzs)
 
-    def kernel(self, cosmo, z, ell):
+    def kernel(self, cosmo, z, ell, z1):
         """Compute the radial kernel for all nz bins in this probe.
 
         Returns:
@@ -271,6 +342,13 @@ class NumberCounts(container):
         pzs, bias = self.params
         # Retrieve density kernel
         kernel = density_kernel(cosmo, pzs, bias, z, ell)
+
+        if self.mag_bias:
+            kernel += mag_kernel(cosmo, pzs, z, ell, self.mag_bias)
+
+        if self.has_rsd:
+            kernel += rsd_kernel(cosmo, pzs, z, ell, z1)
+
         return kernel
 
     def noise(self):
