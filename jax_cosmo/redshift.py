@@ -79,6 +79,59 @@ class smail_nz(redshift_distribution):
 
 
 @register_pytree_node_class
+class histogram_nz(redshift_distribution):
+    """Histogram redshift distribution for flexible parameterisation.
+
+    Parameters:
+    -----------
+    bin_heights: array where elements are histogram bin heights
+
+    bin_edges: array containing edges of each bin and should be
+    strictly increasing.
+
+    gals_per_arcmin2: number of galaxies per sq arcmin
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the parameters of the redshift distribution"""
+        super(histogram_nz, self).__init__(*args, **kwargs)
+
+        if len(self.params[0]) + 1 != len(self.params[1]):
+            raise Exception(
+                "Number of bin edges must equal the number of bins plus one."
+            )
+
+        self._norm = np.sum(self.params[0] * np.diff(self.params[1]))
+
+    def pz_fn(self, z):
+        # parameters
+        bin_heights = self.params[0]
+        bin_edges = self.params[1]
+
+        n_edges = len(bin_heights)
+        zgrid_size = len(z)
+
+        # arrays containing lower and upper walls of bins respectively
+        zmins = bin_edges[:-1]
+        zmaxs = bin_edges[1:]
+
+        # reshape into column vectors
+        bin_heights_T = bin_heights.reshape(1, len(bin_heights)).T
+        z_T = z.reshape(1, zgrid_size).T
+
+        # build matrices to find whether redshifts lie above each zmin and below each zmax
+        zmin_mat = np.repeat(zmins.reshape(1, n_edges), zgrid_size, axis=0)
+        zmax_mat = np.repeat(zmaxs.reshape(1, n_edges), zgrid_size, axis=0)
+        step_n = np.where(zmin_mat <= z_T, 1.0, 0.0)
+        step_p = np.where(zmax_mat > z_T, 1.0, 0.0)
+
+        # find redshifts that lie inside bin adjacent bin edges (i.e. inside bins)
+        comparison_mat = np.where(step_n == step_p, 1.0, 0.0)
+
+        return np.dot(comparison_mat, bin_heights_T).flatten()
+
+
+@register_pytree_node_class
 class delta_nz(redshift_distribution):
     """Defines a single plane redshift distribution with these arguments
     Parameters:
