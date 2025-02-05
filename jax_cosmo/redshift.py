@@ -10,7 +10,7 @@ from jax_cosmo.scipy.integrate import simps
 
 steradian_to_arcmin2 = 11818102.86004228
 
-__all__ = ["smail_nz", "kde_nz", "delta_nz"]
+__all__ = ["smail_nz", "martinet_nz" "kde_nz", "delta_nz"]
 
 
 class redshift_distribution(container):
@@ -76,6 +76,25 @@ class smail_nz(redshift_distribution):
     def pz_fn(self, z):
         a, b, z0 = self.params
         return z**a * np.exp(-((z / z0) ** b))
+
+@register_pytree_node_class
+class martinet_nz(redshift_distribution):
+    """Defines a the distribution from Martinet et al. (eqn 10 2010.07376) with these arguments
+    Parameters:
+    -----------
+
+    a:
+
+    b:
+
+    c:
+
+    gals_per_arcmin2: number of galaxies per sq arcmin (30 in the original paper)
+    """
+
+    def pz_fn(self, z):
+        a, b, c = self.params
+        return (z**a + z**(a*b)) / (z**b + c)
 
 
 @register_pytree_node_class
