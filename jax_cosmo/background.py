@@ -1,4 +1,6 @@
 # This module implements various functions for the background COSMOLOGY
+import os
+
 import jax.numpy as np
 from jax import lax
 
@@ -197,18 +199,25 @@ def Omega_de_a(cosmo, a):
 
 
 def _cache_radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
-     # Compute tabulated array
-    atab = np.logspace(log10_amin, 0.0, steps)
+    CACHING_ACTIVATED = os.environ.get("JC_CACHE", "1") == "1"
+    if CACHING_ACTIVATED and "background.radial_comoving_distance" in cosmo._workspace.keys(
+    ):
+        cache =  cosmo._workspace["background.radial_comoving_distance"]
+    else:
+        # Compute tabulated array
+        atab = np.logspace(log10_amin, 0.0, steps)
 
-    def dchioverdlna(y, x):
-        xa = np.exp(x)
-        return dchioverda(cosmo, xa) * xa
+        def dchioverdlna(y, x):
+            xa = np.exp(x)
+            return dchioverda(cosmo, xa) * xa
 
-    chitab = odeint(dchioverdlna, 0.0, np.log(atab))
-    # np.clip(- 3000*np.log(atab), 0, 10000)#odeint(dchioverdlna, 0., np.log(atab), cosmo)
-    chitab = chitab[-1] - chitab
+        chitab = odeint(dchioverdlna, 0.0, np.log(atab))
+        # np.clip(- 3000*np.log(atab), 0, 10000)#odeint(dchioverdlna, 0., np.log(atab), cosmo)
+        chitab = chitab[-1] - chitab
 
-    cache = {"a": atab, "chi": chitab}
+        cache = {"a": atab, "chi": chitab}
+        if CACHING_ACTIVATED:
+            cosmo._workspace["background.radial_comoving_distance"] = cache
     return cache
 
 def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
@@ -234,7 +243,7 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
 
         \chi(a) =  R_H \int_a^1 \frac{da^\prime}{{a^\prime}^2 E(a^\prime)}
     """
-
+    
     cache = _cache_radial_comoving_distance(cosmo, a, log10_amin, steps)
     a = np.atleast_1d(a)
     # Return the results as an interpolation of the table
