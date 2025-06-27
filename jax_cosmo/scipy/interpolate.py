@@ -10,6 +10,7 @@ __all__ = ["interp"]
 
 interp = np.interp
 
+
 @register_pytree_node_class
 class InterpolatedUnivariateSpline(object):
     def __init__(self, x, y, k=3, endpoints="not-a-knot", coefficients=None):
