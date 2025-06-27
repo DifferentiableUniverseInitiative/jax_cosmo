@@ -4,8 +4,7 @@ from jax.tree_util import register_pytree_node_class
 
 import jax_cosmo.background as bkgrd
 from jax_cosmo.jax_utils import container
-from jax_cosmo.utils import a2z
-from jax_cosmo.utils import z2a
+from jax_cosmo.utils import a2z, z2a
 
 
 @register_pytree_node_class

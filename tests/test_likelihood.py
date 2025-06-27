@@ -1,9 +1,7 @@
 import jax.numpy as jnp
-from numpy.testing import assert_allclose
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_allclose, assert_array_equal
 
-from jax_cosmo import Planck15
-from jax_cosmo import probes
+from jax_cosmo import Planck15, probes
 from jax_cosmo.angular_cl import gaussian_cl_covariance_and_mean
 from jax_cosmo.bias import constant_linear_bias
 from jax_cosmo.likelihood import gaussian_log_likelihood

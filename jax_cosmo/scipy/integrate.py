@@ -2,8 +2,7 @@ from functools import partial
 
 import jax
 import jax.numpy as np
-from jax import jit
-from jax import vmap
+from jax import jit, vmap
 
 __all__ = ["romb", "simps"]
 
