@@ -1,7 +1,7 @@
 # jax-cosmo
 
 [![Join the chat at https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo](https://badges.gitter.im/DifferentiableUniverseInitiative/jax_cosmo.svg)](https://gitter.im/DifferentiableUniverseInitiative/jax_cosmo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Documentation Status](https://readthedocs.org/projects/jax-cosmo/badge/?version=latest)](https://jax-cosmo.readthedocs.io/en/latest/?badge=latest) [![CI Test](https://github.com/DifferentiableUniverseInitiative/jax_cosmo/workflows/Python%20package/badge.svg)]() [![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![PyPI](https://img.shields.io/pypi/v/jax-cosmo)](https://pypi.org/project/jax-cosmo/) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md) [![PyPI - License](https://img.shields.io/pypi/l/jax-cosmo)](https://github.com/google/jax-cosmo/blob/master/LICENSE) <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-10-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <h3 align="center">Finally a differentiable cosmology library, and it's in JAX!</h3>
@@ -108,6 +108,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jecampagne"><img src="https://avatars.githubusercontent.com/u/20539759?v=4?s=100" width="100px;" alt="jecampagne"/><br /><sub><b>jecampagne</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues?q=author%3Ajecampagne" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/eelregit"><img src="https://avatars.githubusercontent.com/u/7311098?v=4?s=100" width="100px;" alt="Yin Li"/><br /><sub><b>Yin Li</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=eelregit" title="Code">💻</a> <a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues?q=author%3Aeelregit" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/mihir-r-kondapalli"><img src="https://avatars.githubusercontent.com/u/90729208?v=4?s=100" width="100px;" alt="mihir-r-kondapalli"/><br /><sub><b>mihir-r-kondapalli</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/issues?q=author%3Amihir-r-kondapalli" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/aymgal"><img src="https://avatars.githubusercontent.com/u/10706063?v=4?s=100" width="100px;" alt="Aymeric Galan"/><br /><sub><b>Aymeric Galan</b></sub></a><br /><a href="https://github.com/DifferentiableUniverseInitiative/jax_cosmo/commits?author=aymgal" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>

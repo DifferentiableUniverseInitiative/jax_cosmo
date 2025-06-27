@@ -2,8 +2,7 @@ from functools import partial
 
 import jax
 import jax.numpy as np
-from jax import jit
-from jax import vmap
+from jax import jit, vmap
 
 __all__ = ["romb", "simps"]
 
@@ -161,7 +160,7 @@ def romb(function, a, b, args=(), divmax=6, return_error=False):
 
 
 def simps(f, a, b, N=128):
-    """Approximate the integral of f(x) from a to b by Simpson's rule.
+    r"""Approximate the integral of f(x) from a to b by Simpson's rule.
 
     Simpson's rule approximates the integral \int_a^b f(x) dx by the sum:
     (dx/3) \sum_{k=1}^{N/2} (f(x_{2i-2} + 4f(x_{2i-1}) + f(x_{2i}))

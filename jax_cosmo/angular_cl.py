@@ -2,17 +2,14 @@
 from functools import partial
 
 import jax.numpy as np
-from jax import jit
-from jax import lax
-from jax import vmap
+from jax import jit, lax, vmap
 
 import jax_cosmo.background as bkgrd
 import jax_cosmo.constants as const
 import jax_cosmo.power as power
 import jax_cosmo.transfer as tklib
 from jax_cosmo.scipy.integrate import simps
-from jax_cosmo.utils import a2z
-from jax_cosmo.utils import z2a
+from jax_cosmo.utils import a2z, z2a
 
 
 def _get_cl_ordering(probes):

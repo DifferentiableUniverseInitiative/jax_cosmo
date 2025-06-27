@@ -369,7 +369,7 @@ def angular_diameter_distance(cosmo, a):
 
 
 def growth_factor(cosmo, a):
-    """Compute linear growth factor D(a) at a given scale factor,
+    r"""Compute linear growth factor D(a) at a given scale factor,
     normalized such that D(a=1) = 1.
 
     Parameters
@@ -399,7 +399,7 @@ def growth_factor(cosmo, a):
 
 
 def growth_rate(cosmo, a):
-    """Compute growth rate dD/dlna at a given scale factor.
+    r"""Compute growth rate dD/dlna at a given scale factor.
 
     Parameters
     ----------

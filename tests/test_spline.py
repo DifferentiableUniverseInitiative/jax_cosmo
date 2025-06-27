@@ -5,9 +5,9 @@ import jax
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as np
 from numpy.testing import assert_allclose
+from scipy.interpolate import InterpolatedUnivariateSpline as RefSpline
 
 from jax_cosmo.scipy.interpolate import InterpolatedUnivariateSpline
-from scipy.interpolate import InterpolatedUnivariateSpline as RefSpline
 
 
 def _testing_function(x):
