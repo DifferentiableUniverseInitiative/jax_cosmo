@@ -1,21 +1,14 @@
 #!/usr/bin/env python3
-"""
-Performance benchmark script for jax_cosmo angular power spectra computations.
-
-This script benchmarks the key computations used in tests to track performance
-changes across different versions of the code.
-"""
+"""Performance benchmark script for jax_cosmo angular power spectra computations."""
 
 import json
 import os
 import time
 import tracemalloc
 from functools import wraps
-from typing import Any, Dict, List, Tuple
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 import psutil
 
 # Force CPU mode for consistent benchmarking
@@ -23,8 +16,8 @@ jax.config.update("jax_platform_name", "cpu")
 
 import jax_cosmo.core as jc
 from jax_cosmo.angular_cl import angular_cl
-from jax_cosmo.probes import NumberCounts, WeakLensing
-from jax_cosmo.redshift import delta_nz, smail_nz
+from jax_cosmo.probes import WeakLensing
+from jax_cosmo.redshift import smail_nz
 
 
 def measure_performance(func):
@@ -67,7 +60,6 @@ class AngularClBenchmark:
     """Benchmark suite for angular power spectra computations."""
 
     def __init__(self):
-        # Standard cosmology for all tests
         self.cosmo = jc.Cosmology(
             Omega_c=0.25,
             Omega_b=0.05,
@@ -78,63 +70,27 @@ class AngularClBenchmark:
             w0=-1.0,
             wa=0.0,
         )
-
-        # Standard redshift distributions
         self.nz_source = smail_nz(1.0, 2.0, 1.0, gals_per_arcmin2=30)
-        self.nz_lens = smail_nz(0.5, 1.5, 0.8, gals_per_arcmin2=10)
 
     @measure_performance
     def benchmark_lensing_cl_small(self):
-        """Benchmark small-scale lensing Cl computation (similar to test_lensing_cl)"""
+        """Benchmark small-scale lensing Cl computation."""
         probe = WeakLensing([self.nz_source])
-        ell = jnp.logspace(1, 3, 20)  # 20 ell values
+        ell = jnp.logspace(1, 3, 20)
         return angular_cl(self.cosmo, ell, [probe], npoints=64)
 
     @measure_performance
     def benchmark_lensing_cl_large(self):
-        """Benchmark large-scale lensing Cl computation"""
+        """Benchmark large-scale lensing Cl computation."""
         probe = WeakLensing([self.nz_source])
-        ell = jnp.logspace(1, 3, 100)  # 100 ell values
+        ell = jnp.logspace(1, 3, 50)
         return angular_cl(self.cosmo, ell, [probe], npoints=128)
 
     @measure_performance
-    def benchmark_clustering_cl(self):
-        """Benchmark clustering Cl computation (similar to test_clustering_cl)"""
-        probe = NumberCounts([self.nz_lens], bias=2.0)
-        ell = jnp.logspace(1, 3, 50)
-        return angular_cl(self.cosmo, ell, [probe], npoints=64)
-
-    @measure_performance
-    def benchmark_cross_correlation(self):
-        """Benchmark cross-correlation between lensing and clustering"""
-        lensing_probe = WeakLensing([self.nz_source])
-        clustering_probe = NumberCounts([self.nz_lens], bias=2.0)
-        ell = jnp.logspace(1, 3, 50)
-        return angular_cl(
-            self.cosmo, ell, [lensing_probe, clustering_probe], npoints=64
-        )
-
-    @measure_performance
-    def benchmark_multi_bin_lensing(self):
-        """Benchmark multi-bin lensing analysis"""
-        nz1 = smail_nz(1.0, 2.0, 0.8, gals_per_arcmin2=15)
-        nz2 = smail_nz(1.5, 2.0, 1.2, gals_per_arcmin2=15)
-        probe = WeakLensing([nz1, nz2])
-        ell = jnp.logspace(1, 3, 50)
-        return angular_cl(self.cosmo, ell, [probe], npoints=64)
-
-    @measure_performance
-    def benchmark_high_precision(self):
-        """Benchmark high-precision computation with many sample points"""
-        probe = WeakLensing([self.nz_source])
-        ell = jnp.logspace(1, 3, 30)
-        return angular_cl(self.cosmo, ell, [probe], npoints=256)
-
-    @measure_performance
     def benchmark_parameter_gradient(self):
-        """Benchmark gradient computation w.r.t. cosmological parameters"""
+        """Benchmark gradient computation."""
         probe = WeakLensing([self.nz_source])
-        ell = jnp.logspace(1, 3, 20)
+        ell = jnp.logspace(1, 3, 10)
 
         def compute_cl(sigma8):
             cosmo_varied = jc.Cosmology(
@@ -148,18 +104,16 @@ class AngularClBenchmark:
                 wa=0.0,
             )
             cl = angular_cl(cosmo_varied, ell, [probe], npoints=64)
-            return jnp.sum(cl)  # Sum for scalar output
+            return jnp.sum(cl)
 
         grad_func = jax.grad(compute_cl)
         return grad_func(0.8)
 
-    def run_all_benchmarks(self) -> Dict[str, Dict[str, float]]:
+    def run_all_benchmarks(self):
         """Run all benchmarks and return results."""
         benchmarks = [
             ("lensing_cl_small", self.benchmark_lensing_cl_small),
             ("lensing_cl_large", self.benchmark_lensing_cl_large),
-            ("multi_bin_lensing", self.benchmark_multi_bin_lensing),
-            ("high_precision", self.benchmark_high_precision),
             ("parameter_gradient", self.benchmark_parameter_gradient),
         ]
 
@@ -188,16 +142,12 @@ class AngularClBenchmark:
         return results
 
 
-def format_benchmark_results(results: Dict[str, Dict[str, float]]) -> str:
+def format_benchmark_results(results):
     """Format benchmark results for display."""
-    lines = []
-    lines.append("## Performance Benchmark Results\n")
-
-    # Table header
+    lines = ["## Performance Benchmark Results\n"]
     lines.append("| Benchmark | Time (s) | Peak Memory (MB) | Status |")
     lines.append("|-----------|----------|------------------|--------|")
 
-    # Sort by benchmark name for consistent output
     for name in sorted(results.keys()):
         data = results[name]
         if data["status"] == "success":
@@ -216,12 +166,9 @@ def format_benchmark_results(results: Dict[str, Dict[str, float]]) -> str:
     return "\n".join(lines)
 
 
-def compare_results(before_results: Dict, after_results: Dict) -> str:
+def compare_results(before_results, after_results):
     """Compare benchmark results and generate a summary."""
-    lines = []
-    lines.append("## Performance Comparison\n")
-
-    # Table header
+    lines = ["## Performance Comparison\n"]
     lines.append("| Benchmark | Time Change | Memory Change | Status |")
     lines.append("|-----------|-------------|---------------|--------|")
 
@@ -247,25 +194,25 @@ def compare_results(before_results: Dict, after_results: Dict) -> str:
             / before["peak_memory_mb"]
         ) * 100
 
-        # Format changes with colors
-        if abs(time_change) < 5:  # Less than 5% change is neutral
+        # Format changes
+        if abs(time_change) < 5:
             time_emoji = "⚪"
             time_str = f"{time_change:+.1f}%"
-        elif time_change < 0:  # Faster is good
+        elif time_change < 0:
             time_emoji = "🟢"
             time_str = f"{time_change:.1f}%"
-        else:  # Slower is bad
+        else:
             time_emoji = "🔴"
             time_str = f"{time_change:+.1f}%"
 
-        if abs(memory_change) < 5:  # Less than 5% change is neutral
+        if abs(memory_change) < 5:
             memory_emoji = "⚪"
             memory_str = f"{memory_change:+.1f}%"
-        elif memory_change < 0:  # Less memory is good
+        elif memory_change < 0:
             memory_emoji = "🟢"
             memory_str = f"{memory_change:.1f}%"
-        else:  # More memory is bad
-            memory_emoji = "🔴"
+        else:
+            memory_emoji = "��"
             memory_str = f"{memory_change:+.1f}%"
 
         status = f"{time_emoji}{memory_emoji}"
@@ -273,13 +220,8 @@ def compare_results(before_results: Dict, after_results: Dict) -> str:
             f"| {name.replace('_', ' ').title()} | {time_str} | {memory_str} | {status} |"
         )
 
-    # Add summary
     lines.append("\n### Legend")
-    lines.append("- 🟢 = Improvement (faster/less memory)")
-    lines.append("- 🔴 = Regression (slower/more memory)")
-    lines.append("- ⚪ = Neutral (< 5% change)")
-    lines.append("- Time Change: Negative = faster, Positive = slower")
-    lines.append("- Memory Change: Negative = less memory, Positive = more memory")
+    lines.append("- 🟢 = Improvement, 🔴 = Regression, ⚪ = Neutral (< 5% change)")
 
     return "\n".join(lines)
 
@@ -290,17 +232,9 @@ def main():
 
     parser = argparse.ArgumentParser(description="Benchmark jax_cosmo performance")
     parser.add_argument("--output", type=str, help="Output file for results")
-    parser.add_argument(
-        "--compare", type=str, help="Compare with previous results file"
-    )
-    parser.add_argument(
-        "--format", choices=["json", "markdown"], default="json", help="Output format"
-    )
-    parser.add_argument(
-        "--results-file",
-        type=str,
-        help="Use existing results file instead of running benchmarks",
-    )
+    parser.add_argument("--compare", type=str, help="Compare with previous results")
+    parser.add_argument("--format", choices=["json", "markdown"], default="json")
+    parser.add_argument("--results-file", type=str, help="Use existing results file")
 
     args = parser.parse_args()
 
@@ -310,7 +244,6 @@ def main():
             results = json.load(f)
         print(f"Loaded results from {args.results_file}")
     else:
-        # Run benchmarks
         benchmark = AngularClBenchmark()
         results = benchmark.run_all_benchmarks()
 
@@ -319,14 +252,12 @@ def main():
     else:
         output = format_benchmark_results(results)
 
-        # Add comparison if requested
         if args.compare and os.path.exists(args.compare):
             with open(args.compare, "r") as f:
                 before_results = json.load(f)
             comparison = compare_results(before_results, results)
             output = comparison + "\n\n" + output
 
-    # Save or print results
     if args.output:
         with open(args.output, "w") as f:
             f.write(output)

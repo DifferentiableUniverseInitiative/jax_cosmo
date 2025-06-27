@@ -31,24 +31,32 @@ jobs:
         pip install psutil
         pip install -e .
     
+    - name: Preserve benchmark script from PR
+      run: |
+        # Copy the benchmark script from PR branch to ensure it's available for both tests
+        cp scripts/benchmark_performance.py /tmp/benchmark_performance.py || cp benchmark_performance.py /tmp/benchmark_performance.py
+        echo "Benchmark script preserved"
+    
     - name: Run baseline benchmark (target branch)
       run: |
         git checkout ${{ github.event.pull_request.base.ref }}
         pip install -e .
-        python scripts/benchmark_performance.py --output baseline_results.json --format json
+        # Use the benchmark script from the PR branch
+        python /tmp/benchmark_performance.py --output baseline_results.json --format json
         echo "Baseline benchmark completed"
     
     - name: Run PR benchmark (current branch)
       run: |
         git checkout ${{ github.event.pull_request.head.ref }}
         pip install -e .
-        python scripts/benchmark_performance.py --output pr_results.json --format json
+        # Use the benchmark script from the PR branch (same version for consistency)
+        python /tmp/benchmark_performance.py --output pr_results.json --format json
         echo "PR benchmark completed"
     
     - name: Generate comparison report
       run: |
-        # Generate comparison report using the new results-file argument
-        python scripts/benchmark_performance.py \
+        # Generate comparison report using the preserved benchmark script
+        python /tmp/benchmark_performance.py \
           --results-file pr_results.json \
           --compare baseline_results.json \
           --format markdown \
@@ -56,7 +64,7 @@ jobs:
         
         # Fallback: generate simple report if comparison fails
         if [ ! -f comparison_report.md ]; then
-          python scripts/benchmark_performance.py \
+          python /tmp/benchmark_performance.py \
             --results-file pr_results.json \
             --format markdown \
             --output comparison_report.md
