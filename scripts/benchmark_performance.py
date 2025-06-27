@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Performance benchmark script for jax_cosmo angular power spectra computations."""
 
+import inspect
 import json
 import os
 import time
@@ -56,6 +57,19 @@ def measure_performance(func):
     return wrapper
 
 
+def _call_angular_cl_safely(cosmo, ell, probes, npoints=None):
+    """
+    Call angular_cl with npoints parameter only if supported.
+    This ensures backward compatibility with master branch.
+    """
+    # Check if npoints parameter is supported
+    sig = inspect.signature(angular_cl)
+    if "npoints" in sig.parameters and npoints is not None:
+        return angular_cl(cosmo, ell, probes, npoints=npoints)
+    else:
+        return angular_cl(cosmo, ell, probes)
+
+
 class AngularClBenchmark:
     """Benchmark suite for angular power spectra computations."""
 
@@ -77,14 +91,14 @@ class AngularClBenchmark:
         """Benchmark small-scale lensing Cl computation."""
         probe = WeakLensing([self.nz_source])
         ell = jnp.logspace(1, 3, 20)
-        return angular_cl(self.cosmo, ell, [probe], npoints=64)
+        return _call_angular_cl_safely(self.cosmo, ell, [probe], npoints=64)
 
     @measure_performance
     def benchmark_lensing_cl_large(self):
         """Benchmark large-scale lensing Cl computation."""
         probe = WeakLensing([self.nz_source])
         ell = jnp.logspace(1, 3, 50)
-        return angular_cl(self.cosmo, ell, [probe], npoints=128)
+        return _call_angular_cl_safely(self.cosmo, ell, [probe], npoints=128)
 
     @measure_performance
     def benchmark_parameter_gradient(self):
@@ -103,7 +117,7 @@ class AngularClBenchmark:
                 w0=-1.0,
                 wa=0.0,
             )
-            cl = angular_cl(cosmo_varied, ell, [probe], npoints=64)
+            cl = _call_angular_cl_safely(cosmo_varied, ell, [probe], npoints=64)
             return jnp.sum(cl)
 
         grad_func = jax.grad(compute_cl)
