@@ -26,11 +26,21 @@ def measure_performance(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        # Warm up JIT compilation
-        try:
-            func(*args, **kwargs)
-        except:
-            pass
+        # Proper JIT warmup - run multiple times to ensure compilation
+        print(f"  Warming up JIT for {func.__name__}...")
+        for i in range(3):
+            try:
+                result = func(*args, **kwargs)
+                # Ensure computation is complete
+                if hasattr(result, "block_until_ready"):
+                    result.block_until_ready()
+                break
+            except Exception as e:
+                if i == 2:  # Last attempt
+                    print(f"  Warning: Warmup failed after 3 attempts: {e}")
+                continue
+
+        print(f"  JIT warmup complete, measuring performance...")
 
         # Start memory tracing
         tracemalloc.start()
@@ -40,6 +50,11 @@ def measure_performance(func):
         # Time the execution
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
+
+        # Ensure computation is complete before stopping timer
+        if hasattr(result, "block_until_ready"):
+            result.block_until_ready()
+
         end_time = time.perf_counter()
 
         # Measure memory
@@ -86,6 +101,54 @@ class AngularClBenchmark:
         )
         self.nz_source = smail_nz(1.0, 2.0, 1.0, gals_per_arcmin2=30)
 
+        # Pre-compile key functions
+        print("Pre-compiling JAX functions...")
+        self._precompile_functions()
+
+    def _precompile_functions(self):
+        """Pre-compile JAX functions to avoid compilation time in benchmarks."""
+        # Create small test arrays for compilation
+        test_ell = jnp.array([10.0, 100.0])
+        test_probe = WeakLensing([self.nz_source])
+
+        # Pre-compile angular_cl
+        try:
+            result = _call_angular_cl_safely(
+                self.cosmo, test_ell, [test_probe], npoints=32
+            )
+            if hasattr(result, "block_until_ready"):
+                result.block_until_ready()
+            print("  ✓ angular_cl pre-compiled")
+        except Exception as e:
+            print(f"  ⚠ angular_cl pre-compilation warning: {e}")
+
+        # Pre-compile gradient function
+        try:
+
+            def test_gradient_fn(sigma8):
+                test_cosmo = jc.Cosmology(
+                    Omega_c=0.25,
+                    Omega_b=0.05,
+                    Omega_k=0.0,
+                    h=0.7,
+                    sigma8=sigma8,
+                    n_s=0.96,
+                    w0=-1.0,
+                    wa=0.0,
+                )
+                cl = _call_angular_cl_safely(
+                    test_cosmo, test_ell, [test_probe], npoints=32
+                )
+                return jnp.sum(cl)
+
+            grad_fn = jax.jit(jax.grad(test_gradient_fn))
+            result = grad_fn(0.8)
+            if hasattr(result, "block_until_ready"):
+                result.block_until_ready()
+            print("  ✓ gradient function pre-compiled")
+        except Exception as e:
+            print(f"  ⚠ gradient pre-compilation warning: {e}")
+
     @measure_performance
     def benchmark_lensing_cl_small(self):
         """Benchmark small-scale lensing Cl computation."""
@@ -106,6 +169,7 @@ class AngularClBenchmark:
         probe = WeakLensing([self.nz_source])
         ell = jnp.logspace(1, 3, 10)
 
+        @jax.jit
         def compute_cl(sigma8):
             cosmo_varied = jc.Cosmology(
                 Omega_c=0.25,
@@ -120,7 +184,7 @@ class AngularClBenchmark:
             cl = _call_angular_cl_safely(cosmo_varied, ell, [probe], npoints=64)
             return jnp.sum(cl)
 
-        grad_func = jax.grad(compute_cl)
+        grad_func = jax.jit(jax.grad(compute_cl))
         return grad_func(0.8)
 
     def run_all_benchmarks(self):
@@ -226,7 +290,7 @@ def compare_results(before_results, after_results):
             memory_emoji = "🟢"
             memory_str = f"{memory_change:.1f}%"
         else:
-            memory_emoji = "��"
+            memory_emoji = "🟢"
             memory_str = f"{memory_change:+.1f}%"
 
         status = f"{time_emoji}{memory_emoji}"
