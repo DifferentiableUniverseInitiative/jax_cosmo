@@ -97,6 +97,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "aymgal",
+      "name": "Aymeric Galan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/10706063?v=4",
+      "profile": "https://github.com/aymgal",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
