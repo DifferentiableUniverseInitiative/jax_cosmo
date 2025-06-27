@@ -35,20 +35,20 @@ jobs:
       run: |
         git checkout ${{ github.event.pull_request.base.ref }}
         pip install -e .
-        python benchmark_performance.py --output baseline_results.json --format json
+        python scripts/benchmark_performance.py --output baseline_results.json --format json
         echo "Baseline benchmark completed"
     
     - name: Run PR benchmark (current branch)
       run: |
         git checkout ${{ github.event.pull_request.head.ref }}
         pip install -e .
-        python benchmark_performance.py --output pr_results.json --format json
+        python scripts/benchmark_performance.py --output pr_results.json --format json
         echo "PR benchmark completed"
     
     - name: Generate comparison report
       run: |
         # Generate comparison report using the new results-file argument
-        python benchmark_performance.py \
+        python scripts/benchmark_performance.py \
           --results-file pr_results.json \
           --compare baseline_results.json \
           --format markdown \
@@ -56,7 +56,7 @@ jobs:
         
         # Fallback: generate simple report if comparison fails
         if [ ! -f comparison_report.md ]; then
-          python benchmark_performance.py \
+          python scripts/benchmark_performance.py \
             --results-file pr_results.json \
             --format markdown \
             --output comparison_report.md
