@@ -27,6 +27,7 @@ You can also use the lower-level algorithms (with no input validation) directly:
  - :fun:`sparse_dot_sparse`
  - :fun:`dense_dot_sparse_dot_dense`
 """
+
 import functools
 
 import jax.numpy as np
