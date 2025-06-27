@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """Performance benchmark script for jax_cosmo angular power spectra computations."""
 
-import inspect
 import json
 import os
 import time
-import tracemalloc
 from functools import wraps
 
 import jax
 import jax.numpy as jnp
-import psutil
 
 # Force CPU mode for consistent benchmarking
 jax.config.update("jax_platform_name", "cpu")
@@ -54,19 +51,6 @@ def measure_performance(func):
     return wrapper
 
 
-def _call_angular_cl_safely(cosmo, ell, probes, npoints=None):
-    """
-    Call angular_cl with npoints parameter only if supported.
-    This ensures backward compatibility with master branch.
-    """
-    # Check if npoints parameter is supported
-    sig = inspect.signature(angular_cl)
-    if "npoints" in sig.parameters and npoints is not None:
-        return angular_cl(cosmo, ell, probes, npoints=npoints)
-    else:
-        return angular_cl(cosmo, ell, probes)
-
-
 class AngularClBenchmark:
     """Benchmark suite for angular power spectra computations."""
 
@@ -88,14 +72,14 @@ class AngularClBenchmark:
         """Benchmark small-scale lensing Cl computation."""
         probe = WeakLensing([self.nz_source])
         ell = jnp.logspace(1, 3, 5)
-        return _call_angular_cl_safely(self.cosmo, ell, [probe], npoints=16)
+        return angular_cl(self.cosmo, ell, [probe])
 
     @measure_performance
     def benchmark_lensing_cl_large(self):
         """Benchmark large-scale lensing Cl computation."""
         probe = WeakLensing([self.nz_source])
         ell = jnp.logspace(1, 3, 15)
-        return _call_angular_cl_safely(self.cosmo, ell, [probe], npoints=32)
+        return angular_cl(self.cosmo, ell, [probe])
 
     @measure_performance
     def benchmark_parameter_gradient(self):
@@ -103,18 +87,19 @@ class AngularClBenchmark:
         probe = WeakLensing([self.nz_source])
         ell = jnp.logspace(1, 3, 3)
 
+        # Pre-define the varied cosmology to avoid recompilation issues
         cosmo_varied = jc.Cosmology(
             Omega_c=0.25,
             Omega_b=0.05,
             Omega_k=0.0,
             h=0.7,
-            sigma8=0.81,
+            sigma8=0.81,  # Slightly different value
             n_s=0.96,
             w0=-1.0,
             wa=0.0,
         )
 
-        cl = _call_angular_cl_safely(cosmo_varied, ell, [probe], npoints=16)
+        cl = angular_cl(cosmo_varied, ell, [probe])
         return jnp.sum(cl)
 
     def run_all_benchmarks(self):
