@@ -3,10 +3,7 @@ import functools
 
 import jax.numpy as np
 from jax import vmap
-from jax.numpy import array
-from jax.numpy import concatenate
-from jax.numpy import ones
-from jax.numpy import zeros
+from jax.numpy import array, concatenate, ones, zeros
 from jax.tree_util import register_pytree_node_class
 
 __all__ = ["interp"]

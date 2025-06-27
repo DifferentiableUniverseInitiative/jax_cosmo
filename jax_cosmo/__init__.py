@@ -1,6 +1,5 @@
 # Cosmology in JAX
-from pkg_resources import DistributionNotFound
-from pkg_resources import get_distribution
+from pkg_resources import DistributionNotFound, get_distribution
 
 try:
     __version__ = get_distribution(__name__).version
@@ -15,7 +14,7 @@ import jax_cosmo.likelihood as likelihood
 import jax_cosmo.power as power
 import jax_cosmo.probes as probes
 import jax_cosmo.redshift as redshift
+import jax_cosmo.sparse as sparse
 import jax_cosmo.transfer as transfer
 from jax_cosmo.core import *
 from jax_cosmo.parameters import *
-import jax_cosmo.sparse as sparse

@@ -3,8 +3,7 @@ from jax.experimental.ode import odeint
 from jax.tree_util import register_pytree_node_class
 
 import jax_cosmo.constants as const
-from jax_cosmo.utils import a2z
-from jax_cosmo.utils import z2a
+from jax_cosmo.utils import a2z, z2a
 
 __all__ = ["Cosmology"]
 
@@ -12,7 +11,7 @@ __all__ = ["Cosmology"]
 @register_pytree_node_class
 class Cosmology:
     def __init__(self, Omega_c, Omega_b, h, n_s, sigma8, Omega_k, w0, wa, gamma=None):
-        """
+        r"""
         Cosmology object, stores primary and derived cosmological parameters.
 
         Parameters:
