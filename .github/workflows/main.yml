@@ -26,6 +26,6 @@ jobs:
     - name: python-format-action
       shell: bash -l {0}
       run: |
-        pip install black reorder-python-imports
-        find . -name "*.py" | xargs reorder-python-imports
+        pip install black isort
+        isort --profile black .
         black --check .
