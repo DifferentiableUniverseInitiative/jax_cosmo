@@ -438,13 +438,3 @@ class InterpolatedUnivariateSpline(object):
             sign = -1
         xs = np.array([a, b])
         return sign * np.diff(self.antiderivative(xs))
-
-
-def splint(func, a, b, k=3, N=128):
-    """Function that computes an integration with a spline function
-    slightly different from the original splint from scipy
-    """
-    x = np.linspace(a, b, N)
-    return InterpolatedUnivariateSpline(x, func(x), k=k).integral(a, b)
-
-
