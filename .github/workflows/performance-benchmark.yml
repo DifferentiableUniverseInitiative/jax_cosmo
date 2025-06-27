@@ -1,0 +1,177 @@
+name: Performance Benchmark
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'jax_cosmo/**/*.py'
+      - 'tests/**/*.py'
+      - 'setup.py'
+      - 'requirements.txt'
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout PR branch
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install psutil tracemalloc
+        pip install -e .
+    
+    - name: Run baseline benchmark (target branch)
+      run: |
+        git checkout ${{ github.event.pull_request.base.ref }}
+        pip install -e .
+        python benchmark_performance.py --output baseline_results.json --format json
+        echo "Baseline benchmark completed"
+    
+    - name: Run PR benchmark (current branch)
+      run: |
+        git checkout ${{ github.event.pull_request.head.ref }}
+        pip install -e .
+        python benchmark_performance.py --output pr_results.json --format json
+        echo "PR benchmark completed"
+    
+    - name: Generate comparison report
+      run: |
+        # Generate comparison report using the new results-file argument
+        python benchmark_performance.py \
+          --results-file pr_results.json \
+          --compare baseline_results.json \
+          --format markdown \
+          --output comparison_report.md || echo "Comparison failed, generating simple report"
+        
+        # Fallback: generate simple report if comparison fails
+        if [ ! -f comparison_report.md ]; then
+          python benchmark_performance.py \
+            --results-file pr_results.json \
+            --format markdown \
+            --output comparison_report.md
+        fi
+    
+    - name: Post benchmark results
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          
+          // Read the comparison report
+          let reportContent = '';
+          try {
+            reportContent = fs.readFileSync('comparison_report.md', 'utf8');
+          } catch (error) {
+            reportContent = '## Performance Benchmark\n\nFailed to generate comparison report.';
+          }
+          
+          // Add header with metadata
+          const header = `# 🚀 Performance Benchmark Report
+          
+          **PR:** #${{ github.event.pull_request.number }}
+          **Base:** \`${{ github.event.pull_request.base.ref }}\`
+          **Head:** \`${{ github.event.pull_request.head.ref }}\`
+          **Commit:** ${{ github.event.pull_request.head.sha }}
+          
+          `;
+          
+          const fullReport = header + reportContent;
+          
+          // Find existing benchmark comment
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.login === 'github-actions[bot]' && 
+            comment.body.includes('Performance Benchmark Report')
+          );
+          
+          if (botComment) {
+            // Update existing comment
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: fullReport
+            });
+          } else {
+            // Create new comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: fullReport
+            });
+          }
+    
+    - name: Upload benchmark artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: |
+          baseline_results.json
+          pr_results.json
+          comparison_report.md
+        retention-days: 30
+    
+    - name: Check for performance regressions
+      run: |
+        python3 -c "
+        import json
+        import sys
+        
+        # Load results
+        with open('baseline_results.json') as f:
+            baseline = json.load(f)
+        with open('pr_results.json') as f:
+            pr_results = json.load(f)
+        
+        # Check for significant regressions (>20% slower)
+        regressions = []
+        for test_name in baseline.keys():
+            if test_name not in pr_results:
+                continue
+            
+            if (baseline[test_name]['status'] == 'success' and 
+                pr_results[test_name]['status'] == 'success'):
+                
+                time_change = ((pr_results[test_name]['time_seconds'] - 
+                               baseline[test_name]['time_seconds']) / 
+                               baseline[test_name]['time_seconds']) * 100
+                
+                if time_change > 20:
+                    regressions.append(f'{test_name}: +{time_change:.1f}%')
+        
+        if regressions:
+            print('❌ Significant performance regressions detected:')
+            for reg in regressions:
+                print(f'  - {reg}')
+            print()
+            print('Consider optimizing the performance-critical changes.')
+            # Don't fail the workflow, just warn
+            # sys.exit(1)
+        else:
+            print('✅ No significant performance regressions detected.')
+        "
+    
+    - name: Archive performance data
+      if: github.event.pull_request.merged == true
+      run: |
+        # Store performance data for future comparisons
+        mkdir -p .github/performance_history
+        cp pr_results.json .github/performance_history/$(date +%Y%m%d_%H%M%S)_${{ github.event.pull_request.head.sha }}.json
+        echo "Performance data archived for future reference" 
