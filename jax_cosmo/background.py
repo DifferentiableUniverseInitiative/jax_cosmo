@@ -1,4 +1,6 @@
 # This module implements various functions for the background COSMOLOGY
+import os
+
 import jax.numpy as np
 from jax import lax
 
@@ -196,6 +198,28 @@ def Omega_de_a(cosmo, a):
     return cosmo.Omega_de * np.exp(f_de(cosmo, a)) / Esqr(cosmo, a)
 
 
+def _cache_radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
+    CACHING_ACTIVATED = os.environ.get("JC_CACHE", "1") == "1"
+    if CACHING_ACTIVATED and "background.radial_comoving_distance" in cosmo._workspace.keys(
+    ):
+        cache =  cosmo._workspace["background.radial_comoving_distance"]
+    else:
+        # Compute tabulated array
+        atab = np.logspace(log10_amin, 0.0, steps)
+
+        def dchioverdlna(y, x):
+            xa = np.exp(x)
+            return dchioverda(cosmo, xa) * xa
+
+        chitab = odeint(dchioverdlna, 0.0, np.log(atab))
+        # np.clip(- 3000*np.log(atab), 0, 10000)#odeint(dchioverdlna, 0., np.log(atab), cosmo)
+        chitab = chitab[-1] - chitab
+
+        cache = {"a": atab, "chi": chitab}
+        if CACHING_ACTIVATED:
+            cosmo._workspace["background.radial_comoving_distance"] = cache
+    return cache
+
 def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
     r"""Radial comoving distance in [Mpc/h] for a given scale factor.
 
@@ -219,24 +243,8 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
 
         \chi(a) =  R_H \int_a^1 \frac{da^\prime}{{a^\prime}^2 E(a^\prime)}
     """
-    # Check if distances have already been computed
-    if not "background.radial_comoving_distance" in cosmo._workspace.keys():
-        # Compute tabulated array
-        atab = np.logspace(log10_amin, 0.0, steps)
-
-        def dchioverdlna(y, x):
-            xa = np.exp(x)
-            return dchioverda(cosmo, xa) * xa
-
-        chitab = odeint(dchioverdlna, 0.0, np.log(atab))
-        # np.clip(- 3000*np.log(atab), 0, 10000)#odeint(dchioverdlna, 0., np.log(atab), cosmo)
-        chitab = chitab[-1] - chitab
-
-        cache = {"a": atab, "chi": chitab}
-        cosmo._workspace["background.radial_comoving_distance"] = cache
-    else:
-        cache = cosmo._workspace["background.radial_comoving_distance"]
-
+    
+    cache = _cache_radial_comoving_distance(cosmo, a, log10_amin, steps)
     a = np.atleast_1d(a)
     # Return the results as an interpolation of the table
     return np.clip(interp(a, cache["a"], cache["chi"]), 0.0)
@@ -260,9 +268,7 @@ def a_of_chi(cosmo, chi):
       Scale factors corresponding to requested distances
     """
     # Check if distances have already been computed, force computation otherwise
-    if not "background.radial_comoving_distance" in cosmo._workspace.keys():
-        radial_comoving_distance(cosmo, 1.0)
-    cache = cosmo._workspace["background.radial_comoving_distance"]
+    cache = _cache_radial_comoving_distance(cosmo, chi)
     chi = np.atleast_1d(chi)
     return interp(chi, cache["chi"], cache["a"])
 
