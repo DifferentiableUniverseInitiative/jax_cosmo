@@ -1,6 +1,5 @@
 # Module to define redshift distributions we can differentiate through
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 import jax.numpy as np
 from jax.tree_util import register_pytree_node_class
@@ -10,7 +9,7 @@ from jax_cosmo.scipy.integrate import simps
 
 steradian_to_arcmin2 = 11818102.86004228
 
-__all__ = ["smail_nz", "kde_nz", "delta_nz"]
+__all__ = ["smail_nz", "fu_nz", "kde_nz", "delta_nz"]
 
 
 class redshift_distribution(container):
@@ -79,6 +78,34 @@ class smail_nz(redshift_distribution):
 
 
 @register_pytree_node_class
+class fu_nz(redshift_distribution):
+    """Defines the redshift distribution from Fu et al. (2008), as used in Martinet et al. (2021)
+
+    Formula: n(z) = A * (z^a + z^(ab)) / (z^b + c)
+
+    Parameters:
+    -----------
+    a: float
+        Shape parameter (0.4710 in Martinet et al. 2021)
+    b: float
+        Shape parameter (5.1843 in Martinet et al. 2021)
+    c: float
+        Shape parameter (0.7259 in Martinet et al. 2021)
+    gals_per_arcmin2: float
+        Number of galaxies per sq arcmin (30 in Martinet et al. 2021)
+
+    References:
+    -----------
+    Fu et al. (2008) - https://arxiv.org/abs/0712.0884
+    Martinet et al. (2021) - https://arxiv.org/abs/2010.07376
+    """
+
+    def pz_fn(self, z):
+        a, b, c = self.params
+        return (z**a + z ** (a * b)) / (z**b + c)
+
+
+@register_pytree_node_class
 class delta_nz(redshift_distribution):
     """Defines a single plane redshift distribution with these arguments
     Parameters:
@@ -117,9 +144,7 @@ class kde_nz(redshift_distribution):
 
     def _kernel(self, bw, X, x):
         """Gaussian kernel for KDE"""
-        return (1.0 / np.sqrt(2 * np.pi) / bw) * np.exp(
-            -((X - x) ** 2) / (bw**2 * 2.0)
-        )
+        return (1.0 / np.sqrt(2 * np.pi) / bw) * np.exp(-((X - x) ** 2) / (bw**2 * 2.0))
 
     def pz_fn(self, z):
         # Extract parameters

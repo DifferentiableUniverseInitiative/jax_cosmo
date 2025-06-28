@@ -97,6 +97,24 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "aymgal",
+      "name": "Aymeric Galan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/10706063?v=4",
+      "profile": "https://github.com/aymgal",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "nataliehogg",
+      "name": "Natalie B. Hogg",
+      "avatar_url": "https://avatars.githubusercontent.com/u/32572654?v=4",
+      "profile": "http://nataliebhogg.com",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

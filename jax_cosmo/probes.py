@@ -1,7 +1,6 @@
 # This module defines kernel functions for various tracers
 import jax.numpy as np
-from jax import jit
-from jax import vmap
+from jax import jit, vmap
 from jax.tree_util import register_pytree_node_class
 
 import jax_cosmo.background as bkgrd
@@ -9,8 +8,7 @@ import jax_cosmo.constants as const
 import jax_cosmo.redshift as rds
 from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
-from jax_cosmo.utils import a2z
-from jax_cosmo.utils import z2a
+from jax_cosmo.utils import a2z, z2a
 
 __all__ = ["WeakLensing", "NumberCounts"]
 
