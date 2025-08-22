@@ -1,5 +1,4 @@
 import jax.numpy as np
-from jax.experimental.ode import odeint
 from jax.tree_util import register_pytree_node_class
 
 import jax_cosmo.constants as const

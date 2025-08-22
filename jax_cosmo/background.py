@@ -1,10 +1,10 @@
 # This module implements various functions for the background COSMOLOGY
 import jax.numpy as np
 from jax import lax
+from jax.experimental.ode import odeint
 
 import jax_cosmo.constants as const
 from jax_cosmo.scipy.interpolate import interp
-from jax_cosmo.scipy.ode import odeint
 
 __all__ = [
     "w",
