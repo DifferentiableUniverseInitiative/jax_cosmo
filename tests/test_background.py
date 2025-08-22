@@ -1,4 +1,3 @@
-import jax.numpy as jnp
 import numpy as np
 import pyccl as ccl
 from numpy.testing import assert_allclose
@@ -213,3 +212,65 @@ def test_growth_gamma():
     gjax = bkgrd.growth_factor(cosmo_jax, a)
 
     assert_allclose(gccl, gjax, rtol=1e-2)
+
+
+def test_luminosity_distance():
+    cosmo_ccl = ccl.Cosmology(
+        Omega_c=0.3,
+        Omega_b=0.05,
+        h=0.7,
+        sigma8=0.8,
+        n_s=0.96,
+        Neff=0,
+        transfer_function="eisenstein_hu",
+        matter_power_spectrum="linear",
+    )
+
+    cosmo_jax = Cosmology(
+        Omega_c=0.3,
+        Omega_b=0.05,
+        h=0.7,
+        sigma8=0.8,
+        n_s=0.96,
+        Omega_k=0.0,
+        w0=-1.0,
+        wa=0.0,
+    )
+
+    # Test array of scale factors
+    a = np.linspace(0.01, 1.0)
+
+    dl_ccl = ccl.luminosity_distance(cosmo_ccl, a)
+    dl_jax = bkgrd.luminosity_distance(cosmo_jax, a) / cosmo_jax.h
+    assert_allclose(dl_ccl, dl_jax, rtol=0.5e-2)
+
+
+def test_distance_modulus():
+    cosmo_ccl = ccl.Cosmology(
+        Omega_c=0.3,
+        Omega_b=0.05,
+        h=0.7,
+        sigma8=0.8,
+        n_s=0.96,
+        Neff=0,
+        transfer_function="eisenstein_hu",
+        matter_power_spectrum="linear",
+    )
+
+    cosmo_jax = Cosmology(
+        Omega_c=0.3,
+        Omega_b=0.05,
+        h=0.7,
+        sigma8=0.8,
+        n_s=0.96,
+        Omega_k=0.0,
+        w0=-1.0,
+        wa=0.0,
+    )
+
+    # Test array of scale factors
+    a = np.linspace(0.01, 0.99)
+
+    mu_ccl = ccl.distance_modulus(cosmo_ccl, a)
+    mu_jax = bkgrd.distance_modulus(cosmo_jax, a) - 5*np.log10(cosmo_jax.h)
+    assert_allclose(mu_ccl, mu_jax, rtol=0.5e-2)
