@@ -213,3 +213,61 @@ def test_growth_gamma():
     gjax = bkgrd.growth_factor(cosmo_jax, a)
 
     assert_allclose(gccl, gjax, rtol=1e-2)
+
+
+def test_growth_factor_second():
+    # Test second-order growth factor
+    cosmo_jax = Cosmology(
+        Omega_c=0.3,
+        Omega_b=0.05,
+        h=0.7,
+        sigma8=0.8,
+        n_s=0.96,
+        Omega_k=0.0,
+        w0=-1.0,
+        wa=0.0,
+    )
+
+    # Test array of scale factors
+    a = np.linspace(0.01, 1.0)
+
+    d1 = bkgrd.growth_factor(cosmo_jax, a)
+    d2 = bkgrd.growth_factor_second(cosmo_jax, a)
+
+    # Test normalization: D2(a=1) = 1
+    assert_allclose(
+        bkgrd.growth_factor_second(cosmo_jax, jnp.atleast_1d(1.0)), 1.0, rtol=1e-10
+    )
+
+    # Did not find a pyccl equivalent to test against, so I test like so
+    # (matter-dominated), D2_norm / D1_norm^2 ≈ 1
+    # This is because both are normalized to 1 at a=1
+    d1_early = bkgrd.growth_factor(cosmo_jax, a)
+    d2_early = bkgrd.growth_factor_second(cosmo_jax, a)
+    ratio = d2_early / d1_early**2
+    assert_allclose(ratio, 1.0, rtol=1e-2, atol=1e-5)
+
+
+def test_growth_rate_second():
+    # Test second-order growth rate
+    cosmo_jax = Cosmology(
+        Omega_c=0.3,
+        Omega_b=0.05,
+        h=0.7,
+        sigma8=0.8,
+        n_s=0.96,
+        Omega_k=0.0,
+        w0=-1.0,
+        wa=0.0,
+    )
+
+    # Test array of scale factors
+    a = np.linspace(0.1, 1.0, 100)
+
+    d2 = bkgrd.growth_factor_second(cosmo_jax, a)
+    f2 = bkgrd.growth_rate_second(cosmo_jax, a)
+
+    # did not find a pyccl equivalent to test against, so I test like so
+    # Test numerical consistency: f2 = d ln(D2)/d ln(a)
+    f2_numerical = np.gradient(np.log(np.abs(d2)), np.log(a))
+    assert_allclose(f2, f2_numerical, rtol=5e-2)

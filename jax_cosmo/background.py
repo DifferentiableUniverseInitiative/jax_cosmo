@@ -19,6 +19,8 @@ __all__ = [
     "angular_diameter_distance",
     "growth_factor",
     "growth_rate",
+    "growth_factor_second",
+    "growth_rate_second",
 ]
 
 
@@ -440,17 +442,99 @@ def growth_rate(cosmo, a):
         return _growth_rate_ODE(cosmo, a)
 
 
+def growth_factor_second(cosmo, a):
+    r"""Compute second-order growth factor D2(a) at a given scale factor,
+    normalized such that D2(a=1) = 1.
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    D2:  ndarray, or float if input scalar
+        Second-order growth factor computed at requested scale factor
+
+    Notes
+    -----
+    The second-order growth factor satisfies the ODE:
+
+    .. math::
+
+        D_2'' + q D_2' - r D_2 = -r D_1^2
+
+    where q and r are the same coefficients as in the first-order equation.
+    The second-order growth is important for 2LPT (second-order Lagrangian
+    perturbation theory) calculations.
+
+    Note: gamma parametrization is not supported for second-order growth.
+    """
+    if cosmo._flags["gamma_growth"]:
+        raise NotImplementedError(
+            "Gamma growth parametrization is not implemented for second-order growth. "
+            "Use a cosmology without gamma_growth flag."
+        )
+    return _growth_factor_second_ODE(cosmo, a)
+
+
+def growth_rate_second(cosmo, a):
+    r"""Compute second-order growth rate f2 = d ln(D2)/d ln(a) at a given scale factor.
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    f2:  ndarray, or float if input scalar
+        Second-order growth rate computed at requested scale factor
+
+    Notes
+    -----
+    The second-order growth rate is defined as:
+
+    .. math::
+
+        f_2(a) = \frac{d \ln D_2}{d \ln a}
+
+    Note: gamma parametrization is not supported for second-order growth.
+    """
+    if cosmo._flags["gamma_growth"]:
+        raise NotImplementedError(
+            "Gamma growth parametrization is not implemented for second-order growth. "
+            "Use a cosmology without gamma_growth flag."
+        )
+    return _growth_rate_second_ODE(cosmo, a)
+
+
 def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
     """Compute linear growth factor D(a) at a given scale factor,
     normalised such that D(a=1) = 1.
+
+    This function also computes second-order growth factors simultaneously
+    by solving the coupled ODE system.
 
     Parameters
     ----------
     a: array_like
       Scale factor
 
-    amin: float
-      Mininum scale factor, default 1e-3
+    log10_amin: float
+      Log10 of minimum scale factor, default -3
+
+    steps: int
+      Number of integration steps, default 128
+
+    eps: float
+      Small regularization parameter (unused, kept for API compatibility)
 
     Returns
     -------
@@ -458,11 +542,17 @@ def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
         Growth factor computed at requested scale factor
     """
     # Check if growth has already been computed
-    if not "background.growth_factor" in cosmo._workspace.keys():
+    if "background.growth_factor" not in cosmo._workspace.keys():
         # Compute tabulated array
         atab = np.logspace(log10_amin, 0.0, steps)
 
         def D_derivs(y, x):
+            """Coupled ODE system for first and second order growth factors.
+
+            State vector y has shape (2, 2):
+              y[0] = [D1, D2]     (growth factors)
+              y[1] = [dD1/da, dD2/da]  (derivatives)
+            """
             q = (
                 2.0
                 - 0.5
@@ -472,19 +562,55 @@ def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
                 )
             ) / x
             r = 1.5 * Omega_m_a(cosmo, x) / x / x
-            return np.array([y[1], -q * y[1] + r * y[0]])
 
-        y0 = np.array([atab[0], 1.0])
+            g1, g2 = y[0]
+            f1, f2 = y[1]
+
+            # First order: D1'' + q*D1' - r*D1 = 0
+            dy1da = [f1, -q * f1 + r * g1]
+            # Second order: D2'' + q*D2' - r*D2 = -r*D1^2
+            dy2da = [f2, -q * f2 + r * g2 - r * g1**2]
+
+            return np.array([[dy1da[0], dy2da[0]], [dy1da[1], dy2da[1]]])
+
+        # Initial conditions at early times (matter-dominated era)
+        # D1 ~ a, D2 ~ -3/7 * a^2
+        y0 = np.array([[atab[0], -3.0 / 7 * atab[0] ** 2], [1.0, -6.0 / 7 * atab[0]]])
         y = odeint(D_derivs, y0, atab)
-        y1 = y[:, 0]
-        gtab = y1 / y1[-1]
-        # To transform from dD/da to dlnD/dlna: dlnD/dlna = a / D dD/da
-        ftab = y[:, 1] / y1[-1] * atab / gtab
 
-        cache = {"a": atab, "g": gtab, "f": ftab}
+        # Compute second derivatives for h and h2
+        dyda2 = D_derivs(np.transpose(y, (1, 2, 0)), atab)
+        dyda2 = np.transpose(dyda2, (2, 0, 1))
+
+        # Extract and normalize first order growth
+        y1 = y[:, 0, 0]
+        gtab = y1 / y1[-1]
+
+        # Extract and normalize second order growth
+        y2 = y[:, 0, 1]
+        g2tab = y2 / y2[-1]
+
+        # Growth rates: transform from dD/da to dlnD/dlna = a/D * dD/da
+        ftab = y[:, 1, 0] / y1[-1] * atab / gtab
+        f2tab = y[:, 1, 1] / y2[-1] * atab / g2tab
+
+        # Second derivatives (normalized)
+        htab = dyda2[:, 1, 0] / y1[-1] * atab / gtab
+        h2tab = dyda2[:, 1, 1] / y2[-1] * atab / g2tab
+
+        cache = {
+            "a": atab,
+            "g": gtab,
+            "f": ftab,
+            "h": htab,
+            "g2": g2tab,
+            "f2": f2tab,
+            "h2": h2tab,
+        }
         cosmo._workspace["background.growth_factor"] = cache
     else:
         cache = cosmo._workspace["background.growth_factor"]
+
     return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
 
 
@@ -510,6 +636,52 @@ def _growth_rate_ODE(cosmo, a):
         _growth_factor_ODE(cosmo, np.atleast_1d(1.0))
     cache = cosmo._workspace["background.growth_factor"]
     return interp(a, cache["a"], cache["f"])
+
+
+def _growth_factor_second_ODE(cosmo, a):
+    """Compute second-order growth factor D2(a) by solving the coupled ODE system.
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    D2:  ndarray, or float if input scalar
+        Second-order growth factor computed at requested scale factor
+    """
+    # Ensure growth factors have been computed (this populates g2)
+    if "background.growth_factor" not in cosmo._workspace.keys():
+        _growth_factor_ODE(cosmo, np.atleast_1d(1.0))
+    cache = cosmo._workspace["background.growth_factor"]
+    return np.clip(interp(a, cache["a"], cache["g2"]), 0.0, 1.0)
+
+
+def _growth_rate_second_ODE(cosmo, a):
+    """Compute second-order growth rate f2 = d ln(D2)/d ln(a).
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    f2:  ndarray, or float if input scalar
+        Second-order growth rate computed at requested scale factor
+    """
+    # Ensure growth factors have been computed (this populates f2)
+    if "background.growth_factor" not in cosmo._workspace.keys():
+        _growth_factor_ODE(cosmo, np.atleast_1d(1.0))
+    cache = cosmo._workspace["background.growth_factor"]
+    return interp(a, cache["a"], cache["f2"])
 
 
 def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
