@@ -10,7 +10,19 @@ __all__ = ["Cosmology"]
 
 @register_pytree_node_class
 class Cosmology:
-    def __init__(self, Omega_c, Omega_b, h, n_s, sigma8, Omega_k, w0, wa, gamma=None):
+    def __init__(
+        self,
+        Omega_c,
+        Omega_b,
+        h,
+        n_s,
+        sigma8,
+        Omega_k,
+        w0,
+        wa,
+        Omega_nu=0.0,
+        gamma=None,
+    ):
         r"""
         Cosmology object, stores primary and derived cosmological parameters.
 
@@ -34,6 +46,8 @@ class Cosmology:
           Second order term of dark energy equation of state
         gamma: float
           Index of the growth rate (optional)
+        Omega_nu, float
+          Neutrino density fraction (added support for massive neutrinos)
 
         Notes:
         ------
@@ -52,6 +66,7 @@ class Cosmology:
         self._Omega_k = Omega_k
         self._w0 = w0
         self._wa = wa
+        self._Omega_nu = Omega_nu  # Added Neutrino mass support
 
         self._flags = {}
 
@@ -89,6 +104,9 @@ class Cosmology:
             + " \n"
             + "    sigma8:   "
             + str(self.sigma8)
+            + " \n"
+            + "    Omega_nu: "
+            + str(self.Omega_nu)
         )
 
     def __repr__(self):
@@ -105,6 +123,7 @@ class Cosmology:
             self._Omega_k,
             self._w0,
             self._wa,
+            self._Omega_nu,
         )
 
         if self._flags["gamma_growth"]:
@@ -118,8 +137,8 @@ class Cosmology:
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         # Retrieve base parameters
-        Omega_c, Omega_b, h, n_s, sigma8, Omega_k, w0, wa = children[:8]
-        children = list(children[8:]).reverse()
+        Omega_c, Omega_b, h, n_s, sigma8, Omega_k, w0, wa, Omega_nu = children[:9]
+        children = list(children[9:]).reverse()
 
         # We extract the remaining parameters in reverse order from how they
         # were inserted
@@ -137,6 +156,7 @@ class Cosmology:
             Omega_k=Omega_k,
             w0=w0,
             wa=wa,
+            Omega_nu=Omega_nu,
             gamma=gamma,
         )
 
@@ -154,8 +174,13 @@ class Cosmology:
         return self._Omega_c
 
     @property
+    def Omega_nu(self):
+        return self._Omega_nu
+
+    @property
     def Omega_m(self):
-        return self._Omega_b + self._Omega_c
+        # FIX: Include neutrinos in total matter so it sums to 0.3 correctly
+        return self._Omega_b + self._Omega_c + self._Omega_nu
 
     @property
     def Omega_de(self):
