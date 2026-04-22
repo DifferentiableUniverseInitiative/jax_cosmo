@@ -146,6 +146,30 @@ def test_growth_rate():
     assert_allclose(fccl, fjax, rtol=1e-2)
 
 
+def test_angular_diameter_distance_z1z2():
+    """Basic test for angular diameter distance between two redshifts."""
+    cosmo_jax = Cosmology(
+        Omega_c=0.3,
+        Omega_b=0.05,
+        h=0.7,
+        sigma8=0.8,
+        n_s=0.96,
+        Omega_k=0.0,
+        w0=-1.0,
+        wa=0.0,
+    )
+
+    # Test that angular_diameter_distance_z1z2(0, z) gives the same result as
+    # angular_diameter_distance(z)
+    z = 1.0
+    a = 1.0 / (1.0 + z)
+    
+    result_single = bkgrd.angular_diameter_distance(cosmo_jax, a)
+    result_z1z2 = bkgrd.angular_diameter_distance_z1z2(cosmo_jax, 0.0, z)
+    
+    assert_allclose(result_single, result_z1z2, rtol=1e-6)
+
+
 def test_growth_rate_gamma():
     # We test consistency of both effective growth
     # parametrisation for LCDM

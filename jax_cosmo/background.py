@@ -17,6 +17,9 @@ __all__ = [
     "dchioverda",
     "transverse_comoving_distance",
     "angular_diameter_distance",
+    "comoving_distance_z1z2",
+    "comoving_transverse_distance_z1z2",  
+    "angular_diameter_distance_z1z2",
     "growth_factor",
     "growth_rate",
 ]
@@ -366,6 +369,108 @@ def angular_diameter_distance(cosmo, a):
         d_A(a) = a f_k(a)
     """
     return a * transverse_comoving_distance(cosmo, a)
+
+
+def comoving_distance_z1z2(cosmo, z1, z2):
+    r"""Comoving distance in [Mpc/h] between two redshifts.
+
+    Parameters
+    ----------
+    cosmo : Cosmology
+        Cosmological parameters
+    z1, z2 : array_like
+        Input redshifts
+
+    Returns
+    -------
+    d_c : ndarray, or float if input scalar
+        Comoving distance between the two redshifts
+
+    Notes
+    -----
+    This is the line-of-sight comoving distance from redshift z1 to z2.
+    For most applications z2 > z1, but z2 < z1 is also supported.
+    """
+    from jax_cosmo.utils import z2a
+    a1, a2 = z2a(z1), z2a(z2)
+    chi1 = radial_comoving_distance(cosmo, a1)
+    chi2 = radial_comoving_distance(cosmo, a2)
+    return np.abs(chi2 - chi1)
+
+
+def comoving_transverse_distance_z1z2(cosmo, z1, z2):
+    r"""Comoving transverse distance in [Mpc/h] between two redshifts.
+
+    Parameters
+    ----------
+    cosmo : Cosmology
+        Cosmological parameters
+    z1, z2 : array_like
+        Input redshifts
+
+    Returns
+    -------
+    d_M : ndarray, or float if input scalar
+        Comoving transverse distance between the two redshifts
+
+    Notes
+    -----
+    This is the transverse comoving distance from redshift z1 to z2,
+    which accounts for spatial curvature. For a flat universe (Omega_k=0),
+    this is the same as the comoving distance.
+    """
+    # Get the comoving distance between the two redshifts
+    dc = comoving_distance_z1z2(cosmo, z1, z2)
+    
+    # Apply curvature correction using the same logic as transverse_comoving_distance
+    # but applied to the distance difference
+    def open_universe(chi):
+        return const.rh / cosmo.sqrtk * np.sinh(cosmo.sqrtk * chi / const.rh)
+
+    def flat_universe(chi):
+        return chi
+
+    def close_universe(chi):
+        return const.rh / cosmo.sqrtk * np.sin(cosmo.sqrtk * chi / const.rh)
+
+    branches = (open_universe, flat_universe, close_universe)
+    return lax.switch(cosmo.k + 1, branches, dc)
+
+
+def angular_diameter_distance_z1z2(cosmo, z1, z2):
+    r"""Angular diameter distance in [Mpc/h] between two redshifts.
+
+    Useful for gravitational lensing calculations, for example computing 
+    the angular diameter distance between a lensed galaxy and a foreground lens.
+
+    Parameters
+    ----------
+    cosmo : Cosmology
+        Cosmological parameters
+    z1, z2 : array_like
+        Input redshifts. For most practical applications such as 
+        gravitational lensing, z2 should be larger than z1. The 
+        function will work for z2 < z1; however, this will return 
+        negative distances.
+
+    Returns
+    -------
+    d_A : ndarray, or float if input scalar
+        Angular diameter distance between the two redshifts
+
+    Notes
+    -----
+    The angular diameter distance between two redshifts is computed as:
+
+    .. math::
+
+        d_A(z_1, z_2) = \frac{f_k(\chi_{12})}{1 + z_2}
+
+    where :math:`f_k(\chi_{12})` is the transverse comoving distance 
+    between the two redshifts and :math:`\chi_{12}` is the comoving 
+    distance difference.
+    """
+    return comoving_transverse_distance_z1z2(cosmo, z1, z2) / (1.0 + z2)
 
 
 def growth_factor(cosmo, a):
