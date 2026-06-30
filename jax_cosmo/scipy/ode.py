@@ -19,4 +19,4 @@ def odeint(fn, y0, t):
         return (y, t), y
 
     (yf, _), y = jax.lax.scan(rk4, (y0, np.array(t[0])), t)
-    return y
+    return yf, y

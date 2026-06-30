@@ -1,12 +1,29 @@
 # This module implements various functions for the background COSMOLOGY
+import os
+
 import jax.numpy as np
 from jax import lax
 
 import jax_cosmo.constants as const
-from jax_cosmo.scipy.interpolate import interp
+from jax_cosmo.cache import caching
+from jax_cosmo.scipy.interpolate import InterpolatedUnivariateSpline, interp
 from jax_cosmo.scipy.ode import odeint
 
+# ---------------------------------------------------------------------------
+# Configurable ODE table parameters (env-overridable)
+# ---------------------------------------------------------------------------
+# Number of interpolation points for growth / distance tables.
+# More points → higher interpolation accuracy, negligible cost.
+GROWTH_TABLE_STEPS: int = int(os.environ.get("JAX_COSMO_GROWTH_STEPS", "2048"))
+
+# log10 of the minimum scale factor where the ODE integration starts.
+# Must be negative; fastpm uses -7 by default.
+GROWTH_TABLE_LOG10_AMIN: int = int(os.environ.get("JAX_COSMO_GROWTH_LOG10_AMIN", "-7"))
+
+
 __all__ = [
+    "GROWTH_TABLE_STEPS",
+    "GROWTH_TABLE_LOG10_AMIN",
     "w",
     "f_de",
     "Esqr",
@@ -19,6 +36,10 @@ __all__ = [
     "angular_diameter_distance",
     "growth_factor",
     "growth_rate",
+    "growth_factor_second",
+    "growth_rate_second",
+    "_compute_distance_tables",
+    "_compute_growth_tables",
 ]
 
 
@@ -196,7 +217,93 @@ def Omega_de_a(cosmo, a):
     return cosmo.Omega_de * np.exp(f_de(cosmo, a)) / Esqr(cosmo, a)
 
 
-def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
+# ---------------------------------------------------------------------------
+# Cached table computations (replace _workspace-based caching)
+# ---------------------------------------------------------------------------
+
+
+@caching(arg_name="cosmo", max_entries=1000)
+def _compute_distance_tables(
+    cosmo, log10_amin=GROWTH_TABLE_LOG10_AMIN, steps=GROWTH_TABLE_STEPS
+):
+    """Compute comoving distance table via ODE integration.
+
+    Returns a dict with keys ``"a"`` and ``"chi"``.
+    """
+    atab = np.logspace(log10_amin, 0.0, steps)
+
+    def dchioverdlna(y, x):
+        xa = np.exp(x)
+        return dchioverda(cosmo, xa) * xa
+
+    chi_final, chitab = odeint(dchioverdlna, 0.0, np.log(atab))
+    chitab = chi_final - chitab
+
+    return (atab, chitab)
+
+
+@caching(arg_name="cosmo", max_entries=1000)
+def _compute_growth_tables(
+    cosmo, log10_amin=GROWTH_TABLE_LOG10_AMIN, steps=GROWTH_TABLE_STEPS
+):
+    """Compute growth factor tables via ODE integration.
+
+    Returns a tuple whose contents depend on ``cosmo._flags["gamma_growth"]``.
+    For the standard ODE path: ``(atab, gtab, ftab, htab, g2tab, f2tab, h2tab)``.
+    For the gamma path: ``(atab, gtab)``.
+    """
+    atab = np.logspace(log10_amin, 0.0, steps)
+
+    if not cosmo._flags["gamma_growth"]:
+
+        def D_derivs(y, x):
+            q = (
+                2.0
+                - 0.5
+                * (
+                    Omega_m_a(cosmo, x)
+                    + (1.0 + 3.0 * w(cosmo, x)) * Omega_de_a(cosmo, x)
+                )
+            ) / x
+            r = 1.5 * Omega_m_a(cosmo, x) / x / x
+
+            g1, g2 = y[0]
+            f1, f2 = y[1]
+
+            dy1da = [f1, -q * f1 + r * g1]
+            dy2da = [f2, -q * f2 + r * g2 - r * g1**2]
+
+            return np.array([[dy1da[0], dy2da[0]], [dy1da[1], dy2da[1]]])
+
+        y0 = np.array([[atab[0], -3.0 / 7 * atab[0] ** 2], [1.0, -6.0 / 7 * atab[0]]])
+        _, y = odeint(D_derivs, y0, atab)
+
+        dyda2 = D_derivs(np.transpose(y, (1, 2, 0)), atab)
+        dyda2 = np.transpose(dyda2, (2, 0, 1))
+
+        y1 = y[:, 0, 0]
+        gtab = y1 / y1[-1]
+        y2 = y[:, 0, 1]
+        g2tab = y2 / y2[-1]
+        ftab = y[:, 1, 0] / y1[-1] * atab / gtab
+        f2tab = y[:, 1, 1] / y2[-1] * atab / g2tab
+        htab = dyda2[:, 1, 0] / y1[-1] * atab / gtab
+        h2tab = dyda2[:, 1, 1] / y2[-1] * atab / g2tab
+
+        return (atab, gtab, ftab, htab, g2tab, f2tab, h2tab)
+    else:
+
+        def integrand(y, loga):
+            xa = np.exp(loga)
+            return _growth_rate_gamma(cosmo, xa)
+
+        _, gtab_raw = odeint(integrand, np.log(atab[0]), np.log(atab))
+        gtab = np.exp(gtab_raw)
+        gtab = gtab / gtab[-1]
+        return (atab, gtab)
+
+
+def radial_comoving_distance(cosmo, a):
     r"""Radial comoving distance in [Mpc/h] for a given scale factor.
 
     Parameters
@@ -219,27 +326,11 @@ def radial_comoving_distance(cosmo, a, log10_amin=-3, steps=256):
 
         \chi(a) =  R_H \int_a^1 \frac{da^\prime}{{a^\prime}^2 E(a^\prime)}
     """
-    # Check if distances have already been computed
-    if not "background.radial_comoving_distance" in cosmo._workspace.keys():
-        # Compute tabulated array
-        atab = np.logspace(log10_amin, 0.0, steps)
-
-        def dchioverdlna(y, x):
-            xa = np.exp(x)
-            return dchioverda(cosmo, xa) * xa
-
-        chitab = odeint(dchioverdlna, 0.0, np.log(atab))
-        # np.clip(- 3000*np.log(atab), 0, 10000)#odeint(dchioverdlna, 0., np.log(atab), cosmo)
-        chitab = chitab[-1] - chitab
-
-        cache = {"a": atab, "chi": chitab}
-        cosmo._workspace["background.radial_comoving_distance"] = cache
-    else:
-        cache = cosmo._workspace["background.radial_comoving_distance"]
+    cache = _compute_distance_tables(cosmo)
 
     a = np.atleast_1d(a)
     # Return the results as an interpolation of the table
-    return np.clip(interp(a, cache["a"], cache["chi"]), 0.0)
+    return np.clip(interp(a, cache[0], cache[1]), 0.0)
 
 
 def a_of_chi(cosmo, chi):
@@ -259,12 +350,10 @@ def a_of_chi(cosmo, chi):
     a : array-like
       Scale factors corresponding to requested distances
     """
-    # Check if distances have already been computed, force computation otherwise
-    if not "background.radial_comoving_distance" in cosmo._workspace.keys():
-        radial_comoving_distance(cosmo, 1.0)
-    cache = cosmo._workspace["background.radial_comoving_distance"]
+    cache = _compute_distance_tables(cosmo)
     chi = np.atleast_1d(chi)
-    return interp(chi, cache["chi"], cache["a"])
+    # Reverse the chi_tab and a_tab for interpolation
+    return interp(chi, cache[1][::-1], cache[0][::-1])
 
 
 def dchioverda(cosmo, a):
@@ -440,52 +529,108 @@ def growth_rate(cosmo, a):
         return _growth_rate_ODE(cosmo, a)
 
 
-def _growth_factor_ODE(cosmo, a, log10_amin=-3, steps=128, eps=1e-4):
+def growth_factor_second(cosmo, a):
+    r"""Compute second-order growth factor D2(a) at a given scale factor,
+    normalized such that D2(a=1) = 1.
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    D2:  ndarray, or float if input scalar
+        Second-order growth factor computed at requested scale factor
+
+    Notes
+    -----
+    The second-order growth factor satisfies the ODE:
+
+    .. math::
+
+        D_2'' + q D_2' - r D_2 = -r D_1^2
+
+    where q and r are the same coefficients as in the first-order equation.
+    The second-order growth is important for 2LPT (second-order Lagrangian
+    perturbation theory) calculations.
+
+    Note: gamma parametrization is not supported for second-order growth.
+    """
+    if cosmo._flags["gamma_growth"]:
+        raise NotImplementedError(
+            "Gamma growth parametrization is not implemented for second-order growth. "
+            "Use a cosmology without gamma_growth flag."
+        )
+    return _growth_factor_second_ODE(cosmo, a)
+
+
+def growth_rate_second(cosmo, a):
+    r"""Compute second-order growth rate f2 = d ln(D2)/d ln(a) at a given scale factor.
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    f2:  ndarray, or float if input scalar
+        Second-order growth rate computed at requested scale factor
+
+    Notes
+    -----
+    The second-order growth rate is defined as:
+
+    .. math::
+
+        f_2(a) = \frac{d \ln D_2}{d \ln a}
+
+    Note: gamma parametrization is not supported for second-order growth.
+    """
+    if cosmo._flags["gamma_growth"]:
+        raise NotImplementedError(
+            "Gamma growth parametrization is not implemented for second-order growth. "
+            "Use a cosmology without gamma_growth flag."
+        )
+    return _growth_rate_second_ODE(cosmo, a)
+
+
+def _growth_factor_ODE(cosmo, a):
     """Compute linear growth factor D(a) at a given scale factor,
     normalised such that D(a=1) = 1.
+
+    This function also computes second-order growth factors simultaneously
+    by solving the coupled ODE system.
 
     Parameters
     ----------
     a: array_like
       Scale factor
 
-    amin: float
-      Mininum scale factor, default 1e-3
+    log10_amin: float
+      Log10 of minimum scale factor, default -3
+
+    steps: int
+      Number of integration steps, default 128
+
+    eps: float
+      Small regularization parameter (unused, kept for API compatibility)
 
     Returns
     -------
     D:  ndarray, or float if input scalar
         Growth factor computed at requested scale factor
     """
-    # Check if growth has already been computed
-    if not "background.growth_factor" in cosmo._workspace.keys():
-        # Compute tabulated array
-        atab = np.logspace(log10_amin, 0.0, steps)
+    cache = _compute_growth_tables(cosmo)
 
-        def D_derivs(y, x):
-            q = (
-                2.0
-                - 0.5
-                * (
-                    Omega_m_a(cosmo, x)
-                    + (1.0 + 3.0 * w(cosmo, x)) * Omega_de_a(cosmo, x)
-                )
-            ) / x
-            r = 1.5 * Omega_m_a(cosmo, x) / x / x
-            return np.array([y[1], -q * y[1] + r * y[0]])
-
-        y0 = np.array([atab[0], 1.0])
-        y = odeint(D_derivs, y0, atab)
-        y1 = y[:, 0]
-        gtab = y1 / y1[-1]
-        # To transform from dD/da to dlnD/dlna: dlnD/dlna = a / D dD/da
-        ftab = y[:, 1] / y1[-1] * atab / gtab
-
-        cache = {"a": atab, "g": gtab, "f": ftab}
-        cosmo._workspace["background.growth_factor"] = cache
-    else:
-        cache = cosmo._workspace["background.growth_factor"]
-    return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
+    return np.clip(interp(a, cache[0], cache[1]), 0.0, 1.0)
 
 
 def _growth_rate_ODE(cosmo, a):
@@ -505,11 +650,48 @@ def _growth_rate_ODE(cosmo, a):
     f:  ndarray, or float if input scalar
         Growth rate computed at requested scale factor
     """
-    # Check if growth has already been computed, if not, compute it
-    if not "background.growth_factor" in cosmo._workspace.keys():
-        _growth_factor_ODE(cosmo, np.atleast_1d(1.0))
-    cache = cosmo._workspace["background.growth_factor"]
-    return interp(a, cache["a"], cache["f"])
+    cache = _compute_growth_tables(cosmo)
+    return interp(a, cache[0], cache[2])
+
+
+def _growth_factor_second_ODE(cosmo, a):
+    """Compute second-order growth factor D2(a) by solving the coupled ODE system.
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    D2:  ndarray, or float if input scalar
+        Second-order growth factor computed at requested scale factor
+    """
+    cache = _compute_growth_tables(cosmo)
+    return np.clip(interp(a, cache[0], cache[4]), 0.0, 1.0)
+
+
+def _growth_rate_second_ODE(cosmo, a):
+    """Compute second-order growth rate f2 = d ln(D2)/d ln(a).
+
+    Parameters
+    ----------
+    cosmo: `Cosmology`
+      Cosmology object
+
+    a: array_like
+      Scale factor
+
+    Returns
+    -------
+    f2:  ndarray, or float if input scalar
+        Second-order growth rate computed at requested scale factor
+    """
+    cache = _compute_growth_tables(cosmo)
+    return interp(a, cache[0], cache[5])
 
 
 def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
@@ -530,22 +712,8 @@ def _growth_factor_gamma(cosmo, a, log10_amin=-3, steps=128):
         Growth factor computed at requested scale factor
 
     """
-    # Check if growth has already been computed, if not, compute it
-    if not "background.growth_factor" in cosmo._workspace.keys():
-        # Compute tabulated array
-        atab = np.logspace(log10_amin, 0.0, steps)
-
-        def integrand(y, loga):
-            xa = np.exp(loga)
-            return _growth_rate_gamma(cosmo, xa)
-
-        gtab = np.exp(odeint(integrand, np.log(atab[0]), np.log(atab)))
-        gtab = gtab / gtab[-1]  # Normalize to a=1.
-        cache = {"a": atab, "g": gtab}
-        cosmo._workspace["background.growth_factor"] = cache
-    else:
-        cache = cosmo._workspace["background.growth_factor"]
-    return np.clip(interp(a, cache["a"], cache["g"]), 0.0, 1.0)
+    cache = _compute_growth_tables(cosmo, log10_amin, steps)
+    return np.clip(interp(a, cache[0], cache[1]), 0.0, 1.0)
 
 
 def _growth_rate_gamma(cosmo, a):

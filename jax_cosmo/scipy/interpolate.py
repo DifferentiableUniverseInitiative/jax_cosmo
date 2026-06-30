@@ -1,23 +1,34 @@
 # This module contains some missing ops from jax
 import functools
+import os
 
 import jax.numpy as np
-from jax import vmap
+from jax import lax, vmap
 from jax.numpy import array, concatenate, ones, zeros
 from jax.tree_util import register_pytree_node_class
 
 __all__ = ["interp"]
 
 
+# Aliasing interp to jnp interp
+# This implentation is more efficient than the old one below
+# and also naturally supports batching and broadcasting
+# This allows us to avoid flattening multi-dimensional arrays which might not always be possible
+# in case we have an array with over 2³¹ elements
+# However, this implementation assumes that the x points are sorted
+# This was done in background.py and power.py
+# for for external calls to interp this might be a breaking change
+# We keep the old implementation here for reference and possible future use
+interp = np.interp
+
+
 @functools.partial(vmap, in_axes=(0, None, None))
-def interp(x, xp, fp):
+def _old_interp(x, xp, fp):
     """
     Simple equivalent of np.interp that compute a linear interpolation.
 
     We are not doing any checks, so make sure your query points are lying
     inside the array.
-
-    TODO: Implement proper interpolation!
 
     x, xp, fp need to be 1d arrays
     """

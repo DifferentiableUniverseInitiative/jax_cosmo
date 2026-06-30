@@ -109,7 +109,8 @@ def _halofit_parameters(cosmo, a, transfer_fn):
             )
 
         sigma = simps(int_sigma, np.log(1e-4), np.log(1e4), 256)
-        root = interp(np.atleast_1d(1.0), sigma, logr)
+        # Invert sigma and logr because jnp.interp only works for increasing arrays
+        root = interp(np.atleast_1d(1.0), sigma[::-1], logr[::-1])
         return np.exp(root).clip(
             1e-6
         )  # To ensure that the root is not too close to zero
